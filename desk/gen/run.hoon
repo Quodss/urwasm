@@ -2,11 +2,12 @@
 /+  ast-interpreter
 /+  wasm-to-ast
 /+  handle=handle-operators
-/*  bin-wasm  %wasm  /simple-debts-2/wasm
+/*  bin-wasm  %wasm  /simple-debts/wasm
 |=  [n-people=@ debtor-vec=(list @) creditor-vec=(list @) sums-vec=(list @)]
 ::  end-to-end Wasm module interpretation pipeline
 ::
 |^
+~>  %bout
 =/  debtor-ids=cord
   %+  can  5
   (fuse (reap 9 1) debtor-vec)
@@ -25,6 +26,7 @@
     (find-func-id:hwasm '__wbindgen_add_to_stack_pointer' module.hwasm)
   ~[[%i32 (si-to-complement:handle 32 -16)]]
 =/  retptr=@  ?>(?=(^ out) n.i.out)
+~&  "retptr={<retptr>}"
 ::  pass vecs to wasm:
 ::
 =^  out  hwasm
@@ -32,24 +34,25 @@
     (find-func-id:hwasm '__wbindgen_malloc' module.hwasm)
   ~[[%i32 (mul 4 length-words)] [%i32 4]]  ::  length and some other argument from JS 
 =/  ptr0=@  ?>(?=(^ out) n.i.out)
+~&  "ptr0={<ptr0>}"
 =.  buffer.hwasm
   (sew bloq=3 [ptr0 size=(mul 4 length-words) debtor-ids] buffer.hwasm)
-::  ~&  ptr0
 ::
 =^  out  hwasm
   %+  call-id:hwasm
     (find-func-id:hwasm '__wbindgen_malloc' module.hwasm)
   ~[[%i32 (mul 4 length-words)] [%i32 4]]  ::  length and some other argument from JS 
 =/  ptr1=@  ?>(?=(^ out) n.i.out)
+~&  "ptr1={<ptr1>}"
 =.  buffer.hwasm
   (sew bloq=3 [ptr1 size=(mul 4 length-words) creditor-ids] buffer.hwasm)
-::  ~&  ptr1
 ::
 =^  out  hwasm
   %+  call-id:hwasm
     (find-func-id:hwasm '__wbindgen_malloc' module.hwasm)
   ~[[%i32 (mul 4 length-words)] [%i32 4]]  ::  length and some other argument from JS 
 =/  ptr2=@  ?>(?=(^ out) n.i.out)
+~&  "ptr2={<ptr2>}"
 =.  buffer.hwasm
   (sew bloq=3 [ptr2 size=(mul 4 length-words) sums] buffer.hwasm)
 ::  run `simplify`
@@ -71,6 +74,7 @@
 ::
 =/  r0=@  (cut 3 [retptr 4] buffer.hwasm)
 =/  r1=@  (cut 3 [(add retptr 4) 4] buffer.hwasm)
+~&  "ptr-out={<r0>}"
 ::  get vec with r0 and r1
 ::
 =/  string-out=@

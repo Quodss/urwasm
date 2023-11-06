@@ -3,12 +3,12 @@
 /+  ast-interpreter
 /+  wasm-to-ast
 /+  handle=handle-operators
-/*  div-table  %wasm  /del-table/wasm
-/*  fac-loop   %wasm  /fac-br/wasm
-/*  fib-rust   %wasm  /fib/wasm
-/*  fac-if     %wasm  /fac/wasm
-/*  two-func   %wasm  /two-functions/wasm
-/*  flopper    %wasm  /flopper/wasm
+/*  div-table  %wasm  /tests/del-table/wasm
+/*  fac-loop   %wasm  /tests/fac-br/wasm
+/*  fib-rust   %wasm  /tests/fib/wasm
+/*  fac-if     %wasm  /tests/fac/wasm
+/*  two-func   %wasm  /tests/two-functions/wasm
+/*  flopper    %wasm  /tests/flopper/wasm
 |%
 ++  test-table
   ::  Test table section and indirect calls
