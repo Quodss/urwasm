@@ -19,22 +19,22 @@ At this moment (~2023.11.27) jet is practically nonexistent: all I have is a Arv
 
     In `simple_debts.rs` example we need to call multiple functions (move the stack pointer, allocate memory for three vectors) before we can call our main solving function. Translating intermediate state of Wasm interpreter from C to Hoon representation and back is unfeasible. Instead I'll develop a simple scripting Language for Invocation of Assembly (Lia), that would specify the algorithm that is going to be performed by the interpreter. An example:
 
-```
-# Lia (Language for Invocation of Assembly) scripting language
-# a script must start with at least one import line and the import
-# must have at least one wasm-module
-#
-import wasm-module *bin-wasm            # expose namespace
-import atom string0, i32 len0           # imports must have explicit types
-retptr = add_to_stack_pointer(-16)      # implicit type of input and output
-                                        # from type section
-ptr0 = malloc(len0, 1) 
-memory[0].write(string0, ptr0, len0, 1) # memory[i].write takes 4 atoms 
-process(retptr, ptr0, len0)
-i32 r0 = memory[0].read(retptr, 4, 1)   # explicit type, casts atom to i32
-i32 r1 = memory[0].read(retptr+4, 4, 1) # '4' is implicitly typed as i32,
-                                        # addition operator upcasts to i64
-                                        # or convert to fn if necessary
-return memory[0].read(r0, r1, 1)        # `return` expression is 'return' + expression
-                                        # that returns an atom
-```
+    ```
+    # Lia (Language for Invocation of Assembly) scripting language
+    # a script must start with at least one import line and the import
+    # must have at least one wasm-module
+    #
+    import wasm-module *bin-wasm            # expose namespace
+    import atom string0, i32 len0           # imports must have explicit types
+    retptr = add_to_stack_pointer(-16)      # implicit type of input and output
+                                            # from type section
+    ptr0 = malloc(len0, 1) 
+    memory[0].write(string0, ptr0, len0, 1) # memory[i].write takes 4 atoms 
+    process(retptr, ptr0, len0)
+    i32 r0 = memory[0].read(retptr, 4, 1)   # explicit type, casts atom to i32
+    i32 r1 = memory[0].read(retptr+4, 4, 1) # '4' is implicitly typed as i32,
+                                            # addition operator upcasts to i64
+                                            # or convert to fn if necessary
+    return memory[0].read(r0, r1, 1)        # `return` expression is 'return' + expression
+                                            # that returns an atom
+    ```
