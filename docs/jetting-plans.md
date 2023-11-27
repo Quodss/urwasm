@@ -24,6 +24,9 @@ At this moment (~2023.11.27) jet is practically nonexistent: all I have is a Arv
     # a script must start with at least one import line and the import
     # must have at least one wasm-module
     #
+    # "add_to_stack_pointer", "malloc" and "process" are functions exported
+    # by the wasm module
+    #
     import wasm-module *bin-wasm            # expose namespace
     import atom string0, i32 len0           # imports must have explicit types
     retptr = add_to_stack_pointer(-16)      # implicit type of input and output
