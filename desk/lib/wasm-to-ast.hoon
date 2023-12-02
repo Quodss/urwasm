@@ -499,7 +499,7 @@
     ;~(plug (mask mask-one-i32) (i-n 32))
   ::
     %+  cook  handle-const-i32
-    ;~(plug const-i32 (s-n 64))
+    ;~(plug const-i32 (s-n 32))
   ::
     %+  cook  handle-const-i64
     ;~(plug const-i64 (s-n 64))

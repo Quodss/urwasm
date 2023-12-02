@@ -3,38 +3,42 @@
   ::
 |%
 +$  valtype
-  $?  %f64
-      %i64
-      %f32
-      %i32
+  $~  %i32
+  $?  num-type
+      vec-type
+      ref-type
   ==
 ::
++$  num-type  ?(%i32 %i64 %f32 %f64)
++$  vec-type  %v128
++$  ref-type  ?(%extn %func)  ::  externref and funcref
 +$  coin-wasm
-  $%  [type=%i32 n=@]
-      [type=%i64 n=@]
-      [type=%f32 n=@rs]
-      [type=%f64 n=@rd]
-  ::  ...  TODO: add v128?
+  $~  [%i32 *@]
+  $%  [num-type @]
+      [vec-type @]
+      [%ref $%([%null ref-type] [%func @])]
   ==
 ::
 +$  limits
-  $%  [%0 @]
-      [%1 @ @]
+  $%  [%flor @]    ::  min only
+      [%ceil @ @]  ::  min and max
   ==
 ::  Module definition
 ::
 +$  module
   $:
     =type-section
+    =import-section
     =function-section
     =table-section
     =memory-section
     =global-section
     =export-section
+    =start-section
     =elem-section
     =code-section
     =data-section
-  ::  ...   TODO add other sections, add fields for globals + imports
+    =datacnt-section
   ==
 ::  Definitions of sections
 ::
@@ -48,7 +52,22 @@
   $:  params=(list valtype)
       results=(list valtype)
   ==
+::  Import section
 ::
++$  import-section
+  $+  import-section
+  (list import)
+::
++$  import
+  $:  mod=tape
+      name=tape
+      $=  desc
+      $%
+        [%func id=@]
+        [%tabl table]
+        [%memo l=limits]
+        [%glob v=valtype m=?(%con %var)]  ::  constant or variable
+  ==  ==
 ::  Function section
 ::
 +$  function-section
@@ -58,20 +77,25 @@
 ::  Table section
 ::
 +$  table-section  (list table)
-+$  table  [%funcref min=@ max=(unit @)]
++$  table  (pair ref-type limits)
 ::
 ::  Memory section
 ::
-+$  memory-section  (list mem)
-+$  mem  [min=@ max=(unit @)]
-+$  memarg
-  $+  memarg
-  [align=@ offset=@]
++$  memory-section  (list limits)
 ::
 ::  Global section
 ::
 +$  global-section  (list global)
-+$  global  [=valtype ?(%const %mut) e=(list instruction)]
+::  valtype, mutability and init value.
+::  We use a single constant instruction as opposed to a
+::  (list instruction) since there is no global value type
+::  that would take multiple constant values
+::
++$  global
+  $:  v=valtype
+      m=?(%con %var)
+      i=$>(?(%const %global-get) instruction)
+  ==
 ::
 ::  Export section
 ::
@@ -79,19 +103,34 @@
   $+  export-section
   (list export)
 ::
-+$  export  [name=@t =export-desc]
++$  export  [name=tape =export-desc]
 ::
 +$  export-desc
   $%  [%func i=@]
-      [%table i=@]
-      [%memory i=@]
-      [%global i=@]
+      [%tabl i=@]
+      [%memo i=@]
+      [%glob i=@]
   ==
 ::
+::  Start section
+::
++$  start-section  @
 ::  Elem section
 ::
 +$  elem-section  (list elem)
-+$  elem  [%0x0 offset=(list instruction) y=(list @)]
+::  The constant instructions are going to contain
+::  %ref reference constants. The offset in %acti
+::  active mode `off` is a single instruction
+::  because it is going to yield a single value
+::
++$  elem
+  $:  t=ref-type
+      i=(list $>(%const instruction))
+      ^=  m
+      $%  [%pass ~]
+          [%decl ~]
+          [%acti tab=@ off=$>(%const instruction)]
+  ==  ==
 ::
 ::  Code section
 ::
@@ -103,6 +142,10 @@
   $:  locals=(list valtype)
       expression=(list instruction)
   ==
+::
++$  memarg
+  $+  memarg
+  [align=@ offset=@]
 ::
 +$  instruction
   $%
