@@ -1,7 +1,17 @@
-::  HWasm AST definition and binary opcode classification
+::  urwasm AST definition and binary opcode classification
+::
+::    The first part mirrors Structure chapter of WebAssembly Core Specification
+::    https://www.w3.org/TR/2022/WD-wasm-core-2-20220419/syntax/index.html.
+::    The second part is based on binary format specification.
+::
 ::::  /hoon/wasm/sur
   ::
 |%
+::  Types
+::
++$  num-type  ?(%i32 %i64 %f32 %f64)
++$  vec-type  %v128
++$  ref-type  ?(%extn %func)  ::  externref and funcref
 +$  valtype
   $~  %i32
   $?  num-type
@@ -9,9 +19,8 @@
       ref-type
   ==
 ::
-+$  num-type  ?(%i32 %i64 %f32 %f64)
-+$  vec-type  %v128
-+$  ref-type  ?(%extn %func)  ::  externref and funcref
+::  $coin-wasm: type-annotated value
+::
 +$  coin-wasm
   $~  [%i32 *@]
   $%  [num-type @]
@@ -23,125 +32,8 @@
   $%  [%flor @]    ::  min only
       [%ceil @ @]  ::  min and max
   ==
-::  Module definition
 ::
-+$  module
-  $:
-    =type-section
-    =import-section
-    =function-section
-    =table-section
-    =memory-section
-    =global-section
-    =export-section
-    =start-section
-    =elem-section
-    =code-section
-    =data-section
-    =datacnt-section
-  ==
-::  Definitions of sections
-::
-::  Type section
-::
-+$  type-section
-  $+  type-section
-  (list func-type)
-::
-+$  func-type
-  $:  params=(list valtype)
-      results=(list valtype)
-  ==
-::  Import section
-::
-+$  import-section
-  $+  import-section
-  (list import)
-::
-+$  import
-  $:  mod=tape
-      name=tape
-      $=  desc
-      $%
-        [%func id=@]
-        [%tabl table]
-        [%memo l=limits]
-        [%glob v=valtype m=?(%con %var)]  ::  constant or variable
-  ==  ==
-::  Function section
-::
-+$  function-section
-  $+  function-section
-  (list type-id=@)
-::
-::  Table section
-::
-+$  table-section  (list table)
-+$  table  (pair ref-type limits)
-::
-::  Memory section
-::
-+$  memory-section  (list limits)
-::
-::  Global section
-::
-+$  global-section  (list global)
-::  valtype, mutability and init value.
-::  We use a single constant instruction as opposed to a
-::  (list instruction) since there is no global value type
-::  that would take multiple constant values
-::
-+$  global
-  $:  v=valtype
-      m=?(%con %var)
-      i=$>(?(%const %global-get) instruction)
-  ==
-::
-::  Export section
-::
-+$  export-section
-  $+  export-section
-  (list export)
-::
-+$  export  [name=tape =export-desc]
-::
-+$  export-desc
-  $%  [%func i=@]
-      [%tabl i=@]
-      [%memo i=@]
-      [%glob i=@]
-  ==
-::
-::  Start section
-::
-+$  start-section  @
-::  Elem section
-::
-+$  elem-section  (list elem)
-::  The constant instructions are going to contain
-::  %ref reference constants. The offset in %acti
-::  active mode `off` is a single instruction
-::  because it is going to yield a single value
-::
-+$  elem
-  $:  t=ref-type
-      i=(list $>(%const instruction))
-      ^=  m
-      $%  [%pass ~]
-          [%decl ~]
-          [%acti tab=@ off=$>(%const instruction)]
-  ==  ==
-::
-::  Code section
-::
-+$  code-section
-  $+  code-section
-  (list code)
-::
-+$  code
-  $:  locals=(list valtype)
-      expression=(list instruction)
-  ==
+::  Instructions
 ::
 +$  memarg
   $+  memarg
@@ -153,7 +45,7 @@
     ::
     [%unreachable ~]
     [%nop ~]
-    [%block result-type=(list valtype) body=(list instruction)]
+    [%block result-type=(list valtype) body=(list instruction)]  ::  XX update type field of nesting instructions
     [%loop result-type=(list valtype) body=(list instruction)]
     $:  %if
         result-type=(list valtype)
@@ -248,22 +140,147 @@
     [%demote ~]
     [%promote ~]
     [%reinterpret type=valtype source-type=valtype]
-    ::  maybe todo: FC extensions, SIMD opcodes
+    ::  XX add SIMD stuff, check completeness
+  ==  ::  $instruction
+::
++$  expression  (list instruction)
+::
+::  Modules
+::
+::  $module: represents `module` type from WebAssembly specification,
+::  but in a format closer to the binary representation, e.g. separate
+::  code and function sections. This is done to simplify parsing.
+::
++$  module
+  $:
+    =type-section
+    =import-section
+    =function-section
+    =table-section
+    =memory-section
+    =global-section
+    =export-section
+    =start-section
+    =elem-section
+    =code-section
+    =data-section
+    =datacnt-section
   ==
 ::
-::  Data section
+::  Definitions of sections
+::
+::  Type section
+::
++$  type-section
+  $+  type-section
+  (list func-type)
+::
++$  func-type
+  $:  params=(list valtype)
+      results=(list valtype)
+  ==
+::  Import section
+::
++$  import-section
+  $+  import-section
+  (list import)
+::
++$  import
+  $:  mod=tape
+      name=tape
+      $=  desc
+      $%
+        [%func id=@]
+        [%tabl table]
+        [%memo l=limits]
+        [%glob v=valtype m=?(%con %var)]  ::  constant or variable
+  ==  ==
+::  Function section
+::
++$  function-section
+  $+  function-section
+  (list type-id=@)
+::
+::  Table section
+::
++$  table-section  (list table)
++$  table  (pair ref-type limits)
+::
+::  Memory section
+::
++$  memory-section  (list limits)
+::
+::  Global section
+::
++$  global-section  (list global)
+::  valtype, mutability and init value.
+::  We use a single constant instruction as opposed to a
+::  (list instruction) since there is no global value type
+::  that would take multiple constant values
+::
++$  global
+  $:  v=valtype
+      m=?(%con %var)
+      i=$>(?(%const %global-get) instruction)
+  ==
+::
+::  Export section
+::
++$  export-section
+  $+  export-section
+  (list export)
+::
++$  export  [name=tape =export-desc]
+::
++$  export-desc
+  $%  [%func i=@]
+      [%tabl i=@]
+      [%memo i=@]
+      [%glob i=@]
+  ==
+::
+::  Start section
+::
++$  start-section  (unit @)
+::  Elem section
+::
++$  elem-section  (list elem)
+::  The constant instructions are going to contain
+::  %ref reference constants. The offset in %acti
+::  active mode `off` and an element of `i` list 
+::  of expressions are a single instruction because
+::  they yield a single value
+::
++$  elem
+  $:  t=ref-type
+      i=(list $>(%const instruction))
+      ^=  m
+      $%  [%pass ~]
+          [%decl ~]
+          [%acti tab=@ off=$>(%const instruction)]
+  ==  ==
+::
+::  Code section
+::
++$  code-section
+  $+  code-section
+  (list code)
+::
++$  code
+  $:  locals=(list valtype)
+      =expression
+  ==
 ::
 +$  data-section  (list data)
-+$  data  $%
-            [%active offset=(list instruction) b=[len=@ array=@]]
-            [%passive b=[len=@ array=@]]
-          ==
-::  Interpreter types
++$  data
+  $%
+    [%acti off=$>(%const instruction) b=octs]
+    [%pass b=octs]
+  ==
 ::
-+$  stack  [p=(unit branch) q=(pole coin-wasm)]
-+$  branch  $%([%return ~] [%target i=@])  ::  target for branching: return or target an index
+::  Binary opcode specification
 ::
-::  Binary opcode classification
+:  Binary opcode classification
 ::
 +$  opcode  $?  bin-opcodes-zero-args
                 bin-opcodes-one-arg
