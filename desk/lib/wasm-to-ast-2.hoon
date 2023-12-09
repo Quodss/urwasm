@@ -1,70 +1,41 @@
 ::  WebAssembly parser
 ::
 /-  sur=wasm
-/+  handle=handle-operators
+:: /+  handle=handle-operators
 |%
 ::
-::  ++section-ord: gate for comparing section id order correctness.
-::  id=0 (custom section) can be anywhere, rest of the sections are
-::  ordered as ~[1 2 3 4 5 6 7 8 9 12 10 11]
-::
-++  section-ord
-  |=  [a=@ b=@]
-  ^-  ?
-  ?:  |(=(a 0) =(b 0))  %.y
-  ?.  |(=(a 12) =(b 12))
-    (gth b a)
-  ?.  =(b 12)
-    |(=(b 10) =(b 11))
-  ?:  =(a 12)  %.n
-  !$(a b, b a)
 ::  ++main: parsing function. Extends octstream with
 ::  leading zeros, then applies ++module:r parsing rule.
 ::
 ++  main
-  =,  sur
   |=  wasm=octs
+  =,  sur
   =|  out=module
   =/  bytes=tape  (trip q.wasm)
-  =.  bytes  %+  weld  bytes
-             ;;  tape
-             (reap (sub p.wasm (lent bytes)) '\00')
-  ::  Wasm binary magic & binary version
+  ::  add leading zeros
   ::
-  ?>  =((scag 8 bytes) "\00asm\01\00\00\00")
-  =/  section-bytes=(list tape)  (scan (slag 8 bytes) section-bytes:r)
-  =+  last-id=0
-  |-  ^-  module
-  ?~  section-bytes  out
-  ?>  ?=(^ i.section-bytes)
-  ?>  (section-ord last-id i.i.section-bytes)
-  =.  out
-    ?+  i.i.section-bytes  ~|(%unrecognized-section-code !!)
-      %0   out
-      %1   out(type-section (scan t.i.section-bytes type-section:r))
-      %2   out(import-section (scan t.i.section-bytes import-section:r))
-      %3   out(function-section (scan t.i.section-bytes function-section:r))
-      %4   out(table-section (scan t.i.section-bytes table-section:r))
-      %5   out(memory-section (scan t.i.section-bytes memory-section:r))
-      %6   out(global-section (scan t.i.section-bytes global-section:r))
-      %7   out(export-section (scan t.i.section-bytes export-section:r))
-      %8   out(start-section (scan t.i.section-bytes start-section:r))
-      %9   out(elem-section (scan t.i.section-bytes elem-section:r))
-      %12  out(datacnt-section (scan t.i.section-bytes datacnt-section:r))
-      %10  out(code-section (scan t.i.section-bytes code-section:r))
-      %11  out(data-section (scan t.i.section-bytes data-section:r))
-    ==
-  %=  $
-    last-id  ?:  =(i.i.section-bytes 0)
-               last-id
-             i.i.section-bytes
-    section-bytes  t.section-bytes
-  ==
+  =.  bytes
+    %+  weld  bytes
+    ;;  tape
+    (reap (sub p.wasm (lent bytes)) '\00')
+  (scan bytes module:r)
   ::
-  ::  |r: core with parsing rules
+  ::  |r: core with parsing rules.
+  ::  Parsing rules often use the same name as the types
+  ::  in /sur/wasm/hoon. Whenever you need a type make sure
+  ::  to point at the structure file. For example,
+  ::  num-type in |r refers to the parsing rule, which
+  ::  returns a noun with the type num-type:sur
   ::
 ++  r
   |%
+  ::  ++womp: returns a mold of a product of rule
+  ::
+  ++  womp
+    |*  rul=rule
+    $_  =+  vex=(rul)
+    ?>  ?=(^ q.vex)
+    p.u.q.vex
   ::  ++bild: connexts an edge with a rule and a rule-
   ::  producing gate, returning the result of the
   ::  rule produced by slamming the gate with
@@ -84,6 +55,7 @@
   ++  bonk
     |*  [tet=rule fes=rule]
     |=  tub=nail
+    ^+  (fes)
     =+  try=(tet tub)
     ?~  q.try  try
     =+  zen=(fes tub)
@@ -169,7 +141,7 @@
       list
     (stun [8 8] next)
   ::
-  ++  fuse                                                ::  from ~paldev
+  ++  fuse                        ::  from ~paldev
     |*  [a=(list) b=(list)]
     ^-  (list [_?>(?=(^ a) i.a) _?>(?=(^ b) i.b)])
     ?~  a  ~
@@ -186,7 +158,8 @@
       (stun [n n] rul)
     ==
   ::
-  ++  name  (vec prn)
+  ++  name     (vec prn)
+  ++  vec-u32  (vec u32)
   ++  num-type
     %+  cook  num-type:sur
     ;~  pose
@@ -230,6 +203,11 @@
     |.  ~+
     ;~(sfix (star instr) end)
   ::
+  ++  expr-else
+    %+  knee  *expression:sur
+    |.  ~+
+    ;~(sfix (star instr) else)
+  ::
   ++  end        (just '\0b')
   ++  else       (just '\05')
   ++  const-i32  (just '\41')
@@ -241,9 +219,9 @@
   ++  loop-op    (just '\03')
   ++  if-op      (just '\04')
   ::
-  ++  instr       ::  XX update const instructions due to new coin-wasm, 
-    ;~  pose      ::  parse nesting instruction's types correctly,
-      instr-zero  ::  add `:sur` to type casts
+  ++  instr       ::  XX  TODO 
+    ;~  pose      ::  parse nesting instruction's types correctly
+      instr-zero
       instr-one
       instr-two
       if-else
@@ -256,7 +234,7 @@
   ++  instr-one
     ;~  pose
       %+  cook  handle-one-arg-i32
-      ;~(plug (mask mask-one-i32) (i-n 32))
+      ;~(plug (mask mask-one-i32) u32)
     ::
       %+  cook  handle-const-i32
       ;~(plug const-i32 (s-n 32))
@@ -274,27 +252,30 @@
   ++  instr-two
     ;~  pose
       %+  cook  handle-two-args-i32
-      ;~(plug (mask mask-two-i32) (i-n 32) (i-n 32))
+      ;~(plug (mask mask-two-i32) u32 u32)
     ::
       %+  cook  handle-br-table
-      ;~(plug br-table vec-i-32 (i-n 32))
+      ;~(plug br-table vec-u32 u32)
     ==
   ::
   ++  block
     %+  cook  handle-block
-    ;~(pfix block-op ;~(plug next expression-end))
+    ;~(pfix block-op ;~(plug next expr))
   ::
   ++  loop
     %+  cook  handle-loop
-    ;~(pfix loop-op ;~(plug next expression-end))
+    ;~(pfix loop-op ;~(plug next expr))
   ::
   ++  if
     %+  cook  handle-if
-    ;~(pfix if-op ;~(plug next expression-end))
+    ;~(pfix if-op ;~(plug next expr))
   ::
   ++  if-else
     %+  cook  handle-if-else
-    ;~(pfix if-op ;~(plug next expression-else expression-end))
+    ;~  pfix
+      if-op
+      ;~(plug next expr-else expr)
+    ==
   ::
   ::  All handle-X functions must return `instruction` type
   ::
@@ -302,11 +283,11 @@
     ^~
     %+  skim  (gulf '\00' '\ff')
     |=  op=char
-    ?=(bin-opcodes-zero-args op)
+    ?=(bin-opcodes-zero-args:sur op)
   ::
   ++  handle-zero-args
     |=  op=char
-    ^-  instruction
+    ^-  instruction:sur
     ?+  op  ~|(`@ux`op !!)
       %0x0   [%unreachable ~]
       %0x1   [%nop ~]
@@ -317,14 +298,14 @@
       %0xb6  [%demote ~]
       %0xbb  [%promote ~]
     ::
-        eqz-opcodes
+        eqz-opcodes:sur
       :-  %eqz
       ?-  op
         %0x45  %i32
         %0x50  %i64
       ==
     ::
-        eq-opcodes
+        eq-opcodes:sur
       :-  %eq
       ?-  op
         %0x46  %i32
@@ -333,7 +314,7 @@
         %0x61  %f64
       ==
     ::
-        ne-opcodes
+        ne-opcodes:sur
       :-  %ne
       ?-  op
         %0x47  %i32
@@ -342,7 +323,7 @@
         %0x62  %f64
       ==
     ::
-        lt-opcodes
+        lt-opcodes:sur
       :-  %lt
       ?-  op
         %0x48  [%i32 `%s]
@@ -353,7 +334,7 @@
         %0x63  [%f64 ~]
       ==
     ::
-        gt-opcodes
+        gt-opcodes:sur
       :-  %gt
       ?-  op
         %0x4a  [%i32 `%s]
@@ -364,7 +345,7 @@
         %0x64  [%f64 ~]
       ==
     ::
-        le-opcodes
+        le-opcodes:sur
       :-  %le
       ?-  op
         %0x4c  [%i32 `%s]
@@ -375,7 +356,7 @@
         %0x65  [%f64 ~]
       ==
     ::
-        ge-opcodes
+        ge-opcodes:sur
       :-  %ge
       ?-  op
         %0x4e  [%i32 `%s]
@@ -386,28 +367,28 @@
         %0x66  [%f64 ~]
       ==
     ::
-        clz-opcodes
+        clz-opcodes:sur
       :-  %clz
       ?-  op
         %0x67  %i32
         %0x79  %i64
       ==
     ::
-        ctz-opcodes
+        ctz-opcodes:sur
       :-  %ctz
       ?-  op
         %0x68  %i32
         %0x7a  %i64
       ==
     ::
-        popcnt-opcodes
+        popcnt-opcodes:sur
       :-  %popcnt
       ?-  op
         %0x69  %i32
         %0x7b  %i64
       ==
     ::
-        add-opcodes
+        add-opcodes:sur
       :-  %add
       ?-  op
         %0x6a  %i32
@@ -416,7 +397,7 @@
         %0xa0  %f64
       ==
     ::
-        sub-opcodes
+        sub-opcodes:sur
       :-  %sub
       ?-  op
         %0x6b  %i32
@@ -425,7 +406,7 @@
         %0xa1  %f64
       ==
     ::
-        mul-opcodes
+        mul-opcodes:sur
       :-  %mul
       ?-  op
         %0x6c  %i32
@@ -434,7 +415,7 @@
         %0xa2  %f64
       ==
     ::
-        div-opcodes
+        div-opcodes:sur
       :-  %div
       ?-  op
         %0x6d  [%i32 `%s]
@@ -445,7 +426,7 @@
         %0xa3  [%f64 ~]
       ==
     ::
-        rem-opcodes
+        rem-opcodes:sur
       :-  %rem
       ?-  op
         %0x6f  [%i32 %s]
@@ -454,35 +435,35 @@
         %0x82  [%i64 %u]
       ==
     ::
-        and-opcodes
+        and-opcodes:sur
       :-  %and
       ?-  op
         %0x71  %i32
         %0x83  %i64
       ==
     ::
-        or-opcodes
+        or-opcodes:sur
       :-  %or
       ?-  op
         %0x72  %i32
         %0x84  %i64
       ==
     ::
-        xor-opcodes
+        xor-opcodes:sur
       :-  %xor
       ?-  op
         %0x73  %i32
         %0x85  %i64
       ==
     ::
-        shl-opcodes
+        shl-opcodes:sur
       :-  %shl
       ?-  op
         %0x74  %i32
         %0x86  %i64
       ==
     ::
-        shr-opcodes
+        shr-opcodes:sur
       :-  %shr
       ?-  op
         %0x75  [%i32 %s]
@@ -491,49 +472,49 @@
         %0x88  [%i64 %u]
       ==
     ::
-        rotl-opcodes
+        rotl-opcodes:sur
       :-  %rotl
       ?-  op
         %0x77  %i32
         %0x89  %i64
       ==
     ::
-        rotr-opcodes
+        rotr-opcodes:sur
       :-  %rotr
       ?-  op
         %0x78  %i32
         %0x8a  %i64
       ==
     ::
-        abs-opcodes
+        abs-opcodes:sur
       :-  %abs
       ?-  op
         %0x8b  %f32
         %0x99  %f64
       ==
     ::
-        neg-opcodes
+        neg-opcodes:sur
       :-  %neg
       ?-  op
         %0x8c  %f32
         %0x9a  %f64
       ==
     ::
-        ceil-opcodes
+        ceil-opcodes:sur
       :-  %ceil
       ?-  op
         %0x8d  %f32
         %0x9b  %f64
       ==
     ::
-        floor-opcodes
+        floor-opcodes:sur
       :-  %floor
       ?-  op
         %0x8e  %f32
         %0x9c  %f64
       ==
     ::
-        trunc-opcodes
+        trunc-opcodes:sur
       :-  %trunc
       ?-  op
         %0x8f  [%f32 ~ ~]
@@ -548,36 +529,37 @@
         %0xb1  [%i64 `%f64 `%u]
       ==
     ::
-        nearest-opcodes
+        nearest-opcodes:sur
       :-  %nearest
       ?-  op
         %0x90  %f32
         %0x9e  %f64
       ==
     ::
-        sqrt-opcodes
+        sqrt-opcodes:sur
       :-  %sqrt
       ?-  op
         %0x91  %f32
         %0x9f  %f64
       ==
     ::
-        min-opcodes
+        min-opcodes:sur
       :-  %min
       ?-  op
         %0x96  %f32
         %0xa4  %f64
       ==
     ::
-        max-opcodes
+        max-opcodes:sur
       :-  %max
       ?-  op
         %0x97  %f32
         %0xa5  %f64
       ==
     ::
-        ::  copysign-opcodes
-        extend-opcodes
+        ::  copysign-opcodes:sur
+    ::
+        extend-opcodes:sur
       :-  %extend
       ?+  op  !!
         %0xac  [%i64 %32 %s]
@@ -585,12 +567,12 @@
         %0xc0  [%i32 %8 %s]
       ==
     ::
-        convert-opcodes
+        convert-opcodes:sur
       :-  %convert
       ?+  op  !!
         %0xba  [%f64 %i64 %u]
       ==
-        reinterpret-opcodes
+        reinterpret-opcodes:sur
       :-  %reinterpret
       ?+  op  !!
         %0xbf  [%f64 %i64]
@@ -607,7 +589,7 @@
     ^~
     %+  skim  (gulf '\00' '\ff')
     |=  op=char
-    ?&  ?=(bin-opcodes-one-arg op)
+    ?&  ?=(bin-opcodes-one-arg:sur op)
         !(~(has in (silt mask-one-64)) op)
         !=(op '\43')
         !=(op '\41')
@@ -615,7 +597,7 @@
   ::
   ++  handle-one-arg-i32
     |=  [op=char arg=@]
-    ^-  instruction
+    ^-  instruction:sur
     ?+  op  ~|(`@ux`op !!)
       %0xc   [%br arg]
       %0xd   [%br-if arg]
@@ -633,13 +615,13 @@
     ^~
     %+  skim  (gulf '\00' '\ff')
     |=  op=char
-    ?&  ?=(bin-opcodes-two-args op)
+    ?&  ?=(bin-opcodes-two-args:sur op)
         !=(op '\0e')
     ==
   ::
   ++  handle-two-args-i32
     |=  [op=char arg1=@ arg2=@]
-    ^-  instruction
+    ^-  instruction:sur
     ?+  op  ~|(`@ux`op !!)
         %0x11
       ?>  =(arg2 0)
@@ -696,21 +678,22 @@
   ::
   ++  handle-br-table
     |=  [op=char vec=(list @) i=@]
-    ^-  instruction
+    ^-  instruction:sur
     ?>  ?=(%0xe op)
     [%br-table vec i]
   ::
   ++  handle-block
     |=  [blocktype-index=@ body=expression:sur]
-    ^-  instruction
+    ^-  $>(%block instruction:sur)
     :-  %block
     :_  body
+    ^-  (list valtype:sur)
     ?:  ?=(%0x40 blocktype-index)  ~
     ~[(get-valtype blocktype-index)]
   ::
   ++  get-valtype
     |=  byte=@
-    ^-  valtype
+    ^-  valtype:sur
     ?+  byte  ~|(`@ux`byte !!)
       %0x7f  %i32
       %0x7e  %i64
@@ -719,12 +702,12 @@
     ==
   ++  handle-loop
     |=  [blocktype-index=@ body=expression:sur]
-    ^-  instruction
+    ^-  instruction:sur
     [%loop ~ body]
   ::
   ++  handle-if
     |=  [blocktype-index=@ body=expression:sur]
-    ^-  instruction
+    ^-  instruction:sur
     :-  %if
     :_  [body ~]
     ?:  ?=(%0x40 blocktype-index)  ~
@@ -735,7 +718,7 @@
             body-true=expression:sur
             body-false=expression:sur
         ==
-    ^-  instruction
+    ^-  instruction:sur
     :-  %if
     :_  [body-true body-false]
     ?:  ?=(%0x40 blocktype-index)  ~
@@ -743,17 +726,17 @@
   ::
   ++  handle-const-f64
     |=  [op=char i=@rd]
-    ^-  instruction
+    ^-  instruction:sur
     [%const %f64 i]
   ::
   ++  handle-const-f32
     |=  [op=char i=@rs]
-    ^-  instruction
+    ^-  instruction:sur
     [%const %f32 i]
   ::
   ++  handle-const-i32
     |=  [op=char i=@s]
-    ^-  instruction
+    ^-  instruction:sur
     =;  i-unsigned=@
       [%const %i32 i-unsigned]
     =,  si
@@ -763,7 +746,7 @@
   ::
   ++  handle-const-i64
     |=  [op=char i=@s]
-    ^-  instruction
+    ^-  instruction:sur
     =;  i-unsigned=@
       [%const %i64 i-unsigned]
     =,  si
@@ -857,7 +840,7 @@
     ;~  plug
       valtype
       con-var
-      instruction
+      ;~(sfix instr end)
     ==
   ::  Export section
   ::
@@ -900,7 +883,7 @@
   ++  elem-0
     %+  cook  handle-elem-0  ::  write handle functions
     ;~  pfix  (just '\00')
-      ;~(plug expression-end (vec u32))
+      ;~(plug expr (vec u32))
     ==
   ::
   ++  elem-1
@@ -912,7 +895,7 @@
   ++  elem-2
     %+  cook  handle-elem-2
     ;~  pfix  (just '\02')
-      ;~(plug u32 expression-end elem-kind (vec u32))
+      ;~(plug u32 expr elem-kind (vec u32))
     ==
   ::
   ++  elem-3
@@ -924,31 +907,31 @@
   ++  elem-4
     %+  cook  handle-elem-4
     ;~  pfix  (just '\04')
-      ;~(plug expression-end (vec expression-end))
+      ;~(plug expr (vec expr))
     ==
   ::
   ++  elem-5
     %+  cook  handle-elem-5
     ;~  pfix  (just '\05')
-      ;~(plug ref-type (vec expression-end))
+      ;~(plug ref-type (vec expr))
     ==
   ::
   ++  elem-6
     %+  cook  handle-elem-6
     ;~  pfix  (just '\06')
-      ;~(plug u32 expression-end ref-type (vec expression-end))
+      ;~(plug u32 expr ref-type (vec expr))
     ==
   ::
   ++  elem-7  
     %+  cook  handle-elem-7
     ;~  pfix  (just '\07')
-      ;~(plug ref-type (vec expression-end))
+      ;~(plug ref-type (vec expr))
     ==
   ::
   ++  handle-elem-0
     |=  [e=expression:sur y=(list @)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm] ~] e)
+    ?>  ?=([[%const coin-wasm:sur] ~] e)
     :+  %func
       %+  turn  y
       |=  y=@
@@ -971,7 +954,7 @@
   ++  handle-elem-2
     |=  [x=@ e=expression:sur et=@ y=(list @)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm] ~] e)
+    ?>  ?=([[%const coin-wasm:sur] ~] e)
     :+  ?+  et  ~|(%unrecognized-elem-kind !!)
           %0x0  %func
         ==
@@ -996,44 +979,44 @@
   ++  handle-elem-4
     |=  [e=expression:sur el=(list expression:sur)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm] ~] e)
+    ?>  ?=([[%const coin-wasm:sur] ~] e)
     :+  %func
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction)
+      ^-  $>(%const instruction:sur)
       ?>  ?=([[%const *] ~] ex)
       i.ex
     [%acti 0 i.e]
   ::
   ++  handle-elem-5
-    |=  [et=ref-type el=(list expression:sur)]
+    |=  [et=ref-type:sur el=(list expression:sur)]
     ^-  elem:sur
     :+  et
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction)
+      ^-  $>(%const instruction:sur)
       ?>  ?=([[%const *] ~] ex)
       i.ex
     [%pass ~]
   ::
   ++  handle-elem-6
-    |=  [x=@ e=expression:sur et=ref-type el=(list expression:sur)]
+    |=  [x=@ e=expression:sur et=ref-type:sur el=(list expression:sur)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm] ~] e)
+    ?>  ?=([[%const coin-wasm:sur] ~] e)
     :+  et
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction)
+      ^-  $>(%const instruction:sur)
       ?>  ?=([[%const *] ~] ex)
       i.ex
     [%acti x i.e]
   ++  handle-elem-7
-    |=  [et=ref-type el=(list expression:sur)]
+    |=  [et=ref-type:sur el=(list expression:sur)]
     ^-  elem:sur
     :+  et
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction)
+      ^-  $>(%const instruction:sur)
       ?>  ?=([[%const *] ~] ex)
       i.ex
     [%decl ~]
@@ -1066,19 +1049,96 @@
   ++  data
     %+  cook  handle-data
     ;~  pose
-      ;~(plug (cold %acti (just '\00')) expr (cook to-octs (vec next)))
-      ;~(plug (cold %passive (just '\01')) (cook to-octs (vec next)))
+      ;~(plug (cold %acti (just '\00')) ;~(sfix instr end) (cook to-octs (vec next)))
+      ;~(plug (cold %pass (just '\01')) (cook to-octs (vec next)))
+    ::
       ;~  plug
         (cold %acti (just '\02'))
         ;~  pfix
           u32
-          (cook to-octs (vec next))
+          ;~  plug
+            ;~(sfix instr end)
+            (cook to-octs (vec next))
+          ==
         ==
       ==
     ::
     ==
   ::
-  ++  
-  ++  datcnt-section  !!
+  ++  to-octs
+    |=  =tape
+    ^-  octs
+    :-  (lent tape)
+    %+  can  3
+    (fuse (reap (lent tape) 1) tape)
+  ::
+  ++  handle-data
+    |=  $=  p
+        $%  [%acti off=instruction:sur b=octs]
+            [%pass b=octs]
+        ==
+    ^-  data:sur
+    ?:  ?=(%pass -.p)  p
+    ?>  ?=($>(%const instruction:sur) off.p)
+    p
+  ::  
+  ++  datacnt-section
+    %+  cook  datacnt-section:sur
+    (punt u32)
+  ::
+  ++  module
+    %+  cook  module:sur
+    ;~  pfix
+      magic
+      version
+      (ifix [customs customs] module-contents)
+    ==
+  ::
+  ++  module-contents
+    ;~  (glue customs)
+      (check 1 type-section *type-section:sur)
+      (check 2 import-section *import-section:sur)
+      (check 3 function-section *function-section:sur)
+      (check 4 table-section *table-section:sur)
+      (check 5 memory-section *memory-section:sur) 
+      (check 6 global-section *global-section:sur)
+      (check 7 export-section *export-section:sur)
+      (check 8 start-section *start-section:sur)
+      (check 9 elem-section *elem-section:sur)
+      (check 12 datacnt-section *datacnt-section:sur)
+      (check 10 code-section *code-section:sur)
+      (check 11 data-section *data-section:sur)
+    ==
+  ::
+  ++  check
+    |*  [id=@ sec=rule def=*]
+    ;~  pose
+      ::  section present
+      ::
+      ;~  pfix
+        (just `@`id)
+        (bonk (vec next) ;~(pfix u32 sec))
+      ==
+    ::
+      ::  section missing
+      ::
+      (easy `(womp sec)`def)
+    ==
+  ++  customs
+    %-  star
+    ;~  plug
+      (just '\00')
+      (vec next)
+    ==
+  ::
+  ++  magic  (jest '\00asm')
+  ++  version
+    ;~  plug
+      (just '\01')
+      (just '\00')  ::  leading zeros shenanigans
+      (just '\00')
+      (just '\00')
+    ==
+  ::
   --  :: |r
 --

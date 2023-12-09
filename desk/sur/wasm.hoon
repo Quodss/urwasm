@@ -45,7 +45,7 @@
     ::
     [%unreachable ~]
     [%nop ~]
-    [%block result-type=(list valtype) body=(list instruction)]  ::  XX update type field of nesting instructions
+    [%block result-type=(list valtype) body=expression]  ::  XX update type field of nesting instructions
     [%loop result-type=(list valtype) body=(list instruction)]
     $:  %if
         result-type=(list valtype)
@@ -59,8 +59,8 @@
     [%return ~]
     [%call func-id=@]
     [%call-indirect type-id=@ table-id=%0x0]
-    [%end ~]
-    [%else ~]
+    :: [%end ~]   ::  %end and %else should be removed, since nesting is expressed
+    :: [%else ~]  ::  with noun structure 
     ::  Parametric instructions
     ::
     [%drop ~]
@@ -162,9 +162,9 @@
     =export-section
     =start-section
     =elem-section
+    =datacnt-section
     =code-section
     =data-section
-    =datacnt-section
   ==
 ::
 ::  Definitions of sections
@@ -254,7 +254,7 @@
 +$  elem
   $:  t=ref-type
       i=(list $>(%const instruction))
-      ^=  m
+      $=  m
       $%  [%pass ~]
           [%decl ~]
           [%acti tab=@ off=$>(%const instruction)]
@@ -272,15 +272,16 @@
   ==
 ::
 +$  data-section  (list data)
+::  memid is implied to be 0
 +$  data
   $%
     [%acti off=$>(%const instruction) b=octs]
     [%pass b=octs]
   ==
 ::
-::  Binary opcode specification
+++  datacnt-section  (unit @)
 ::
-:  Binary opcode classification
+::  Binary opcode classification
 ::
 +$  opcode  $?  bin-opcodes-zero-args
                 bin-opcodes-one-arg
