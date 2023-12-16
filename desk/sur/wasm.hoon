@@ -25,12 +25,12 @@
   $~  [%i32 *@]
   $%  [num-type @]
       [vec-type @]
-      [%ref $%([%null ref-type] [%func @])]
+      [%ref $%([%null ref-type] [%func @])]  ::  add external referenecs
   ==
 ::
 +$  limits
-  $%  [%flor @]    ::  min only
-      [%ceil @ @]  ::  min and max
+  $%  [%flor p=@]      ::  min only
+      [%ceil p=@ q=@]  ::  min and max
   ==
 ::
 ::  Instructions
@@ -46,11 +46,11 @@
     [%unreachable ~]
     [%nop ~]
     [%block result-type=(list valtype) body=expression]  ::  XX update type field of nesting instructions
-    [%loop result-type=(list valtype) body=(list instruction)]
+    [%loop result-type=(list valtype) body=expression]
     $:  %if
         result-type=(list valtype)
-        branch-true=(list instruction)
-        branch-false=(list instruction)
+        branch-true=expression
+        branch-false=expression
     ==
   ::
     [%br label=@]
@@ -242,7 +242,8 @@
 ::  Start section
 ::
 +$  start-section  (unit @)
-::  Elem section
+::
+::  Element section
 ::
 +$  elem-section  (list elem)
 ::  The constant instructions are going to contain
@@ -271,13 +272,18 @@
       =expression
   ==
 ::
+::  Data section
+::
 +$  data-section  (list data)
 ::  memid is implied to be 0
+::
 +$  data
   $%
     [%acti off=$>(%const instruction) b=octs]
     [%pass b=octs]
   ==
+::
+::  Data count section
 ::
 ++  datacnt-section  (unit @)
 ::
@@ -317,7 +323,7 @@
 ::
 +$  bin-opcodes-two-args
   $?
-    %0xe  ::  br_table
+    %0xe   ::  br_table
     %0x11  ::  call_indirect
     load-opcodes
     store-opcodes
@@ -369,9 +375,9 @@
     %0x3e  ::  i64 32
   ==
 ::
-+$  eqz-opcodes  ?(%0x45 %0x50)  ::  i32, i64
-+$  eq-opcodes  ?(%0x46 %0x51 %0x5b %0x61)  ::  i32, i64, f32, f64
-+$  ne-opcodes  ?(%0x47 %0x52 %0x5c %0x62)  ::  i32, i64, f32, f64
++$  eqz-opcodes  ?(%0x45 %0x50)              ::  i32, i64
++$  eq-opcodes   ?(%0x46 %0x51 %0x5b %0x61)  ::  i32, i64, f32, f64
++$  ne-opcodes   ?(%0x47 %0x52 %0x5c %0x62)  ::  i32, i64, f32, f64
 +$  lt-opcodes
   $?
     %0x48  ::  i32 s
@@ -437,7 +443,7 @@
   ==
 ::
 +$  and-opcodes  ?(%0x71 %0x83)  ::  i32, i64
-+$  or-opcodes  ?(%0x72 %0x84)  ::  i32, i64
++$  or-opcodes   ?(%0x72 %0x84)  ::  i32, i64
 +$  xor-opcodes  ?(%0x73 %0x85)  ::  i32, i64
 +$  shl-opcodes  ?(%0x74 %0x86)  ::  i32, i64
 +$  shr-opcodes
@@ -448,11 +454,11 @@
     %0x88  ::  i64 u
   ==
 ::
-+$  rotl-opcodes  ?(%0x77 %0x89)  ::  i32, i64
-+$  rotr-opcodes  ?(%0x78 %0x8a)  ::  i32, i64
-+$  abs-opcodes  ?(%0x8b %0x99)  ::  f32, f64
-+$  neg-opcodes  ?(%0x8c %0x9a)  ::  f32, f64
-+$  ceil-opcodes  ?(%0x8d %0x9b)  ::  f32, f64
++$  rotl-opcodes   ?(%0x77 %0x89)  ::  i32, i64
++$  rotr-opcodes   ?(%0x78 %0x8a)  ::  i32, i64
++$  abs-opcodes    ?(%0x8b %0x99)  ::  f32, f64
++$  neg-opcodes    ?(%0x8c %0x9a)  ::  f32, f64
++$  ceil-opcodes   ?(%0x8d %0x9b)  ::  f32, f64
 +$  floor-opcodes  ?(%0x8e %0x9c)  ::  f32, f64
 +$  trunc-opcodes
   $?
@@ -468,18 +474,18 @@
     %0xb1  ::  f64 -> i64 u
   ==
 ::
-+$  nearest-opcodes  ?(%0x90 %0x9e)  ::  f32, f64
-+$  sqrt-opcodes  ?(%0x91 %0x9f)  ::  f32, f64
-+$  min-opcodes  ?(%0x96 %0xa4)  ::  f32, f64
-+$  max-opcodes  ?(%0x97 %0xa5)  ::  f32, f64
++$  nearest-opcodes   ?(%0x90 %0x9e)  ::  f32, f64
++$  sqrt-opcodes      ?(%0x91 %0x9f)  ::  f32, f64
++$  min-opcodes       ?(%0x96 %0xa4)  ::  f32, f64
++$  max-opcodes       ?(%0x97 %0xa5)  ::  f32, f64
 +$  copysign-opcodes  ?(%0x98 %0xa6)  ::  f32, f64
 +$  extend-opcodes
   $?
     %0xac  ::  i32 -> i64 s
     %0xad  ::  i32 -> i64 u
-    %0xc0  ::  i8 -> i32 s
+    %0xc0  ::  i8  -> i32 s
     %0xc1  ::  i16 -> i32 s
-    %0xc2  ::  i8 -> i64 s
+    %0xc2  ::  i8  -> i64 s
     %0xc3  ::  i16 -> i64 s
     %0xc4  ::  i32 -> i64 s  ??  same as 0xac???
   ==
