@@ -14,7 +14,8 @@
     ?>  &(?=(~ a) ?=(~ b))
     ~
   :_  $(a t.a, b t.b)
-  ?-    i.a
+  ;;  coin-wasm  ::  the compiler isn't convinced that the 
+  ?-    i.a      ::  expression below is a coin-wasm, why? :(
       ?(num-type vec-type)
     [i.a ?>(?=(@ i.b) i.b)]
   ::
@@ -103,53 +104,51 @@
 ::  and running the start function (TODO)
 ::
 ++  prep
-  |=  module
-  =*  module  +<
+  |=  m=module
   ^-  store
-  =+  *store
-  =*  store  -
-  =.  store  store(module module)
+  =|  s=store
+  =.  s  s(module m)
   |^
   ::  Globals
   ::
-  =.  globals
-    |-  ^+  globals
-    ?~  global-section  (flop globals)
-    =*  glob  i.global-section
+  =.  globals.s
+    |-  ^+  globals.s
+    ?~  global-section.m  (flop globals.s)
+    =*  glob  i.global-section.m
     ::  Assert: no global imports (TODO remove limitation)
     ::
     ?>  ?=([%const coin=*] i.glob)
     %=  $
-      global-section  t.global-section
-      globals  [coin.p.i.glob globals]
+      global-section.m  t.global-section.m
+      globals.s  [coin.p.i.glob globals.s]
     ==
   ::  Table
   ::
   ::  Initialize table
   ::
-  =?  table  ?=(^ table-section)
-    ?>  ?=(@ t.table-section)        ::  single table REMOVE
-    ?>  ?=(%func p.i.table-section)  ::  assert funcref (remove?)
+  =?  table.s  ?=(^ table-section.m)
+    ?>  ?=(@ t.table-section.m)        ::  single table REMOVE
+    ?>  ?=(%func p.i.table-section.m)  ::  assert funcref (remove?)
     init-table
   ::  Memory
   ::
-  =?  mem  ?=(^ memory-section)
-    ?>  ?=(@ t.memory-section)  ::  single memory
+  =?  mem.s  ?=(^ memory-section.m)
+    ?>  ?=(@ t.memory-section.m)  ::  single memory
     init-mem
-  store
+  s
   ::
   ++  init-table
-    ^+  table
+    ^+  table.s
     ::  initialize table with null refs
     ::
-    ?>  ?=(^ table-section)
-    =.  table
-      (reap (lim-min q.i.table-section) [%ref %null %func])
-    |-  ^+  table
-    ?~  elem-section  table
-    =*  elem  i.elem-section
+    ?>  ?=(^ table-section.m)
+    =.  table.s
+      (reap (lim-min q.i.table-section.m) [%ref %null %func])
+    |-  ^+  table.s
+    ?~  elem-section.m  table.s
+    =*  elem  i.elem-section.m
     ?.  ?=(%acti -.m.elem)
-      $(elem-section t.elem-section)
+      $(elem-section.m t.elem-section.m)
     ::  Assert: only one table (remove)
     ::
     ?>  =(0 tab.m.elem)
@@ -161,10 +160,10 @@
     ::
     ?>  ?=([%const %i32 n=@] off.m.elem)
     %=    $
-        elem-section  t.elem-section
+        elem-section.m  t.elem-section.m
     ::
-        table
-      %+  place  [table n.p.off.m.elem]
+        table.s
+      %+  place  [table.s n.p.off.m.elem]
       %+  turn  i.elem
       |=  in=instruction
       ^-  $>(%ref coin-wasm)
@@ -174,21 +173,21 @@
     ==
   ::
   ++  init-mem
-    ^+  mem
-    ?>  ?=(^ memory-section)
-    =.  mem  mem(n-pages (lim-min i.memory-section))
-    |-  ^+  mem
-    ?~  data-section  mem
-    =*  data  i.data-section
+    ^+  mem.s
+    ?>  ?=(^ memory-section.m)
+    =.  mem.s  mem.s(n-pages (lim-min i.memory-section.m))
+    |-  ^+  mem.s
+    ?~  data-section.m  mem.s
+    =*  data  i.data-section.m
     ?.  ?=(%acti -.data)
-      $(data-section t.data-section)
+      $(data-section.m t.data-section.m)
     ::  Assert: const i32 value as offset (revisit: it might be a global-get)
     ::
     ?>  ?=([%const %i32 n=@] off.data)
     %=    $
-        data-section  t.data-section
-        buffer.mem
-      (sew bloq=3 [n.p.off.data b.data] buffer.mem)  ::  where did p come from???
+        data-section.m  t.data-section.m
+        buffer.mem.s
+      (sew bloq=3 [n.p.off.data b.data] buffer.mem.s)  ::  where did p come from???
     ==
   ::
   --
@@ -206,7 +205,11 @@
   =/  =func-type  (snag (snag id function-section) type-section)
   ?>  =(params.func-type (get-types in))
   =/  [stack-out=stack * st-out=store]
-    (call id [`(flop in) ~ st])
+    %+  call  id
+    ^-  local-state
+    :+  stack=[~ (turn (flop in) coin-to-val)]
+      locals=~
+    store=st
   ?+  br.stack-out  !!
     ~  :+  %0
          (change results.func-type (flop va.stack-out))
@@ -237,7 +240,9 @@
   =.  l
     %+  eval  expression.code
     ^-  local-state
-    [~ (weld input-values (mint locals.code)) store.l]
+    :+  stack=[~ ~]
+      locals=(weld input-values (mint locals.code))
+    store=store.l
   ::  If trap: forward trap
   ::
   ?:  ?=([%trap ~] br.stack.l)  l
@@ -255,7 +260,7 @@
     (scag (lent results.func-type) va.stack.l)
   ::  Push returned values on stack, bring back locals, empty out br
   ::
-  %_  l
+  %=  l
     va.stack  (weld va.stack.l rest-vals)
     locals    our-locs
     br.stack  ~
@@ -288,10 +293,10 @@
 ++  apply
   |=  [i=instruction l=local-state]
   ^-  local-state
-  !.
+  :: !.
   ?+    i  ((fetch-gate i) l)
-      [%call id=@]
-    (call id.i l)
+      [%call func-id=@]
+    (call func-id.i l)
   ::
       [%block *]  ::  [%block result-type=(list valtype) body=expression]
     ::  save the current frame
@@ -306,9 +311,10 @@
       (scag (lent result-type.i) va.stack.l)
     ::  Exit the block, navigate branch
     ::
-    %_(l va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
+    l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
-      [%loop ~ body=*]  ::  [%loop result-type=(list valtype) body=(list instruction)], revisit type
+      [%loop *]  ::  [%loop result-type=(list valtype) body=(list instruction)], revisit type
+    |-  ^-  local-state  ::  prevent from mathcing `i` again
     ::  save the current frame
     ::
     =/  rest-vals=(pole val)  va.stack.l  ::  nothing is consumed yet, to fix
@@ -319,10 +325,10 @@
     ::  push them on the stack and continue (nothing is popped atm, fix)
     ::
     ?:  ?=([%targ %0] br.stack.l)
-      $(l l(va.stack rest-vals))
+      $(l l(va.stack rest-vals, br.stack ~))
     ::  Exit the block, navigate branch
     ::
-    %_(l va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
+    l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
       [%call-indirect type-id=@ table-id=%0x0]
     ?>  ?=([tab-id=@ rest=*] va.stack.l)
@@ -330,8 +336,8 @@
     ::
     =,  module.store.l
     =,  va.stack.l
-    =/  type-in-instr=(list valtype)  (snag type-id type-section)
-    =/  type-of-ref=(list valtype)
+    =/  type-in-instr=func-type  (snag type-id.i type-section)
+    =/  type-of-ref=func-type
       =+  ref=(snag tab-id table.store.l)
       ?>  ?=([%ref %func n=@] ref)  ::  funcref only, add extern
       (snag (snag n.ref function-section) type-section)

@@ -51,11 +51,12 @@
 ++  val-to-coin
   |=  [v=val eg=coin-wasm]
   ^-  coin-wasm
-  ?@  val
+  ?@  v
     ?<  ?=(%ref -.eg)
-    [-.eg val]
+    ;;  coin-wasm  ::  the compiler isn't convinced that the 
+    [-.eg v]       ::  expression below is a coin-wasm, why? :(
   ?>  ?=(%ref -.eg)
-  val
+  v
 ::
 ::  |kind: instruction classes
 ::
@@ -69,7 +70,7 @@
     ==
   ::
   +$  get  ?(%global-get %local-get)
-  +$  set  ?(%global-set %local-set)
+  +$  set  ?(%global-set %local-set %global-tee %local-tee)
   +$  branch  ?(%br %br-if %br-table)
   +$  unary-num
     $?
@@ -93,20 +94,20 @@
   ^-  $-(local-state local-state)
   ?+    -.i  ~|("missing instruction: {<i>}" !!)
       nullary:kind  (null:fetch i)
-      %load     (load:fetch i)
-      %store    (store:fetch i)
-      %const    (const:fetch i)
+      %load         (load:fetch i)
+      %store        (store:fetch i)
+      %const        (const:fetch i)
       get:kind      (get:fetch i)
       set:kind      (set:fetch i)
       branch:kind   (branch:fetch i)
-      %select   select:fetch
+      %select       select:fetch
   ::
       unary-num:kind
     |=  l=local-state
     ^-  local-state
     ?>  ?=([a=@ rest=*] va.stack.l)
     =,  va.stack.l
-    %_(l va.stack [((unar:fetch i) a) rest])
+    l(va.stack [((unar:fetch i) a) rest])
   ::
       binary-num:kind
     |=  l=local-state
@@ -125,10 +126,10 @@
     |=  l=local-state
     ^-  local-state
     ?>  ?=([which=@ val2=val val1=val rest=*] va.stack.l)
-    %_    l
+    =,  va.stack.l
+    %=    l
         va.stack
-      :-  ?.(=(0 which) val1 val2)
-      va.stack.l
+      [?.(=(0 which) val1 val2) rest]
     ==
   ++  null
     =-  |=  i=instruction
@@ -148,36 +149,37 @@
     ++  unreachable
       |=  l=local-state
       ^-  local-state
-      %_(l br.stack [%trap ~])
+      l(br.stack [%trap ~])
     ::
     ++  return
       |=  l=local-state
       ^-  local-state
-      %_(l br.stack [%return ~])
+      l(br.stack [%retr ~])
     ::
     ++  memory-grow
       |=  l=local-state
       ^-  local-state
-      %_  l
-        va.stack  [n-pages.mem.store va.stack]
-        n-pages.mem.store  +(n-pages.mem.store)
+      %=  l
+        va.stack  [n-pages.mem.store.l va.stack.l]
+        n-pages.mem.store  +(n-pages.mem.store.l)
       ==
     ::
     ++  drop
       |=  l=local-state
       ^-  local-state
-      %_(l va.stack +.va.stack.l)
+      l(va.stack +.va.stack.l)
     --
   ::
   ++  load
-    |=  i=$>(%load instruction)
+    |=  i=instruction
+    ?>  ?=(%load -.i)
     |=  l=local-state
     ^-  local-state
     ?>  ?=([addr=@ rest=*] va.stack.l)
     =,  va.stack.l
     =/  index=@  (add addr offset.m.i)
     =;  loaded=@
-      %_(l va.stack.l [loaded rest])
+      l(va.stack [loaded rest])
     ?~  n.i
       ?+  type.i  !!
         %i32  (cut 3 [index 4] buffer.mem.store.l)
@@ -202,7 +204,7 @@
     =,  va.stack.l
     =/  index=@  (add addr offset.m.i)
     =;  [size=@ to-put=@]
-      %_  l
+      %=  l
         va.stack  rest
         buffer.mem.store  (sew bloq=3 [index size to-put] buffer.mem.store.l)
       ==
@@ -212,32 +214,52 @@
     [(div u.n.i 8) (mod content (bex u.n.i))]
   ::
   ++  const
-    |=  i=$>(%const instruction)
+    |=  i=instruction
+    ?>  ?=(%const -.i)
     |=  l=local-state
     ^-  local-state
-    %_(l va.stack [(coin-to-val p.i) va.stack])
+    l(va.stack [(coin-to-val p.i) va.stack.l])
   ::
   ++  get
-    |=  i=$>(get:kind instruction)
+    |=  i=instruction
+    ?>  ?=(get:kind -.i)
     |=  l=local-state
     ^-  local-state
     =;  got=val
-      %_(l va.stack [got va.stack])
+      l(va.stack [got va.stack.l])
     ?-  -.i
       %local-get   (snag index.i locals.l)
-      %global-get  (snag index.i (coin-to-val globals.store.l))
+      %global-get  (coin-to-val (snag index.i globals.store.l))
     ==
   ::
   ++  set
-    |=  i=$>(set:kind instruction)
+    |=  i=instruction
+    ?>  ?=(set:kind -.i)
+    ~!  -.i
     |=  l=local-state
     ^-  local-state
     ?>  ?=([a=val rest=*] va.stack.l)
     =,  va.stack.l
     ?-    -.i
-        %local-set  %_(l locals (snap locals.l index.i a))
+        %local-set
+      l(locals (snap locals.l index.i a), va.stack rest)
+    ::
+        %local-tee
+      l(locals (snap locals.l index.i a))
         %global-set
-      %_    l
+      %=    l
+          va.stack  rest
+          globals.store
+        ::  turn a to coin-wasm based on example in globals,
+        ::  and replace the value in globals
+        ::
+        %^  snap  globals.store.l  index.i
+        %+  val-to-coin  a
+        (snag index.i globals.store.l)
+      ==
+    ::
+        %global-tee
+      %=    l
           globals.store
         ::  turn a to coin-wasm based on example in globals,
         ::  and replace the value in globals
@@ -249,7 +271,8 @@
     ==
   ::
   ++  branch
-    |=  i=$>(branch:kind instruction)
+    |=  i=instruction
+    ?>  ?=(branch:kind -.i)
     |=  l=local-state
     ^-  local-state
     ?-    -.i
@@ -271,7 +294,8 @@
   ::  +unar: unary gate fetcher
   ::
   ++  unar
-    =-  |=  i=$>(unary-num:kind instruction)
+    =-  |=  i=instruction
+        ?>  ?=(unary-num:kind -.i)
         ^-  $-(@ @)
         ~+
         ((~(got by m) ;;(@tas -.i)) i)
@@ -361,7 +385,8 @@
   ::  Attention, arithmetic gates are shadowed, but not elsewhere
   ::
   ++  bina
-    =-  |=  i=$>(binary-num:kind instruction)
+    =-  |=  i=instruction
+        ?>  ?=(binary-num:kind -.i)
         ^-  $-([@ @] @)
         ~+
         ((~(got by m) ;;(@tas -.i)) i)
@@ -382,7 +407,7 @@
       =/  modul=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
       |=  [v=@ w=@]
       ^-  @
-      ?-  type.i
+      ?+  type.i  !!
         ?(%i32 %i64)  (~(sum fo modul) v w)
         %f32  (add:rs v w)
         %f64  (add:rd v w)
@@ -401,7 +426,7 @@
       =/  negat=@  ?+(type.i 0 %i32 (bex 31), %i64 (bex 63))
       |=  [v=@ w=@]
       ^-  @
-      ?-    type.i
+      ?+    type.i  !!
           %f32  ?:((lth:rs v w) 1 0)
           %f64  ?:((lth:rd v w) 1 0)
       ::
@@ -480,7 +505,7 @@
       =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
       |=  [v=@ w=@]
       ^-  @
-      ?-  type.i
+      ?+  type.i  !!
         ?(%i32 %i64)  (~(dif fo base) v w)
         %f32  (sub:rs v w)
         %f64  (sub:rd v w)
@@ -492,7 +517,7 @@
       =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
       |=  [v=@ w=@]
       ^-  @
-      ?-  type.i
+      ?+  type.i  !!  ::  assert numerical values, add v128
         ?(%i32 %i64)  (~(pro fo base) v w)
         %f32  (mul:rs v w)
         %f64  (mul:rd v w)
@@ -505,7 +530,7 @@
       =/  mode=?(%u %s)  (fall mode.i %u)
       |=  [v=@ w=@]
       ^-  @
-      ?-    type.i
+      ?+    type.i  !!
           ?(%i32 %i64)
         ?-  mode
           %u  (^div v w)
