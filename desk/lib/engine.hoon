@@ -2,7 +2,7 @@
 ::
 ::::  /hoon/ast-interpreter/lib
   ::
-/-  *interpreter
+/-  *engine
 /+  *op-def
 |%
 ::  +change: convert stack values to coin-wasm list
@@ -191,14 +191,22 @@
     ==
   ::
   --
-::  +invoke: call function by id, to call from the outside
+::
+++  wasm-need
+  |=  a=wasm-res
+  ^-  (quip coin-wasm store)
+  ?>  ?=(%0 -.a)
+  +.a
+::
+::  +invoke: call function by name, to call from the outside
 ::
 ++  invoke
-  |=  [id=@ in=(list coin-wasm) st=store]
+  |=  [name=tape in=(list coin-wasm) st=store]
   ^-  $%  [%0 (list coin-wasm) store]  ::  success
       ::  [%1 *]                       ::  import block, to define
           [%2 ~]                       ::  trap, crash
       ==
+  =/  id=@  (find-func-id name module.st)
   ::  Type check for the input values
   ::
   =,  module.st
@@ -314,7 +322,7 @@
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
       [%loop *]  ::  [%loop result-type=(list valtype) body=(list instruction)], revisit type
-    |-  ^-  local-state  ::  prevent from mathcing `i` again
+    |-  ^-  local-state  ::  not strictly necessary, but prevents from matching `i` again
     ::  save the current frame
     ::
     =/  rest-vals=(pole val)  va.stack.l  ::  nothing is consumed yet, to fix
@@ -322,7 +330,8 @@
     ::
     =.  l  (eval body.i l(va.stack *(pole val)))
     ::  If the loop was targeted, pop appropriate amount of vals,
-    ::  push them on the stack and continue (nothing is popped atm, fix)
+    ::  push them on the stack, clear branching signal and jump to start
+    ::  (nothing is popped atm, fix)
     ::
     ?:  ?=([%targ %0] br.stack.l)
       $(l l(va.stack rest-vals, br.stack ~))

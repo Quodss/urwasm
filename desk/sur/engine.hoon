@@ -23,4 +23,11 @@
   ::  [%impo *]  Execution blocked with an unresolved import.
   ::             Noun should contain import func name and args
   ==
+::
++$  wasm-res
+  $%
+    [%0 out=(list coin-wasm) st=store]  ::  success
+  ::  [%1 *]                            ::  import block, to define
+    [%2 ~]                              ::  trap, crash
+  ==
 --

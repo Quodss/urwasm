@@ -1,7 +1,6 @@
 ::  WebAssembly parser
 ::
 /-  sur=wasm
-:: /+  handle=handle-operators
 |%
 ::
 ::  ++main: parsing function. Extends octstream with

@@ -22,7 +22,7 @@
 ::
 ::::  /hoon/op-def/lib
   ::
-/-  *interpreter
+/-  *engine
 ::
 |%
 ++  complement-to-si
@@ -197,16 +197,18 @@
     ==
   ::
   ++  store
-    |=  i=$>(%store instruction)
+    |=  i=instruction
+    ?>  ?=(%store -.i)
     |=  l=local-state
     ^-  local-state
     ?>  ?=([content=@ addr=@ rest=*] va.stack.l)
     =,  va.stack.l
     =/  index=@  (add addr offset.m.i)
     =;  [size=@ to-put=@]
-      %=  l
-        va.stack  rest
-        buffer.mem.store  (sew bloq=3 [index size to-put] buffer.mem.store.l)
+      %=    l
+          va.stack  rest
+          buffer.mem.store
+        (sew bloq=3 [index size to-put] buffer.mem.store.l)
       ==
     ?~  n.i
       :_  content
@@ -382,7 +384,7 @@
     ::
     --
   ::  +bina: binary gate fetcher.
-  ::  Attention, arithmetic gates are shadowed, but not elsewhere
+  ::  Attention, arithmetic gates are shadowed here, but not elsewhere
   ::
   ++  bina
     =-  |=  i=instruction
@@ -434,13 +436,15 @@
         ?-    mode
             %u  ?:((lth v w) 1 0)
             %s
-          ::  if both are positive or both a negative, then comparison is simple
+          ::  if both are positive or both a negative,
+          ::  then comparison is simple
           ::
           ?:  ?|  &((lth v negat) (lth w negat))
                   &((gte v negat) (gte w negat))
               ==
             ?:((lth v w) 1 0)
-          ::  otherwise v and w have different signs, check which is negative
+          ::  otherwise v and w have different signs,
+          ::  check which is negative
           ::
           ?:((gth v w) 1 0)
         ==
@@ -469,7 +473,7 @@
       |=  [v=@ w=@]
       ^-  @
       %.  [w v]
-      (le ;;(instruction [%lt +.i]))
+      (le ;;(instruction [%le +.i]))
     ::
     ++  shr
       |=  i=instruction
