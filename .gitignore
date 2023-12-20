@@ -1,3 +1,5 @@
 desk/*.wasm
 desk/gen/
 zod/
+zod.new/
+urbit
