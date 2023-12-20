@@ -1,108 +1,43 @@
-::  HWasm AST definition and binary opcode classification
+::  urwasm AST definition and binary opcode classification
+::
+::    The first part mirrors Structure chapter of WebAssembly Core Specification
+::    https://www.w3.org/TR/2022/WD-wasm-core-2-20220419/syntax/index.html.
+::    The second part is based on binary format specification.
+::
 ::::  /hoon/wasm/sur
   ::
 |%
+::  Types
+::
++$  num-type  ?(%i32 %i64 %f32 %f64)
++$  vec-type  %v128
++$  ref-type  ?(%extn %func)  ::  externref and funcref
 +$  valtype
-  $?  %f64
-      %i64
-      %f32
-      %i32
+  $~  %i32
+  $?  num-type
+      vec-type
+      ref-type
   ==
 ::
+::  $coin-wasm: type-annotated value
+::
 +$  coin-wasm
-  $%  [type=%i32 n=@]
-      [type=%i64 n=@]
-      [type=%f32 n=@rs]
-      [type=%f64 n=@rd]
-  ::  ...  TODO: add v128?
+  $~  [%i32 *@]
+  $%  [num-type @]
+      [vec-type @]
+      [%ref $%([%null ref-type] [%func @])]  ::  add external referenecs
   ==
 ::
 +$  limits
-  $%  [%0 @]
-      [%1 @ @]
-  ==
-::  Module definition
-::
-+$  module
-  $:
-    =type-section
-    =function-section
-    =table-section
-    =memory-section
-    =global-section
-    =export-section
-    =elem-section
-    =code-section
-    =data-section
-  ::  ...   TODO add other sections, add fields for globals + imports
-  ==
-::  Definitions of sections
-::
-::  Type section
-::
-+$  type-section
-  $+  type-section
-  (list func-type)
-::
-+$  func-type
-  $:  params=(list valtype)
-      results=(list valtype)
+  $%  [%flor p=@]      ::  min only
+      [%ceil p=@ q=@]  ::  min and max
   ==
 ::
-::  Function section
+::  Instructions
 ::
-+$  function-section
-  $+  function-section
-  (list type-id=@)
-::
-::  Table section
-::
-+$  table-section  (list table)
-+$  table  [%funcref min=@ max=(unit @)]
-::
-::  Memory section
-::
-+$  memory-section  (list mem)
-+$  mem  [min=@ max=(unit @)]
 +$  memarg
   $+  memarg
   [align=@ offset=@]
-::
-::  Global section
-::
-+$  global-section  (list global)
-+$  global  [=valtype ?(%const %mut) e=(list instruction)]
-::
-::  Export section
-::
-+$  export-section
-  $+  export-section
-  (list export)
-::
-+$  export  [name=@t =export-desc]
-::
-+$  export-desc
-  $%  [%func i=@]
-      [%table i=@]
-      [%memory i=@]
-      [%global i=@]
-  ==
-::
-::  Elem section
-::
-+$  elem-section  (list elem)
-+$  elem  [%0x0 offset=(list instruction) y=(list @)]
-::
-::  Code section
-::
-+$  code-section
-  $+  code-section
-  (list code)
-::
-+$  code
-  $:  locals=(list valtype)
-      expression=(list instruction)
-  ==
 ::
 +$  instruction
   $%
@@ -110,12 +45,12 @@
     ::
     [%unreachable ~]
     [%nop ~]
-    [%block result-type=(list valtype) body=(list instruction)]
-    [%loop result-type=(list valtype) body=(list instruction)]
+    [%block result-type=(list valtype) body=expression]  ::  XX update type field of nesting instructions
+    [%loop result-type=(list valtype) body=expression]
     $:  %if
         result-type=(list valtype)
-        branch-true=(list instruction)
-        branch-false=(list instruction)
+        branch-true=expression
+        branch-false=expression
     ==
   ::
     [%br label=@]
@@ -124,8 +59,8 @@
     [%return ~]
     [%call func-id=@]
     [%call-indirect type-id=@ table-id=%0x0]
-    [%end ~]
-    [%else ~]
+    :: [%end ~]   ::  %end and %else should be removed, since nesting is expressed
+    :: [%else ~]  ::  with noun structure 
     ::  Parametric instructions
     ::
     [%drop ~]
@@ -135,6 +70,7 @@
     [%local-get index=@]
     [%local-set index=@]
     [%local-tee index=@]
+    [%global-tee index=@]
     [%global-get index=@]
     [%global-set index=@]
     ::  Memory instructions
@@ -205,20 +141,152 @@
     [%demote ~]
     [%promote ~]
     [%reinterpret type=valtype source-type=valtype]
-    ::  maybe todo: FC extensions, SIMD opcodes
+    ::  XX add SIMD stuff, check completeness
+  ==  ::  $instruction
+::
++$  expression  (list instruction)
+::
+::  Modules
+::
+::  $module: represents `module` type from WebAssembly specification,
+::  but in a format closer to the binary representation, e.g. separate
+::  code and function sections. This is done to simplify parsing.
+::
++$  module
+  $:
+    =type-section
+    =import-section
+    =function-section
+    =table-section
+    =memory-section
+    =global-section
+    =export-section
+    =start-section
+    =elem-section
+    =datacnt-section
+    =code-section
+    =data-section
+  ==
+::
+::  Definitions of sections
+::
+::  Type section
+::
++$  type-section
+  $+  type-section
+  (list func-type)
+::
++$  func-type
+  $:  params=(list valtype)
+      results=(list valtype)
+  ==
+::  Import section
+::
++$  import-section
+  $+  import-section
+  (list import)
+::
++$  import
+  $:  mod=tape
+      name=tape
+      $=  desc
+      $%
+        [%func id=@]
+        [%tabl table]
+        [%memo l=limits]
+        [%glob v=valtype m=?(%con %var)]  ::  constant or variable
+  ==  ==
+::  Function section
+::
++$  function-section
+  $+  function-section
+  (list type-id=@)
+::
+::  Table section
+::
++$  table-section  (list table)
++$  table  (pair ref-type limits)
+::
+::  Memory section
+::
++$  memory-section  (list limits)
+::
+::  Global section
+::
++$  global-section  (list global)
+::  valtype, mutability and init value.
+::  We use a single constant instruction as opposed to a
+::  (list instruction) since there is no global value type
+::  that would take multiple constant values
+::
++$  global
+  $:  v=valtype
+      m=?(%con %var)
+      i=$>(?(%const %global-get) instruction)
+  ==
+::
+::  Export section
+::
++$  export-section
+  $+  export-section
+  (list export)
+::
++$  export  [name=tape =export-desc]
+::
++$  export-desc
+  $%  [%func i=@]
+      [%tabl i=@]
+      [%memo i=@]
+      [%glob i=@]
+  ==
+::
+::  Start section
+::
++$  start-section  (unit @)
+::
+::  Element section
+::
++$  elem-section  (list elem)
+::  The constant instructions are going to contain
+::  %ref reference constants. The offset in %acti
+::  active mode `off` and an element of `i` list 
+::  of expressions are a single instruction because
+::  they yield a single value
+::
++$  elem
+  $:  t=ref-type
+      i=(list $>(%const instruction))
+      $=  m
+      $%  [%pass ~]
+          [%decl ~]
+          [%acti tab=@ off=$>(%const instruction)]
+  ==  ==
+::
+::  Code section
+::
++$  code-section
+  $+  code-section
+  (list code)
+::
++$  code
+  $:  locals=(list valtype)
+      =expression
   ==
 ::
 ::  Data section
 ::
 +$  data-section  (list data)
-+$  data  $%
-            [%active offset=(list instruction) b=[len=@ array=@]]
-            [%passive b=[len=@ array=@]]
-          ==
-::  Interpreter types
+::  memid is implied to be 0
 ::
-+$  stack  [p=(unit branch) q=(pole coin-wasm)]
-+$  branch  $%([%return ~] [%target i=@])  ::  target for branching: return or target an index
++$  data
+  $%
+    [%acti off=$>(%const instruction) b=octs]
+    [%pass b=octs]
+  ==
+::
+::  Data count section
+::
+++  datacnt-section  (unit @)
 ::
 ::  Binary opcode classification
 ::
@@ -256,7 +324,7 @@
 ::
 +$  bin-opcodes-two-args
   $?
-    %0xe  ::  br_table
+    %0xe   ::  br_table
     %0x11  ::  call_indirect
     load-opcodes
     store-opcodes
@@ -308,9 +376,9 @@
     %0x3e  ::  i64 32
   ==
 ::
-+$  eqz-opcodes  ?(%0x45 %0x50)  ::  i32, i64
-+$  eq-opcodes  ?(%0x46 %0x51 %0x5b %0x61)  ::  i32, i64, f32, f64
-+$  ne-opcodes  ?(%0x47 %0x52 %0x5c %0x62)  ::  i32, i64, f32, f64
++$  eqz-opcodes  ?(%0x45 %0x50)              ::  i32, i64
++$  eq-opcodes   ?(%0x46 %0x51 %0x5b %0x61)  ::  i32, i64, f32, f64
++$  ne-opcodes   ?(%0x47 %0x52 %0x5c %0x62)  ::  i32, i64, f32, f64
 +$  lt-opcodes
   $?
     %0x48  ::  i32 s
@@ -376,7 +444,7 @@
   ==
 ::
 +$  and-opcodes  ?(%0x71 %0x83)  ::  i32, i64
-+$  or-opcodes  ?(%0x72 %0x84)  ::  i32, i64
++$  or-opcodes   ?(%0x72 %0x84)  ::  i32, i64
 +$  xor-opcodes  ?(%0x73 %0x85)  ::  i32, i64
 +$  shl-opcodes  ?(%0x74 %0x86)  ::  i32, i64
 +$  shr-opcodes
@@ -387,11 +455,11 @@
     %0x88  ::  i64 u
   ==
 ::
-+$  rotl-opcodes  ?(%0x77 %0x89)  ::  i32, i64
-+$  rotr-opcodes  ?(%0x78 %0x8a)  ::  i32, i64
-+$  abs-opcodes  ?(%0x8b %0x99)  ::  f32, f64
-+$  neg-opcodes  ?(%0x8c %0x9a)  ::  f32, f64
-+$  ceil-opcodes  ?(%0x8d %0x9b)  ::  f32, f64
++$  rotl-opcodes   ?(%0x77 %0x89)  ::  i32, i64
++$  rotr-opcodes   ?(%0x78 %0x8a)  ::  i32, i64
++$  abs-opcodes    ?(%0x8b %0x99)  ::  f32, f64
++$  neg-opcodes    ?(%0x8c %0x9a)  ::  f32, f64
++$  ceil-opcodes   ?(%0x8d %0x9b)  ::  f32, f64
 +$  floor-opcodes  ?(%0x8e %0x9c)  ::  f32, f64
 +$  trunc-opcodes
   $?
@@ -407,18 +475,18 @@
     %0xb1  ::  f64 -> i64 u
   ==
 ::
-+$  nearest-opcodes  ?(%0x90 %0x9e)  ::  f32, f64
-+$  sqrt-opcodes  ?(%0x91 %0x9f)  ::  f32, f64
-+$  min-opcodes  ?(%0x96 %0xa4)  ::  f32, f64
-+$  max-opcodes  ?(%0x97 %0xa5)  ::  f32, f64
++$  nearest-opcodes   ?(%0x90 %0x9e)  ::  f32, f64
++$  sqrt-opcodes      ?(%0x91 %0x9f)  ::  f32, f64
++$  min-opcodes       ?(%0x96 %0xa4)  ::  f32, f64
++$  max-opcodes       ?(%0x97 %0xa5)  ::  f32, f64
 +$  copysign-opcodes  ?(%0x98 %0xa6)  ::  f32, f64
 +$  extend-opcodes
   $?
     %0xac  ::  i32 -> i64 s
     %0xad  ::  i32 -> i64 u
-    %0xc0  ::  i8 -> i32 s
+    %0xc0  ::  i8  -> i32 s
     %0xc1  ::  i16 -> i32 s
-    %0xc2  ::  i8 -> i64 s
+    %0xc2  ::  i8  -> i64 s
     %0xc3  ::  i16 -> i64 s
     %0xc4  ::  i32 -> i64 s  ??  same as 0xac???
   ==

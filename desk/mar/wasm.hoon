@@ -3,16 +3,16 @@
   ::
 /?    310
 ::
-::::  wasm - just an atom
+::::  wasm - just an octstream
   ::
 =,  mimes:html
-|_  wasm=@
+|_  wasm=octs
 ++  grab  |%
-          ++  noun  @
-          ++  mime  |=([* p=octs] q.p)
+          ++  noun  octs
+          ++  mime  |=([* p=octs] p)
           --
 ++  grow  |%
-          ++  mime  [/application/x-urb-unknown (as-octs wasm)]
+          ++  mime  [/application/x-urb-unknown wasm]
           --
 ++  grad  %mime
 --
