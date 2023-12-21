@@ -316,7 +316,10 @@
     ::  If the block was targeted, pop appropriate amount of vals
     ::
     =?  va.stack.l  ?=([%targ %0] br.stack.l)
-      (scag (lent result-type.i) va.stack.l)
+      =;  n-results=@
+        (scag n-results va.stack.l)
+      ?^  type.i  (lent results.type.i)
+      (lent results:(snag type.i type-section.module.store.l))
     ::  Exit the block, navigate branch
     ::
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
@@ -363,8 +366,8 @@
     ?>  ?=([f=@ rest=*] va.stack.l)
     =,  va.stack.l
     ?.  =(0 f.va.stack.l)
-      $(i [%block result-type branch-true]:i, va.stack.l rest)
-    $(i [%block result-type branch-false]:i, va.stack.l rest)
+      $(i [%block type branch-true]:i, va.stack.l rest)
+    $(i [%block type branch-false]:i, va.stack.l rest)
   ::
   ==
 --

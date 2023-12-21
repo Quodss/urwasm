@@ -259,21 +259,29 @@
   ::
   ++  block
     %+  cook  handle-block
-    ;~(pfix block-op ;~(plug next expr))
+    ;~(pfix block-op ;~(plug block-type expr))
   ::
   ++  loop
     %+  cook  handle-loop
-    ;~(pfix loop-op ;~(plug next expr))
+    ;~(pfix loop-op ;~(plug block-type expr))
   ::
   ++  if
     %+  cook  handle-if
-    ;~(pfix if-op ;~(plug next expr))
+    ;~(pfix if-op ;~(plug block-type expr))
   ::
   ++  if-else
     %+  cook  handle-if-else
     ;~  pfix
       if-op
-      ;~(plug next expr-else expr)
+      ;~(plug block-type expr-else expr)
+    ==
+  ::
+  ++  block-type
+    %+  cook  block-type:sur
+    ;~  pose
+      (cold [~ ~] (just '\40'))
+      ;~(plug (easy ~) (cook get-valtype next) (easy ~))
+      (cook abs:si (s-n 33))
     ==
   ::
   ::  All handle-X functions must return `instruction` type
@@ -682,13 +690,9 @@
     [%br-table vec i]
   ::
   ++  handle-block
-    |=  [blocktype-index=@ body=expression:sur]
+    |=  [type=block-type:sur body=expression:sur]
     ^-  $>(%block instruction:sur)
-    :-  %block
-    :_  body
-    ^-  (list valtype:sur)
-    ?:  ?=(%0x40 blocktype-index)  ~
-    ~[(get-valtype blocktype-index)]
+    [%block type body]
   ::
   ++  get-valtype
     |=  byte=@
@@ -700,28 +704,22 @@
       %0x7c  %f64
     ==
   ++  handle-loop
-    |=  [blocktype-index=@ body=expression:sur]
+    |=  [type=block-type:sur body=expression:sur]
     ^-  instruction:sur
-    [%loop ~ body]
+    [%loop type body]
   ::
   ++  handle-if
-    |=  [blocktype-index=@ body=expression:sur]
+    |=  [type=block-type:sur body=expression:sur]
     ^-  instruction:sur
-    :-  %if
-    :_  [body ~]
-    ?:  ?=(%0x40 blocktype-index)  ~
-    ~[(get-valtype blocktype-index)]
+    [%if type body ~]
   ::
   ++  handle-if-else
-    |=  $:  blocktype-index=@
+    |=  $:  type=block-type:sur
             body-true=expression:sur
             body-false=expression:sur
         ==
     ^-  instruction:sur
-    :-  %if
-    :_  [body-true body-false]
-    ?:  ?=(%0x40 blocktype-index)  ~
-    ~[(get-valtype blocktype-index)]
+    [%if type body-true body-false]
   ::
   ++  handle-const-f64
     |=  [op=char i=@rd]

@@ -39,16 +39,22 @@
   $+  memarg
   [align=@ offset=@]
 ::
++$  block-type  $@(@ func-type)
++$  func-type
+  $:  params=(list valtype)
+      results=(list valtype)
+  ==
+::
 +$  instruction
   $%
     ::  Control instructions
     ::
     [%unreachable ~]
     [%nop ~]
-    [%block result-type=(list valtype) body=expression]  ::  XX update type field of nesting instructions
-    [%loop result-type=(list valtype) body=expression]
+    [%block type=block-type body=expression]  ::  XX update type field of nesting instructions
+    [%loop type=block-type body=expression]
     $:  %if
-        result-type=(list valtype)
+        type=block-type
         branch-true=expression
         branch-false=expression
     ==
@@ -176,10 +182,6 @@
   $+  type-section
   (list func-type)
 ::
-+$  func-type
-  $:  params=(list valtype)
-      results=(list valtype)
-  ==
 ::  Import section
 ::
 +$  import-section
