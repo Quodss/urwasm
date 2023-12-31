@@ -23,7 +23,9 @@
 ::
 +$  coin-wasm
   $~  [%i32 *@]
-  $%  [num-type @]
+  $%  [?(%i32 %i64) @]
+      [%f32 @rs]
+      [%f64 @rd]
       [vec-type @]
       [%ref $%([%null ref-type] [%func @])]  ::  add external referenecs
   ==
