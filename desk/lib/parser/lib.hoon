@@ -1,6 +1,8 @@
 ::  WebAssembly parser
 ::
 /-  sur=wasm
+/+  op-map=parser-op-map
+/+  fc=parser-fc, fd=parser-fd
 |%
 ::
 ::  ++main: parsing function. Extends octstream with
@@ -62,6 +64,19 @@
     ?:  =(q.u.q.try q.u.q.zen)
       zen
     (fail tub)
+  ::  ++boil: Parser modifier. Produces a parser that
+  ::  takes a (successful) result of a rule sef and slams it
+  ::  through try, failing if the product is empty
+  ::
+  ++  boil
+    |*  [try=$-(* (unit)) sef=rule]
+    |=  tub=nail
+    =+  vex=(sef tub)
+    ?~  q.vex
+      vex
+    =+  out=(try p.u.q.vex)
+    ?~  out  (fail tub)
+    [p=p.vex q=[~ u=[p=u.out q=q.u.q.vex]]]
   ::  ++u-n: parse uN integer as an atom
   ::
   ++  u-n
@@ -212,28 +227,45 @@
   ++  const-i32  (just '\41')
   ++  const-i64  (just '\42')
   ++  const-f32  (just '\43')
-  ++  const-f64  (just '\44')
-  ++  br-table   (just '\0e')
+  ++  const-f64  (just '\44')  
   ++  block-op   (just '\02')
   ++  loop-op    (just '\03')
   ++  if-op      (just '\04')
   ::
-  ++  instr       ::  XX  TODO 
-    ;~  pose      ::  parse nesting instruction's types correctly
+  ++  instr
+    ;~  pose
+      select-vec
       instr-zero
       instr-one
       instr-two
+      br-table
       if-else
       block
       loop
       if
+      fc  ::  0xfc and 0xfd prefixes
+      fd
     ==
   ::
-  ++  instr-zero  (cook handle-zero-args (mask mask-zero))
+  ++  select-vec
+    %+  cook  instruction:sur
+    ;~  pfix
+      (just '\1c')
+      %+  stag  %select
+      %+  stag  %~
+      (vec valtype)
+    ==
+  ::
+  ++  br-table
+    %+  cook  handle-br-table
+    ;~(plug (just '\0e') vec-u32 u32)
+  ::
+  ++  instr-zero  (boil op-map next)
   ++  instr-one
+    %+  cook  instruction:sur
     ;~  pose
-      %+  cook  handle-one-arg-i32
-      ;~(plug (mask mask-one-i32) u32)
+      %+  boil  handle-one-arg-i32
+      ;~(plug next u32)
     ::
       %+  cook  handle-const-i32
       ;~(plug const-i32 (s-n 32))
@@ -246,16 +278,22 @@
     ::
       %+  cook  handle-const-f64
       ;~(plug const-f64 f64)
+    ::
+      ;~  pfix
+        (just '\d0')
+        (stag %ref-null ref-type)
+      ==
+    ::
+      ;~  pfix
+        (just '\d2')
+        (stag %ref-func u32)
+      ==
+    ::
     ==
   ::
   ++  instr-two
-    ;~  pose
-      %+  cook  handle-two-args-i32
-      ;~(plug (mask mask-two-i32) u32 u32)
-    ::
-      %+  cook  handle-br-table
-      ;~(plug br-table vec-u32 u32)
-    ==
+    %+  boil  handle-two-args-i32
+    ;~(plug next u32 u32)
   ::
   ++  block
     %+  cook  handle-block
@@ -286,401 +324,102 @@
   ::
   ::  All handle-X functions must return `instruction` type
   ::
-  ++  mask-zero
-    ^~
-    %+  skim  (gulf '\00' '\ff')
-    |=  op=char
-    ?=(bin-opcodes-zero-args:sur op)
-  ::
-  ++  handle-zero-args
-    |=  op=char
-    ^-  instruction:sur
-    ?+  op  ~|(`@ux`op !!)
-      %0x0   [%unreachable ~]
-      %0x1   [%nop ~]
-      %0xf   [%return ~]
-      %0x1a  [%drop ~]
-      %0x1b  [%select ~]
-      %0xa7  [%wrap ~]
-      %0xb6  [%demote ~]
-      %0xbb  [%promote ~]
-    ::
-        eqz-opcodes:sur
-      :-  %eqz
-      ?-  op
-        %0x45  %i32
-        %0x50  %i64
-      ==
-    ::
-        eq-opcodes:sur
-      :-  %eq
-      ?-  op
-        %0x46  %i32
-        %0x51  %i64
-        %0x5b  %f32
-        %0x61  %f64
-      ==
-    ::
-        ne-opcodes:sur
-      :-  %ne
-      ?-  op
-        %0x47  %i32
-        %0x52  %i64
-        %0x5c  %f32
-        %0x62  %f64
-      ==
-    ::
-        lt-opcodes:sur
-      :-  %lt
-      ?-  op
-        %0x48  [%i32 `%s]
-        %0x49  [%i32 `%u]
-        %0x53  [%i64 `%s]
-        %0x54  [%i64 `%u]
-        %0x5d  [%f32 ~]
-        %0x63  [%f64 ~]
-      ==
-    ::
-        gt-opcodes:sur
-      :-  %gt
-      ?-  op
-        %0x4a  [%i32 `%s]
-        %0x4b  [%i32 `%u]
-        %0x55  [%i64 `%s]
-        %0x56  [%i64 `%u]
-        %0x5e  [%f32 ~]
-        %0x64  [%f64 ~]
-      ==
-    ::
-        le-opcodes:sur
-      :-  %le
-      ?-  op
-        %0x4c  [%i32 `%s]
-        %0x4d  [%i32 `%u]
-        %0x57  [%i64 `%s]
-        %0x58  [%i64 `%u]
-        %0x5f  [%f32 ~]
-        %0x65  [%f64 ~]
-      ==
-    ::
-        ge-opcodes:sur
-      :-  %ge
-      ?-  op
-        %0x4e  [%i32 `%s]
-        %0x4f  [%i32 `%u]
-        %0x59  [%i64 `%s]
-        %0x5a  [%i64 `%u]
-        %0x60  [%f32 ~]
-        %0x66  [%f64 ~]
-      ==
-    ::
-        clz-opcodes:sur
-      :-  %clz
-      ?-  op
-        %0x67  %i32
-        %0x79  %i64
-      ==
-    ::
-        ctz-opcodes:sur
-      :-  %ctz
-      ?-  op
-        %0x68  %i32
-        %0x7a  %i64
-      ==
-    ::
-        popcnt-opcodes:sur
-      :-  %popcnt
-      ?-  op
-        %0x69  %i32
-        %0x7b  %i64
-      ==
-    ::
-        add-opcodes:sur
-      :-  %add
-      ?-  op
-        %0x6a  %i32
-        %0x7c  %i64
-        %0x92  %f32
-        %0xa0  %f64
-      ==
-    ::
-        sub-opcodes:sur
-      :-  %sub
-      ?-  op
-        %0x6b  %i32
-        %0x7d  %i64
-        %0x93  %f32
-        %0xa1  %f64
-      ==
-    ::
-        mul-opcodes:sur
-      :-  %mul
-      ?-  op
-        %0x6c  %i32
-        %0x7e  %i64
-        %0x94  %f32
-        %0xa2  %f64
-      ==
-    ::
-        div-opcodes:sur
-      :-  %div
-      ?-  op
-        %0x6d  [%i32 `%s]
-        %0x6e  [%i32 `%u]
-        %0x7f  [%i64 `%s]
-        %0x80  [%i64 `%u]
-        %0x95  [%f32 ~]
-        %0xa3  [%f64 ~]
-      ==
-    ::
-        rem-opcodes:sur
-      :-  %rem
-      ?-  op
-        %0x6f  [%i32 %s]
-        %0x70  [%i32 %u]
-        %0x81  [%i64 %s]
-        %0x82  [%i64 %u]
-      ==
-    ::
-        and-opcodes:sur
-      :-  %and
-      ?-  op
-        %0x71  %i32
-        %0x83  %i64
-      ==
-    ::
-        or-opcodes:sur
-      :-  %or
-      ?-  op
-        %0x72  %i32
-        %0x84  %i64
-      ==
-    ::
-        xor-opcodes:sur
-      :-  %xor
-      ?-  op
-        %0x73  %i32
-        %0x85  %i64
-      ==
-    ::
-        shl-opcodes:sur
-      :-  %shl
-      ?-  op
-        %0x74  %i32
-        %0x86  %i64
-      ==
-    ::
-        shr-opcodes:sur
-      :-  %shr
-      ?-  op
-        %0x75  [%i32 %s]
-        %0x76  [%i32 %u]
-        %0x87  [%i64 %s]
-        %0x88  [%i64 %u]
-      ==
-    ::
-        rotl-opcodes:sur
-      :-  %rotl
-      ?-  op
-        %0x77  %i32
-        %0x89  %i64
-      ==
-    ::
-        rotr-opcodes:sur
-      :-  %rotr
-      ?-  op
-        %0x78  %i32
-        %0x8a  %i64
-      ==
-    ::
-        abs-opcodes:sur
-      :-  %abs
-      ?-  op
-        %0x8b  %f32
-        %0x99  %f64
-      ==
-    ::
-        neg-opcodes:sur
-      :-  %neg
-      ?-  op
-        %0x8c  %f32
-        %0x9a  %f64
-      ==
-    ::
-        ceil-opcodes:sur
-      :-  %ceil
-      ?-  op
-        %0x8d  %f32
-        %0x9b  %f64
-      ==
-    ::
-        floor-opcodes:sur
-      :-  %floor
-      ?-  op
-        %0x8e  %f32
-        %0x9c  %f64
-      ==
-    ::
-        trunc-opcodes:sur
-      :-  %trunc
-      ?-  op
-        %0x8f  [%f32 ~ ~]
-        %0x9d  [%f64 ~ ~]
-        %0xa8  [%i32 `%f32 `%s]
-        %0xa9  [%i32 `%f32 `%u]
-        %0xaa  [%i32 `%f64 `%s]
-        %0xab  [%i32 `%f64 `%u]
-        %0xae  [%i64 `%f32 `%s]
-        %0xaf  [%i64 `%f32 `%u]
-        %0xb0  [%i64 `%f64 `%s]
-        %0xb1  [%i64 `%f64 `%u]
-      ==
-    ::
-        nearest-opcodes:sur
-      :-  %nearest
-      ?-  op
-        %0x90  %f32
-        %0x9e  %f64
-      ==
-    ::
-        sqrt-opcodes:sur
-      :-  %sqrt
-      ?-  op
-        %0x91  %f32
-        %0x9f  %f64
-      ==
-    ::
-        min-opcodes:sur
-      :-  %min
-      ?-  op
-        %0x96  %f32
-        %0xa4  %f64
-      ==
-    ::
-        max-opcodes:sur
-      :-  %max
-      ?-  op
-        %0x97  %f32
-        %0xa5  %f64
-      ==
-    ::
-        ::  copysign-opcodes:sur
-    ::
-        extend-opcodes:sur
-      :-  %extend
-      ?+  op  !!
-        %0xac  [%i64 %32 %s]
-        %0xad  [%i64 %32 %u]
-        %0xc0  [%i32 %8 %s]
-      ==
-    ::
-        convert-opcodes:sur
-      :-  %convert
-      ?+  op  !!
-        %0xba  [%f64 %i64 %u]
-      ==
-        reinterpret-opcodes:sur
-      :-  %reinterpret
-      ?+  op  !!
-        %0xbf  [%f64 %i64]
-      ==
-    ::
-    ==
-  ::
-  ++  mask-one-64
-    ^-  (list char)
-    :~  '\42'
-        '\44'
-    ==
-  ++  mask-one-i32
-    ^~
-    %+  skim  (gulf '\00' '\ff')
-    |=  op=char
-    ?&  ?=(bin-opcodes-one-arg:sur op)
-        !(~(has in (silt mask-one-64)) op)
-        !=(op '\43')
-        !=(op '\41')
-    ==
   ::
   ++  handle-one-arg-i32
     |=  [op=char arg=@]
-    ^-  instruction:sur
-    ?+  op  ~|(`@ux`op !!)
-      %0xc   [%br arg]
-      %0xd   [%br-if arg]
-      %0x10  [%call arg]
-      %0x20  [%local-get arg]
-      %0x21  [%local-set arg]
-      %0x22  [%local-tee arg]
-      %0x23  [%global-get arg]
-      %0x24  [%global-set arg]
-      %0x40  [%memory-grow %0x0]
-      %0x41  [%const %i32 arg]
+    ^-  (unit instruction:sur)
+    ?+  op  ~
+      %0xc   `[%br arg]
+      %0xd   `[%br-if arg]
+      %0x10  `[%call arg]
+      %0x20  `[%local-get arg]
+      %0x21  `[%local-set arg]
+      %0x22  `[%local-tee arg]
+      %0x23  `[%global-get arg]
+      %0x24  `[%global-set arg]
+      %0x25  `[%table-get arg]
+      %0x26  `[%table-set arg]
+      %0x3f  `[%memory-size ?>(=(arg 0) %0)]
+      %0x40  `[%memory-grow ?>(=(arg 0) %0)]
     ==
   ::
-  ++  mask-two-i32
-    ^~
-    %+  skim  (gulf '\00' '\ff')
-    |=  op=char
-    ?&  ?=(bin-opcodes-two-args:sur op)
-        !=(op '\0e')
-    ==
   ::
   ++  handle-two-args-i32
     |=  [op=char arg1=@ arg2=@]
-    ^-  instruction:sur
-    ?+  op  ~|(`@ux`op !!)
+    ^-  (unit instruction:sur)
+    ?+  op  ~
         %0x11
       ?>  =(arg2 0)
-      [%call-indirect arg1 %0x0]
+      `[%call-indirect arg1 %0x0]
     ::
         %0x28
-      [%load %i32 [arg1 arg2] ~ ~]
+      `[%load %i32 [arg1 arg2] ~ ~]
     ::
         %0x29
-      [%load %i64 [arg1 arg2] ~ ~]
+      `[%load %i64 [arg1 arg2] ~ ~]
+    ::
+        %0x2a
+      `[%load %f32 [arg1 arg2] ~ ~]
     ::
         %0x2b
-      [%load %f64 [arg1 arg2] ~ ~]
+      `[%load %f64 [arg1 arg2] ~ ~]
     ::
         %0x2c
-      [%load %i32 [arg1 arg2] `%8 `%s]
+      `[%load %i32 [arg1 arg2] `%8 `%s]
     ::
         %0x2d
-      [%load %i32 [arg1 arg2] `%8 `%u]
+      `[%load %i32 [arg1 arg2] `%8 `%u]
+    ::
+        %0x2e
+      `[%load %i32 [arg1 arg2] `%8 `%s]
     ::
         %0x2f
-      [%load %i32 [arg1 arg2] `%16 `%u]
+      `[%load %i32 [arg1 arg2] `%16 `%u]
+    ::
+        %0x30
+      `[%load %i64 [arg1 arg2] `%8 `%s]
     ::
         %0x31
-      [%load %i64 [arg1 arg2] `%8 `%u]
+      `[%load %i64 [arg1 arg2] `%8 `%u]
+    ::
+        %0x32
+      `[%load %i64 [arg1 arg2] `%16 `%s]
     ::
         %0x33
-      [%load %i64 [arg1 arg2] `%16 `%u]
+      `[%load %i64 [arg1 arg2] `%16 `%u]
     ::
         %0x34
-      [%load %i64 [arg1 arg2] `%32 `%s]
+      `[%load %i64 [arg1 arg2] `%32 `%s]
     ::
         %0x35
-      [%load %i64 [arg1 arg2] `%32 `%u]
+      `[%load %i64 [arg1 arg2] `%32 `%u]
     ::
         %0x36
-      [%store %i32 [arg1 arg2] ~]
+      `[%store %i32 [arg1 arg2] ~]
     ::
         %0x37
-      [%store %i64 [arg1 arg2] ~]
+      `[%store %i64 [arg1 arg2] ~]
+    ::
+        %0x38
+      `[%store %f32 [arg1 arg2] ~]
     ::
         %0x39
-      [%store %f64 [arg1 arg2] ~]
+      `[%store %f64 [arg1 arg2] ~]
     ::
         %0x3a
-      [%store %i32 [arg1 arg2] `%8]
+      `[%store %i32 [arg1 arg2] `%8]
     ::
         %0x3b
-      [%store %i32 [arg1 arg2] `%16]
+      `[%store %i32 [arg1 arg2] `%16]
+    ::
+        %0x3c
+      `[%store %i64 [arg1 arg2] `%8]
+    ::
+        %0x3d
+      `[%store %i64 [arg1 arg2] `%16]
     ::
         %0x3e
-      [%store %i64 [arg1 arg2] `%32]
+      `[%store %i64 [arg1 arg2] `%32]
     ==
   ::
   ++  handle-br-table

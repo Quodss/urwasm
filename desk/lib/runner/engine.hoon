@@ -3,7 +3,7 @@
 ::::  /hoon/ast-interpreter/lib
   ::
 /-  *engine
-/+  *op-def
+/+  *runner-op-def
 |%
 ::  +change: convert stack values to coin-wasm list
 ::
@@ -318,8 +318,9 @@
     =?  va.stack.l  ?=([%targ %0] br.stack.l)
       =;  n-results=@
         (scag n-results va.stack.l)
-      ?^  type.i  (lent results.type.i)
-      (lent results:(snag type.i type-section.module.store.l))
+      %-  lent
+      ?^  type.i  results.type.i
+      results:(snag type.i type-section.module.store.l)
     ::  Exit the block, navigate branch
     ::
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))

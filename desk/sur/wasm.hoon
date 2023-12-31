@@ -39,7 +39,7 @@
   $+  memarg
   [align=@ offset=@]
 ::
-+$  block-type  $@(@ func-type)
++$  block-type  $@(@ func-type)  ::  typeidx in type section or func-type
 +$  func-type
   $:  params=(list valtype)
       results=(list valtype)
@@ -47,11 +47,11 @@
 ::
 +$  instruction
   $%
-    ::  Control instructions
-    ::
+  ::  Control instructions
+  ::
     [%unreachable ~]
     [%nop ~]
-    [%block type=block-type body=expression]  ::  XX update type field of nesting instructions
+    [%block type=block-type body=expression]
     [%loop type=block-type body=expression]
     $:  %if
         type=block-type
@@ -65,20 +65,33 @@
     [%return ~]
     [%call func-id=@]
     [%call-indirect type-id=@ table-id=%0x0]
-    :: [%end ~]   ::  %end and %else should be removed, since nesting is expressed
-    :: [%else ~]  ::  with noun structure 
-    ::  Parametric instructions
-    ::
+  ::  Reference instructions
+  ::
+    [%ref-null t=ref-type]
+    [%ref-is-null ~]
+    [%ref-func func-id=@]
+  ::  Parametric instructions
+  ::
     [%drop ~]
-    [%select ~]
-    ::  Variable instructions
-    ::
+    [%select (unit (list valtype))]
+  ::  Variable instructions
+  ::
     [%local-get index=@]
     [%local-set index=@]
     [%local-tee index=@]
     [%global-tee index=@]
     [%global-get index=@]
     [%global-set index=@]
+  ::  Table instructions
+  ::
+    [%table-get tab-id=@]
+    [%table-set tab-id=@]
+    [%table-init elem-id=@ tab-id=@]
+    [%elem-drop elem-id=@]
+    [%table-copy tab-id-x=@ tab-id-y=@]
+    [%table-grow tab-id=@]
+    [%table-size tab-id=@]
+    [%table-fill tab-id=@]
     ::  Memory instructions
     ::
     $:  %load
@@ -94,8 +107,8 @@
         n=(unit ?(%8 %16 %32))
     ==
     ::
-    [%memory-size mem-id=%0x0]
-    [%memory-grow mem-id=%0x0]
+    [%memory-size mem-id=%0]
+    [%memory-grow mem-id=%0]
     ::  Numeric instructions
     ::
     [%const p=coin-wasm]
@@ -490,7 +503,7 @@
     %0xc1  ::  i16 -> i32 s
     %0xc2  ::  i8  -> i64 s
     %0xc3  ::  i16 -> i64 s
-    %0xc4  ::  i32 -> i64 s  ??  same as 0xac???
+    %0xc4  ::  i32 -> i64 s  ??  same as 0xac??? (yes)
   ==
 +$  convert-opcodes
   $?

@@ -1,8 +1,8 @@
 /-  *engine
 /+  *test
-/+  parser
-/+  *engine
-/+  op-def
+/+  parser=parser-lib
+/+  *runner-engine
+/+  op-def=runner-op-def
 /*  div-table  %wasm  /tests/del-table/wasm
 /*  fac-loop   %wasm  /tests/fac-br/wasm
 /*  fib-rust   %wasm  /tests/fib/wasm
