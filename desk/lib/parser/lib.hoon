@@ -536,20 +536,6 @@
   ::
   ++  fd  fail
   ::
-  ::  ++section-bytes: break up module bytes into sections
-  ::
-  ::  A section is
-  ::    - a one-byte section id, from 0 to 12
-  ::    - u32 size of the contents in bytes,
-  ::    - contents, whose structure is dependent on the section id.
-  ::  Last two pieces can be reinterpreted as a vector of bytes,
-  ::  or (vec next) in terms of parsing rules.
-  ::
-  ++  section-bytes
-    %+  cook  (list tape)
-    %-  star
-    ;~(plug (shim 0 12) (vec next))
-  ::
   ::  Section rules
   ::
   ::  Type section

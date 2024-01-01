@@ -70,12 +70,10 @@
     !>
     =/  string-in=tape  (gulf 'a' 'z')
     =+  st=(prep (main:parser flopper))
-    ~>  %bout
     =^  out=(list coin-wasm)  st
       %-  wasm-need
       %^  invoke  "__wbindgen_add_to_stack_pointer"
       ~[[%i32 (si-to-complement:op-def 32 -16)]]  st
-    ~!  out
     =/  retptr=@  ?>(?=([[%i32 n=@] ~] out) n.i.out)
     =^  out=(list coin-wasm)  st
       %-  wasm-need
