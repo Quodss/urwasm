@@ -2,7 +2,6 @@
 ::
 /-  sur=wasm
 /+  op-map=parser-op-map
-/+  fc=parser-fc, fd=parser-fd
 |%
 ::
 ::  ++main: parsing function. Extends octstream with
@@ -64,19 +63,6 @@
     ?:  =(q.u.q.try q.u.q.zen)
       zen
     (fail tub)
-  ::  ++boil: Parser modifier. Produces a parser that
-  ::  takes a (successful) result of a rule sef and slams it
-  ::  through try, failing if the product is empty
-  ::
-  ++  boil
-    |*  [try=$-(* (unit)) sef=rule]
-    |=  tub=nail
-    =+  vex=(sef tub)
-    ?~  q.vex
-      vex
-    =+  out=(try p.u.q.vex)
-    ?~  out  (fail tub)
-    [p=p.vex q=[~ u=[p=u.out q=q.u.q.vex]]]
   ::  ++u-n: parse uN integer as an atom
   ::
   ++  u-n
@@ -234,6 +220,8 @@
   ::
   ++  instr
     ;~  pose
+      ;~(pfix (just '\fc') fc)  ::  0xfc and 0xfd prefixes
+      ;~(pfix (just '\fd') fd)
       select-vec
       instr-zero
       instr-one
@@ -243,8 +231,6 @@
       block
       loop
       if
-      fc  ::  0xfc and 0xfd prefixes
-      fd
     ==
   ::
   ++  select-vec
@@ -260,11 +246,11 @@
     %+  cook  handle-br-table
     ;~(plug (just '\0e') vec-u32 u32)
   ::
-  ++  instr-zero  (boil op-map next)
+  ++  instr-zero  (sear op-map next)
   ++  instr-one
     %+  cook  instruction:sur
     ;~  pose
-      %+  boil  handle-one-arg-i32
+      %+  sear  handle-one-arg-i32
       ;~(plug next u32)
     ::
       %+  cook  handle-const-i32
@@ -292,7 +278,7 @@
     ==
   ::
   ++  instr-two
-    %+  boil  handle-two-args-i32
+    %+  sear  handle-two-args-i32
     ;~(plug next u32 u32)
   ::
   ++  block
@@ -489,6 +475,66 @@
     ?:  (syn i)
       +:(old i)
     (sub (bex 64) +:(old i))
+  ::  ++fc: 0xFC extension parser
+  ::
+  ++  fc
+    |^
+    %+  cook  instruction:sur
+    ;~  pose
+      zero-args
+      one-arg
+      two-args
+    ==
+    ::
+    ++  zero-args  (sear handle-zero u32)
+    ++  one-arg    (sear handle-one ;~(plug u32 u32))
+    ++  two-args   (sear handle-two ;~(plug u32 u32 u32))
+    ++  handle-zero
+      |=  op=@
+      ^-  (unit instruction:sur)
+      ?.  (lte op 7)  ~
+      :-  ~
+      :*
+        %trunc
+      ::  Type
+      ::
+        ?:((lte op 3) %i32 %i64)
+      ::  Source type
+      ::
+        `?:(=(0 (mod (div op 2) 2)) %f32 %f64)
+      ::  Mode
+      ::
+        `?:(=(0 (mod op 2)) %s %u)
+      ::
+        &  ::  saturated
+      ==
+    ::
+    ++  handle-one
+      |=  [op=@ arg=@]
+      ^-  (unit instruction:sur)
+      ?+  op  ~
+        %9   `[%data-drop arg]
+        %11  `[%memory-fill ?>(?=(%0 arg) arg)]
+        %13  `[%elem-drop arg]
+        %15  `[%table-grow arg]
+        %16  `[%table-size arg]
+        %17  `[%table-fill arg]
+      ==
+    ::
+    ++  handle-two
+      |=  [op=@ arg1=@ arg2=@]
+      ^-  (unit instruction:sur)
+      ?+  op  ~
+        %8   `[%memory-init arg1 ?>(?=(%0 arg2) arg2)]
+        %10  `[%memory-copy ?>(?=(%0 arg1) arg1) ?>(?=(%0 arg1) arg1)]
+        %12  `[%table-init arg1 arg2]
+        %14  `[%table-copy arg1 arg2]
+      ==
+    ::
+    --
+  ::  ++fd: 0xFD extension parser
+  ::
+  ++  fd  fail
   ::
   ::  ++section-bytes: break up module bytes into sections
   ::
@@ -858,15 +904,14 @@
   ++  check
     |*  [id=@ sec=rule def=*]
     ;~  pose
-      ::  section present
-      ::
+    ::  section present
+    ::
       ;~  pfix
         (just `@`id)
         (bonk (vec next) ;~(pfix u32 sec))
       ==
+    ::  section missing
     ::
-      ::  section missing
-      ::
       (easy `(womp sec)`def)
     ==
   ::

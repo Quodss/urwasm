@@ -48,6 +48,9 @@
   ==
 ::
 +$  instruction
+  $%([%vec instr-vec] instr-short)
+::
++$  instr-short
   $%
   ::  Control instructions
   ::
@@ -111,9 +114,13 @@
     ::
     [%memory-size mem-id=%0]
     [%memory-grow mem-id=%0]
+    [%memory-init x=@ mem-id=%0]
+    [%data-drop x=@]
+    [%memory-copy mem-1=%0 mem-2=%0]
+    [%memory-fill mem-id=%0]
     ::  Numeric instructions
     ::
-    [%const p=coin-wasm]
+    [%const p=$<(%v128 coin-wasm)]
     ::::  comparison:
     ::::
     [%eqz type=?(%i32 %i64)]
@@ -149,6 +156,7 @@
         type=valtype
         source-type=(unit ?(%f32 %f64))
         mode=(unit ?(%s %u))
+        sat=?
     ==
     ::
     [%nearest type=?(%f32 %f64)]
@@ -162,8 +170,80 @@
     [%demote ~]
     [%promote ~]
     [%reinterpret type=valtype source-type=valtype]
-    ::  XX add SIMD stuff, check completeness
-  ==  ::  $instruction
+  ==  ::  $instr-short
+::
++$  lane-type  ?(%i8 %i16 num-type)
+::  0xFD prefixed instructions
+::
++$  instr-vec
+  $%
+  ::  Load
+  ::
+    $:  %load
+        m=memarg
+        $=  kind  %-  unit
+        $:  p=?(%8 %16 %32 %64)
+            q=?(%splat %zero [%extend ?(%s %u)])
+    ==  ==
+  ::
+    [%load-lane m=memarg p=?(%8 %16 %32 %64) l=@]
+  ::  Store
+  ::
+    [%store m=memarg]
+    [%store-lane m=memarg p=?(%8 %16 %32 %64) l=@]
+  ::  Misc
+    [%const p=$>(%v128 coin-wasm)]
+    [%shuffle lane-ids=@]
+    [%extract p=lane-type l=@]
+    [%replace p=lane-type l=@]
+  ::  Plain
+  ::
+    [%swizzle ~]
+    [%splat p=lane-type]
+    [%eq p=lane-type]
+    [%ne p=lane-type]
+    [%lt p=lane-type mode=?(%u %s)]
+    [%gt p=lane-type mode=?(%u %s)]
+    [%le p=lane-type mode=?(%u %s)]
+    [%ge p=lane-type mode=?(%u %s)]
+    [%not ~]
+    [%and ~]
+    [%andnot ~]
+    [%or ~]
+    [%xor ~]
+    [%bitselect ~]
+    [%any-true ~]
+    [%abs p=lane-type]
+    [%neg p=lane-type]
+    [%popcnt ~]
+    [%all-true p=?(%i8 %i16 %i32 %i64)]
+    [%bitmask p=?(%i8 %i16 %i32 %i64)]
+    [%narrow p=?(%i8 %i16) mode=?(%u %s)]
+    [%shl p=?(%i8 %i16 %i32 %i64)]
+    [%shr p=?(%i8 %i16 %i32 %i64) mode=?(%u %s)]
+    [%add p=lane-type sat=(unit ?(%u %s))]
+    [%sub p=lane-type sat=(unit ?(%u %s))]
+    [%min p=lane-type mode=?(%u %s)]
+    [%max p=lane-type mode=?(%u %s)]
+    [%avgr p=?(%i8 %i16) mode=%u]
+    [%extadd p=?(%i16 %i32) mode=?(%u %s)]
+    [%q15mul-r-sat ~]
+    [%extend p=?(%i16 %i32 %i64) mode=?(%u %s) half=?(%high %low)]
+    [%mul p=lane-type]
+    [%extmul p=?(%i16 %i32 %i64) mode=?(%u %s) half=?(%high %low)]
+    [%dot ~]
+    [%ceil p=?(%f32 %f64)]
+    [%floor p=?(%f32 %f64)]
+    [%trunc p=?(%i32 %f32 %f64) from=?(%f32 %f64) mode=?(%u %s)]
+    [%nearest p=?(%f32 %f64)]
+    [%sqrt p=?(%f32 %f64)]
+    [%div p=?(%f32 %f64)]
+    [%pmin p=?(%f32 %f64)]
+    [%pmax p=?(%f32 %f64)]
+    [%convert p=?(%f32 %f64) mode=?(%u %s)]
+    [%demote ~]
+    [%promote ~]
+  ==  ::  $instr-vec
 ::
 +$  expression  (list instruction)
 ::
