@@ -563,7 +563,7 @@
       ^-  (unit instruction:sur)
       =;  =(unit instr-vec:sur)
         ?~  unit  ~
-        [%vec u.unit]
+        `[%vec u.unit]
       ?+  op  ~
         %0   `[%load mem ~]
         %1   `[%load mem ~ %8 %extend %s]
@@ -586,7 +586,7 @@
       ^-  (unit instruction:sur)
       =;  =(unit instr-vec:sur)
         ?~  unit  ~
-        [%vec u.unit]
+        `[%vec u.unit]
       ?+  op  ~
         %84  `[%load-lane mem %8 l]
         %85  `[%load-lane mem %16 l]
@@ -601,13 +601,13 @@
     ++  const
       |=  =(list @)
       ^-  instruction:sur
-      :+  %const  %v128
+      :^  %vec  %const  %v128
       (can 3 (fuse (reap 16 1) list))
     ::
     ++  shuffle
       |=  =(list @)
       ^-  instruction:sur
-      :-  %shuffle
+      :+  %vec  %shuffle
       (can 3 (fuse (reap 16 1) list))
     ::
     ++  lane
@@ -615,7 +615,7 @@
       ^-  (unit instruction:sur)
       =;  =(unit instr-vec:sur)
         ?~  unit  ~
-        [%vec u.unit]
+        `[%vec u.unit]
       ?+  op  ~
         %21  `[%extract %i8 l]
         %22  `[%extract %i8 l]
