@@ -2,6 +2,7 @@
 ::
 /-  sur=wasm
 /+  op-map=parser-op-map
+/+  simd-map=parser-simd-map
 |%
 ::
 ::  ++main: parsing function. Extends octstream with
@@ -63,6 +64,16 @@
     ?:  =(q.u.q.try q.u.q.zen)
       zen
     (fail tub)
+  ::  ++feel: rule modifier. Tests equality of
+  ::  the parsing result with a given noun
+  ++  feel
+    |*  [a=* sef=rule]
+    |=  tub=nail
+    =+  vex=(sef tub)
+    ?~  q.vex  vex
+    ?:  =(a p.u.q.vex)
+      vex
+    [p=p.vex q=~]
   ::  ++u-n: parse uN integer as an atom
   ::
   ++  u-n
@@ -534,7 +545,94 @@
     --
   ::  ++fd: 0xFD extension parser
   ::
-  ++  fd  fail
+  ++  fd
+    |^
+    ::  Opcode and immediate parameters
+    ::
+    ;~  pose
+      (sear memarg ;~(plug u32 u32 u32))
+      (sear mem-lane ;~(plug u32 ;~(plug u32 u32) next))
+      (cook const ;~(pfix (feel 12 u32) (stun [16 16] next)))
+      (cook shuffle ;~(pfix (feel 13 u32) (stun [16 16] next)))
+      (sear lane ;~(plug u32 next))
+      (sear simd-map u32)
+    ==
+    ::
+    ++  memarg
+      |=  [op=@ mem=[@ @]]
+      ^-  (unit instruction:sur)
+      =;  =(unit instr-vec:sur)
+        ?~  unit  ~
+        `[%vec u.unit]
+      ?+  op  ~
+        %0   `[%load mem ~]
+        %1   `[%load mem ~ %8 %extend %s]
+        %2   `[%load mem ~ %8 %extend %u]
+        %3   `[%load mem ~ %16 %extend %s]
+        %4   `[%load mem ~ %16 %extend %u]
+        %5   `[%load mem ~ %32 %extend %s]
+        %6   `[%load mem ~ %32 %extend %u]
+        %7   `[%load mem ~ %8 %splat]
+        %8   `[%load mem ~ %16 %splat]
+        %9   `[%load mem ~ %32 %splat]
+        %10  `[%load mem ~ %64 %splat]
+        %92  `[%load mem ~ %32 %zero]
+        %93  `[%load mem ~ %64 %zero]
+        %11  `[%store mem]
+      ==
+    ::
+    ++  mem-lane
+      |=  [op=@ mem=[@ @] l=@]
+      ^-  (unit instruction:sur)
+      =;  =(unit instr-vec:sur)
+        ?~  unit  ~
+        `[%vec u.unit]
+      ?+  op  ~
+        %84  `[%load-lane mem %8 l]
+        %85  `[%load-lane mem %16 l]
+        %86  `[%load-lane mem %32 l]
+        %87  `[%load-lane mem %64 l]
+        %88  `[%store-lane mem %8 l]
+        %89  `[%store-lane mem %16 l]
+        %90  `[%store-lane mem %32 l]
+        %91  `[%store-lane mem %64 l]
+      ==
+    ::
+    ++  const
+      |=  =(list @)
+      ^-  instruction:sur
+      :^  %vec  %const  %v128
+      (can 3 (fuse (reap 16 1) list))
+    ::
+    ++  shuffle
+      |=  =(list @)
+      ^-  instruction:sur
+      :+  %vec  %shuffle
+      (can 3 (fuse (reap 16 1) list))
+    ::
+    ++  lane
+      |=  [op=@ l=@]
+      ^-  (unit instruction:sur)
+      =;  =(unit instr-vec:sur)
+        ?~  unit  ~
+        `[%vec u.unit]
+      ?+  op  ~
+        %21  `[%extract %i8 l]
+        %22  `[%extract %i8 l]
+        %23  `[%replace %i8 l]
+        %24  `[%extract %i16 l]
+        %25  `[%extract %i16 l]
+        %26  `[%replace %i16 l]
+        %27  `[%extract %i32 l]
+        %28  `[%replace %i32 l]
+        %29  `[%extract %i64 l]
+        %30  `[%replace %i64 l]
+        %31  `[%extract %f32 l]
+        %32  `[%replace %f32 l]
+        %33  `[%extract %f64 l]
+        %34  `[%replace %f64 l]
+      ==
+    --
   ::
   ::  Section rules
   ::
