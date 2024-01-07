@@ -237,9 +237,9 @@
   ++  set
     |=  i=instruction
     ?>  ?=(set:kind -.i)
-    ~!  -.i
     |=  l=local-state
     ^-  local-state
+    ~!  -.va.stack.l
     ?>  ?=([a=val rest=*] va.stack.l)
     =,  va.stack.l
     ?-    -.i

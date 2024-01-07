@@ -20,13 +20,10 @@
     [i.a ?>(?=(@ i.b) i.b)]
   ::
       %extn
-    ?>(?=([%ref %null %extn] i.b) i.b)  ::  return non-null external references?
+    ?>(?=([%ref %extn ~] i.b) i.b)  ::  return non-null external references?
   ::
       %func
-    ?>  ?|  ?=([%ref %null %func] i.b)
-            ?=([%ref %func @] i.b)
-        ==
-    i.b
+    ?>(?=([%ref %func *] i.b) i.b)
   ==
 ::  +get-types: turn a (list coin-wasm) into a list of types of coins
 ::
@@ -38,9 +35,7 @@
   ^-  valtype
   ?.  ?=([%ref r=*] c)
     -.c
-  ?:  ?=(%func -.r.c)
-    %func
-  +.r.c
+  -.r.c
 ::  +mint:  get stack values from valtypes, used for locals
 ::
 ++  mint
@@ -51,8 +46,11 @@
   ^-  val
   ?-  i.a
     ?(num-type vec-type)  *@
-    ref-type  [%ref %null i.a]
-  ==
+    ref-type  :-  %ref
+              ?-  i.a
+                %extn  [%extn ~]
+                %func  [%func ~]
+  ==          ==
 ::  +place: places list `b` into list `a`, overwriting contents of `a`
 ::
 ++  place
@@ -77,11 +75,11 @@
   ?:  ?=(%flor -.l)
     ~
   `q.l
-::  +make-export-map: turns export-section into a map [name=tape =export-desc]
+::  +make-export-map: turns export-section into a map [name=cord =export-desc]
 ::
 ++  make-export-map
   |=  =export-section
-  =|  out=(map tape export-desc)
+  =|  out=(map cord export-desc)
   |-  ^+  out
   ?~  export-section  out
   =,  i.export-section
@@ -92,7 +90,7 @@
 ::  +find-func-id: find func-id from a name of an exported function
 ::
 ++  find-func-id
-  |=  [name=tape =module]
+  |=  [name=cord =module]
   ^-  @
   =,  module
   =/  =export-desc  (~(got by (make-export-map export-section)) name)
@@ -143,7 +141,7 @@
     ::
     ?>  ?=(^ table-section.m)
     =.  table.s
-      (reap (lim-min q.i.table-section.m) [%ref %null %func])
+      (reap (lim-min q.i.table-section.m) [%ref %func ~])
     |-  ^+  table.s
     ?~  elem-section.m  table.s
     =*  elem  i.elem-section.m
@@ -167,8 +165,8 @@
       %+  turn  i.elem
       |=  in=instruction
       ^-  $>(%ref coin-wasm)
-      ?>  ?=([%const coin=[%ref %func @]] in)  ::  Assert: %func refs only
-      coin.p.in
+      ?>  ?=([%ref-func @] in)  ::  Assert: %func refs only
+      [%ref %func `func-id.in]
     ::
     ==
   ::
@@ -201,7 +199,7 @@
 ::  +invoke: call function by name, to call from the outside
 ::
 ++  invoke
-  |=  [name=tape in=(list coin-wasm) st=store]
+  |=  [name=cord in=(list coin-wasm) st=store]
   ^-  $%  [%0 (list coin-wasm) store]  ::  success
       ::  [%1 *]                       ::  import block, to define
           [%2 ~]                       ::  trap, crash
@@ -281,15 +279,14 @@
   ?:  |(=(~ e) !=(~ br.stack.l))  ::  if navigating branch
     l                             ::  jump to the end of expression 
   $(l (apply -.e l), e +.e)
-::  +dec-br: "decrement" branch
+::  +dec-br: "decrement" branch. Preserve absolute branching
+::  coordinates (trap, return, block), and safely decrement
+::  relative target index. Used for code flow navigation
 ::
 ++  dec-br
   |=  br=branch
   ^-  branch
-  ?-  br
-    ~            ~
-    [%trap ~]    [%trap ~]
-    [%retr ~]    [%retr ~]
+  ?+  br  br
     [%targ %0]   ~
     [%targ i=@]  [%targ (dec i.br)]
   ==
@@ -352,16 +349,16 @@
     =/  type-in-instr=func-type  (snag type-id.i type-section)
     =/  type-of-ref=func-type
       =+  ref=(snag tab-id table.store.l)
-      ?>  ?=([%ref %func n=@] ref)  ::  funcref only, add extern
-      (snag (snag n.ref function-section) type-section)
+      ?>  ?=([%ref %func p=[~ @]] ref)  ::  funcref only, add extern
+      (snag (snag u.p.ref function-section) type-section)
     ?>  =(type-in-instr type-of-ref)
     ::  Call referenced function, funcref only, add extern
     ::
     =;  id-func=@
       (call id-func l(va.stack rest))
     =+  ref=(snag tab-id table.store.l)
-    ?>  ?=([%ref %func n=@] ref)
-    n.ref
+    ?>  ?=([%ref %func p=[~ @]] ref)
+    u.p.ref
   ::
       [%if *]  ::  [%if result-type=(list valtype) branch-true=(list instruction) branch-false=(list instruction)]
     ?>  ?=([f=@ rest=*] va.stack.l)

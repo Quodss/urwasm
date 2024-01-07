@@ -169,7 +169,7 @@
       (stun [n n] rul)
     ==
   ::
-  ++  name     (vec prn)
+  ++  name     (cook crip (vec prn))
   ++  vec-u32  (vec u32)
   ++  num-type
     %+  cook  num-type:sur
@@ -650,8 +650,8 @@
   ++  import
     %+  cook  import:sur
     ;~  plug
-      (vec prn)
-      (vec prn)
+      name
+      name
       import-desc
     ==
   ::
@@ -716,7 +716,7 @@
   ::
   ++  export
     ;~  plug
-      (vec prn)
+      name
       ;~  pose
         (cold %func (just '\00'))
         (cold %tabl (just '\01'))
@@ -800,12 +800,12 @@
   ++  handle-elem-0
     |=  [e=expression:sur y=(list @)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm:sur] ~] e)
+    ?>  ?=([$>(%const instruction:sur) ~] e)
     :+  %func
       %+  turn  y
       |=  y=@
-      ^-  $>(%const instruction:sur)
-      [%const %ref %func y]
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      [%ref-func y]
     [%acti 0 i.e]
   ::
   ++  handle-elem-1
@@ -816,21 +816,21 @@
         ==
       %+  turn  y
       |=  y=@
-      ^-  $>(%const instruction:sur)
-      [%const %ref %func y]
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      [%ref-func y]
     [%pass ~]
   ::
   ++  handle-elem-2
     |=  [x=@ e=expression:sur et=@ y=(list @)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm:sur] ~] e)
+    ?>  ?=([$>(%const instruction:sur) ~] e)
     :+  ?+  et  ~|(%unrecognized-elem-kind !!)
           %0x0  %func
         ==
       %+  turn  y
       |=  y=@
-      ^-  $>(%const instruction:sur)
-      [%const %ref %func y]
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      [%ref-func y]
     [%acti x i.e]
   ::
   ++  handle-elem-3
@@ -841,19 +841,19 @@
         ==
       %+  turn  y
       |=  y=@
-      ^-  $>(%const instruction:sur)
-      [%const %ref %func y]
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      [%ref-func y]
     [%decl ~]
   ::
   ++  handle-elem-4
     |=  [e=expression:sur el=(list expression:sur)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm:sur] ~] e)
+    ?>  ?=([$>(%const instruction:sur) ~] e)
     :+  %func
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction:sur)
-      ?>  ?=([[%const *] ~] ex)
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      ?>  ?=([[%ref-func *] ~] ex)
       i.ex
     [%acti 0 i.e]
   ::
@@ -863,30 +863,31 @@
     :+  et
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction:sur)
-      ?>  ?=([[%const *] ~] ex)
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      ?>  ?=([[%ref-func *] ~] ex)
       i.ex
     [%pass ~]
   ::
   ++  handle-elem-6
     |=  [x=@ e=expression:sur et=ref-type:sur el=(list expression:sur)]
     ^-  elem:sur
-    ?>  ?=([[%const coin-wasm:sur] ~] e)
+    ?>  ?=([$>(%const instruction:sur) ~] e)
     :+  et
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction:sur)
-      ?>  ?=([[%const *] ~] ex)
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      ?>  ?=([[%ref-func *] ~] ex)
       i.ex
     [%acti x i.e]
+  ::
   ++  handle-elem-7
     |=  [et=ref-type:sur el=(list expression:sur)]
     ^-  elem:sur
     :+  et
       %+  turn  el
       |=  ex=expression:sur
-      ^-  $>(%const instruction:sur)
-      ?>  ?=([[%const *] ~] ex)
+      ^-  $>(?(%ref-func %ref-null) instruction:sur)
+      ?>  ?=([[%ref-func *] ~] ex)
       i.ex
     [%decl ~]
   ::  Code section

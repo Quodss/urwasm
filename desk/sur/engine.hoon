@@ -20,14 +20,23 @@
   $%  [%retr ~]    ::  return to the caller
       [%targ i=@]  ::  targeted block
       [%trap ~]    ::  deterministic crash
-  ::  [%impo *]  Execution blocked with an unresolved import.
-  ::             Noun should contain import func name and args
-  ==
+  ::
+      $:  %bloq    ::  blocked on import call
+          mod=cord
+          name=cord
+          arg=(list coin-wasm)
+  ==  ==
 ::
 +$  wasm-res
   $%
     [%0 out=(list coin-wasm) st=store]  ::  success
-  ::  [%1 *]                            ::  import block, to define
+  ::
+    $:  %1                              ::  block
+        mod=cord                      ::  module
+        name=cord                     ::  name
+        arg=(list coin-wasm)          ::  function arguments
+    ==
+  ::
     [%2 ~]                              ::  trap, crash
   ==
 --
