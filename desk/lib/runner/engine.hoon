@@ -320,8 +320,8 @@
       l
     =.  va.stack.l
       %+  weld
-        =-  ?>(=((lent -) (lent results.func-type)) -)  ::  external typecheck
-        (flop (turn i.shop.store.l coin-to-val))
+        =+  (flop (turn i.shop.store.l coin-to-val))
+        ?>(=((lent -) (lent results.func-type)) -)  ::  external typecheck (just length)
       (slag (lent params.func-type) va.stack.l)
     l(shop.store t.shop.store.l)
   ::  take input values
@@ -344,7 +344,7 @@
     store=store.l
   ::  If trap or bloq: forward
   ::
-  ?:  ?=([?(%trap %bloq) ~] br.stack.l)  l
+  ?:  ?=([?(%trap %bloq) *] br.stack.l)  l
   ::  Assert: no branch or branch with label 0 or return
   ::
   ?>  ?|  ?=(~ br.stack.l)
@@ -433,7 +433,7 @@
     ::
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
-      [%call-indirect type-id=@ table-id=%0x0]
+      [%call-indirect type-id=@ table-id=%0x0]  XX  CONT FROM HERE
     ?>  ?=([tab-id=@ rest=*] va.stack.l)
     ::  Type check of reference
     ::
