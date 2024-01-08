@@ -19,7 +19,7 @@
     !>
     =<  -  %-  wasm-need
     %^  invoke  'testdivtable'  ~[[%f32 .11] [%f32 .2]]
-    (prep (main:parser div-table))
+    +:(wasm-need (prep (main:parser div-table) ~))
 ::
 ++  test-loop
   ::  Test correct loop execution
@@ -29,7 +29,7 @@
     !>
     =<  -  %-  wasm-need
     %^  invoke  'factorial'  ~[[%i32 9]]
-    (prep (main:parser fac-loop))
+    +:(wasm-need (prep (main:parser fac-loop) ~))
 ::
 ++  test-rust
   ::  Test a module obtained from wasm-pack utility in Rust
@@ -39,7 +39,7 @@
     !>
     =<  -  %-  wasm-need
     %^  invoke  'fib'  ~[[%i32 40]]
-    (prep (main:parser fib-rust))
+    +:(wasm-need (prep (main:parser fib-rust) ~))
 ::
 ++  test-if
   ::  Test if branching
@@ -49,7 +49,7 @@
     !>
     =<  -  %-  wasm-need
     %^  invoke  'fac'  ~[[%f64 .~9]]
-    (prep (main:parser fac-if))
+    +:(wasm-need (prep (main:parser fac-if) ~))
 ::
 ++  test-two-functions
   ::  Test nested function calls
@@ -59,7 +59,7 @@
     !>
     =<  -  %-  wasm-need
     %^  invoke  'addTwo'  ~[[%i32 21] [%i32 21]]
-    (prep (main:parser two-func))
+    +:(wasm-need (prep (main:parser two-func) ~))
 ::
 ::
 ++  test-flopper
@@ -69,7 +69,7 @@
     !>  `tape`(flop (gulf 'a' 'z'))
     !>
     =/  string-in=tape  (gulf 'a' 'z')
-    =+  st=(prep (main:parser flopper))
+    =+  st=+:(wasm-need (prep (main:parser flopper) ~))
     =^  out=(list coin-wasm)  st
       %-  wasm-need
       %^  invoke  '__wbindgen_add_to_stack_pointer'

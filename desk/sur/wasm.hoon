@@ -88,7 +88,6 @@
     [%local-get index=@]
     [%local-set index=@]
     [%local-tee index=@]
-    [%global-tee index=@]
     [%global-get index=@]
     [%global-set index=@]
   ::  Table instructions
@@ -293,7 +292,7 @@
       $=  desc
       $%
         [%func type-id=@]
-        [%tabl table]
+        [%tabl t=table]
         [%memo l=limits]
         [%glob v=valtype m=?(%con %var)]  ::  constant or variable
   ==  ==

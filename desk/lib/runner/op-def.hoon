@@ -58,6 +58,56 @@
   ?>  ?=(%ref -.eg)
   v
 ::
+++  snug
+  |*  [a=@ b=(list)]
+  |-  ^-  (unit _?>(?=(^ b) i.b))
+  ?~  b  ~
+  ?:  =(0 a)  `i.b
+  $(b t.b, a (dec a))
+::
+::  |grab: import-related utils. Gates return either a local
+::  instance of an object or its external reference
+::
+++  grab
+  |%
+  ++  func
+    |=  [id=@ st=store]
+    ^-  (each function [[mod=cord name=cord] type-id=@])
+    =,  import-section.module.st
+    =+  imp=(snug id funcs)
+    ?:  ?=(^ imp)  [| u.imp]
+    :-  &
+    (snag (sub id (lent funcs)) function-section.module.st)
+  ::
+  ++  table
+    |=  [id=@ st=store]
+    ^-  (each table [[mod=cord name=cord] t=table])
+    =,  import-section.module.st
+    =+  imp=(snug id tables)
+    ?:  ?=(^ imp)  [| u.imp]
+    :-  &
+    (snag (sub id (lent tables)) table-section.module.st)
+  ::
+  ++  memo
+    |=  [id=@ st=store]
+    ^-  (each limits [[mod=cord name=cord] l=limits])
+    =,  import-section.module.st
+    =+  imp=(snug id memos)
+    ?:  ?=(^ imp)  [| u.imp]
+    :-  &
+    (snag (sub id (lent memos)) memory-section.module.st)
+  ::
+  ++  glob
+    |=  [id=@ st=store]
+    ^-  %+  each  global
+        [[mod=cord name=cord] v=valtype m=?(%con %var)]
+    =,  import-section.module.st
+    =+  imp=(snug id globs)
+    ?:  ?=(^ imp)  [| u.imp]
+    :-  &
+    (snag (sub id (lent globs)) global-section.module.st)
+  ::
+  --
 ::  |kind: instruction classes
 ::
 ++  kind
@@ -70,7 +120,7 @@
     ==
   ::
   +$  get  ?(%global-get %local-get)
-  +$  set  ?(%global-set %local-set %global-tee %local-tee)
+  +$  set  ?(%global-set %local-set %local-tee)
   +$  branch  ?(%br %br-if %br-table)
   +$  unary-num
     $?
@@ -239,7 +289,6 @@
     ?>  ?=(set:kind -.i)
     |=  l=local-state
     ^-  local-state
-    ~!  -.va.stack.l
     ?>  ?=([a=val rest=*] va.stack.l)
     =,  va.stack.l
     ?-    -.i
@@ -260,16 +309,6 @@
         (snag index.i globals.store.l)
       ==
     ::
-        %global-tee
-      %=    l
-          globals.store
-        ::  turn a to coin-wasm based on example in globals,
-        ::  and replace the value in globals
-        ::
-        %^  snap  globals.store.l  index.i
-        %+  val-to-coin  a
-        (snag index.i globals.store.l)
-      ==
     ==
   ::
   ++  branch
