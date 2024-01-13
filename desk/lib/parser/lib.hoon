@@ -5,6 +5,15 @@
 /+  simd-map=parser-simd-map
 |%
 ::
+::
+++  fuse                        ::  from ~paldev
+  |*  [a=(list) b=(list)]
+  ^-  (list [_?>(?=(^ a) i.a) _?>(?=(^ b) i.b)])
+  ?~  a  ~
+  ?~  b  ~
+  :-  [i.a i.b]
+  $(a t.a, b t.b)
+::
 ::  ++main: parsing function. Extends octstream with
 ::  leading zeros, then applies ++module:r parsing rule.
 ::
@@ -151,14 +160,6 @@
       %+  fuse  (reap 8 1)
       list
     (stun [8 8] next)
-  ::
-  ++  fuse                        ::  from ~paldev
-    |*  [a=(list) b=(list)]
-    ^-  (list [_?>(?=(^ a) i.a) _?>(?=(^ b) i.b)])
-    ?~  a  ~
-    ?~  b  ~
-    :-  [i.a i.b]
-    $(a t.a, b t.b)
   ::  ++vec: parse .wasm vector of rule
   ::
   ++  vec

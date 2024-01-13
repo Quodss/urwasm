@@ -27,10 +27,13 @@
       [%f32 @rs]
       [%f64 @rd]
       [vec-type @]
-      $:  %ref                                     ::  function reference, null or not
-          $%  [%func (unit @)]                     ::  local
-              [%extn (unit [mod=cord name=cord])]  ::  external
-      ==  ==
+      $:  %ref                  ::  function reference, null or not
+          $%  [%func (unit @)]  ::  local
+              $:  %extn         ::  external
+                  %-  unit
+                  $:  [mod=cord name=cord]
+                      type=func-type
+      ==  ==  ==  ==
   ::
   ==
 ::

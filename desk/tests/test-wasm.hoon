@@ -81,17 +81,20 @@
       ~[[%i32 (lent string-in)] [%i32 1]]  st
     =/  ptr0=@  ?>(?=([[%i32 n=@] ~] out) n.i.out)
     =/  len0=@  (lent string-in)
-    =.  buffer.mem.st
-      (sew bloq=3 [ptr0 size=len0 (crip string-in)] buffer.mem.st)
+    ?>  ?=(^ mem.st)
+    =.  buffer.u.mem.st
+      (sew bloq=3 [ptr0 size=len0 (crip string-in)] buffer.u.mem.st)
+    =>  .(st `store`st)
     =.  st
       =<  +  %-  wasm-need
       %^  invoke  'process'
       ~[[%i32 retptr] [%i32 ptr0] [%i32 len0]]  st
-    =/  r0=@  (cut 3 [retptr 4] buffer.mem.st)
-    =/  r1=@  (cut 3 [(add retptr 4) 4] buffer.mem.st)
+    ?>  ?=(^ mem.st)
+    =/  r0=@  (cut 3 [retptr 4] buffer.u.mem.st)
+    =/  r1=@  (cut 3 [(add retptr 4) 4] buffer.u.mem.st)
     =/  string-out=tape
       %-  trip
-      (cut 3 [r0 r1] buffer.mem.st)
+      (cut 3 [r0 r1] buffer.u.mem.st)
     string-out
   ::
   --
