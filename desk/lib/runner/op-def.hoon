@@ -25,6 +25,27 @@
 /-  *engine
 ::
 |%
+::  +change: convert stack values to coin-wasm list
+::
+++  change
+  |=  [a=(list valtype) b=(list val)]
+  ^-  (list coin-wasm)
+  ?.  &(?=(^ a) ?=(^ b))
+    ?>  &(?=(~ a) ?=(~ b))
+    ~
+  :_  $(a t.a, b t.b)
+  ;;  coin-wasm  ::  the compiler isn't convinced that the 
+  ?-    i.a      ::  expression below is a coin-wasm, why? :(
+      ?(num-type vec-type)
+    [i.a ?>(?=(@ i.b) i.b)]
+  ::
+      %extn
+    ?>(?=([%ref %extn ~] i.b) i.b)  ::  return non-null external references?
+  ::
+      %func
+    ?>(?=([%ref %func *] i.b) i.b)
+  ==
+::
 ++  complement-to-si
   |=  [base=@ n=@]
   ^-  @s
@@ -49,15 +70,83 @@
   +.c
 ::
 ++  val-to-coin
-  |=  [v=val eg=coin-wasm]
+  |=  [v=val ex=coin-wasm]
   ^-  coin-wasm
   ?@  v
-    ?<  ?=(%ref -.eg)
+    ?<  ?=(%ref -.ex)
     ;;  coin-wasm  ::  the compiler isn't convinced that the 
-    [-.eg v]       ::  expression below is a coin-wasm, why? :(
-  ?>  ?=(%ref -.eg)
+    [-.ex v]       ::  expression below is a coin-wasm, why? :(
+  ?>  ?=(%ref -.ex)
   v
 ::
+++  snug
+  |*  [a=@ b=(list)]
+  |-  ^-  (unit _?>(?=(^ b) i.b))
+  ?~  b  ~
+  ?:  =(0 a)  `i.b
+  $(b t.b, a (dec a))
+::  ++buy: resolve import. If shop is empty, build
+::  a request, otherwise push values on the stack
+::
+++  buy
+  |=  [l=local-state br=$>(%bloq branch)]
+  ^-  local-state
+  ?~  shop.store.l  l(br.stack br)
+  %=    l
+      va.stack
+    %+  weld  
+      %-  flop
+      (turn i.shop.store.l coin-to-val)
+    va.stack.l
+  ::
+      shop.store
+    t.shop.store.l
+  ==
+::
+::  |grab: import-related utils. Gates return either a local
+::  instance of an object or its external reference
+::
+++  grab
+  |%
+  ++  func
+    |=  [id=@ st=store]
+    ^-  (each function [[mod=cord name=cord] type-id=@])
+    =,  import-section.module.st
+    =+  imp=(snug id funcs)
+    ?:  ?=(^ imp)  [%| u.imp]
+    :-  %&
+    (snag (sub id (lent funcs)) function-section.module.st)
+  ::
+  ++  table
+    |=  [id=@ st=store]
+    ^-  %+  each  (list $>(%ref coin-wasm))
+        [[mod=cord name=cord] t=^table]
+    =,  import-section.module.st
+    =+  imp=(snug id tables)
+    ?:  ?=(^ imp)  [%| u.imp]
+    :-  %&
+    (snag (sub id (lent tables)) tables.st)
+  ::
+  ++  memo
+    |=  [id=@ st=store]
+    ^-  %+  each  [buffer=@ n-pages=@]
+        [[mod=cord name=cord] l=limits]
+    =,  import-section.module.st
+    =+  imp=(snug id memos)
+    ?:  ?=(^ imp)  [%| u.imp]
+    [%& (need mem.st)]
+  ::
+  ++  glob
+    |=  [id=@ st=store]
+    ^-  %+  each  coin-wasm
+        [[mod=cord name=cord] v=valtype m=?(%con %var)]
+    =,  import-section.module.st
+    =+  imp=(snug id globs)
+    ?:  ?=(^ imp)  [%| u.imp]
+    :-  %&
+    (snag (sub id (lent globs)) globals.st)
+  ::
+  --
 ::  |kind: instruction classes
 ::
 ++  kind
@@ -70,7 +159,7 @@
     ==
   ::
   +$  get  ?(%global-get %local-get)
-  +$  set  ?(%global-set %local-set %global-tee %local-tee)
+  +$  set  ?(%global-set %local-set %local-tee)
   +$  branch  ?(%br %br-if %br-table)
   +$  unary-num
     $?
@@ -125,7 +214,7 @@
   ++  select
     |=  l=local-state
     ^-  local-state
-    ?>  ?=([which=@ val2=val val1=val rest=*] va.stack.l)
+    ?>  ?=([which=@ val2=* val1=* rest=*] va.stack.l)
     =,  va.stack.l
     %=    l
         va.stack
@@ -156,12 +245,27 @@
       ^-  local-state
       l(br.stack [%retr ~])
     ::
-    ++  memory-grow
+    ++  memory-grow  ::  XX actually not nullary, move
       |=  l=local-state
       ^-  local-state
+      ?>  ?=([a=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      =+  memo=(memo:grab 0 store.l)
+      ::  imported memory
+      ::
+      ?:  ?=(%| -.memo)
+        %+  buy  l(va.stack rest)
+        :*  %bloq
+            -.p.memo
+            %memo
+            (change ~[%i32] ~[a])
+            [%memory-grow %0]
+        ==
+      ::  local memory
+      ::
       %=  l
-        va.stack  [n-pages.mem.store.l va.stack.l]
-        n-pages.mem.store  +(n-pages.mem.store.l)
+        va.stack  [n-pages.p.memo rest]
+        mem.store  `[buffer.p.memo (add n-pages.p.memo a)]
       ==
     ::
     ++  drop
@@ -178,22 +282,31 @@
     ?>  ?=([addr=@ rest=*] va.stack.l)
     =,  va.stack.l
     =/  index=@  (add addr offset.m.i)
+    =+  mem=(memo:grab 0 store.l)
+    ?:  ?=(%| -.mem)
+      %+  buy  l(va.stack rest)
+      :*  %bloq
+          -.p.mem
+          %memo
+          (change ~[%i32] ~[addr])
+          i
+      ==
     =;  loaded=@
       l(va.stack [loaded rest])
     ?~  n.i
       ?+  type.i  !!
-        %i32  (cut 3 [index 4] buffer.mem.store.l)
-        %i64  (cut 3 [index 8] buffer.mem.store.l)
+        %i32  (cut 3 [index 4] buffer.p.mem)
+        %i64  (cut 3 [index 8] buffer.p.mem)
       ==
     ?>  ?=(^ mode.i)
     ?-    u.mode.i
         %u
-      (cut 3 [index (div u.n.i 8)] buffer.mem.store.l)
+      (cut 3 [index (div u.n.i 8)] buffer.p.mem)
     ::
         %s
       %+  si-to-complement  ?+(type.i !! %i32 32, %i64 64)
       %+  complement-to-si  u.n.i
-      (cut 3 [index (div u.n.i 8)] buffer.mem.store.l)
+      (cut 3 [index (div u.n.i 8)] buffer.p.mem)
     ==
   ::
   ++  store
@@ -203,12 +316,22 @@
     ^-  local-state
     ?>  ?=([content=@ addr=@ rest=*] va.stack.l)
     =,  va.stack.l
+    =+  mem=(memo:grab 0 store.l)
+    ?:  ?=(%| -.mem)
+      %+  buy  l(va.stack rest)
+      :*  %bloq
+          -.p.mem
+          %memo
+          (change ~[%i32 %i32] ~[addr content])
+          i
+      ==
     =/  index=@  (add addr offset.m.i)
     =;  [size=@ to-put=@]
       %=    l
           va.stack  rest
-          buffer.mem.store
-        (sew bloq=3 [index size to-put] buffer.mem.store.l)
+      ::
+          mem.store
+        `[(sew bloq=3 [index size to-put] buffer.p.mem) n-pages.p.mem]
       ==
     ?~  n.i
       :_  content
@@ -227,20 +350,20 @@
     ?>  ?=(get:kind -.i)
     |=  l=local-state
     ^-  local-state
-    =;  got=val
-      l(va.stack [got va.stack.l])
-    ?-  -.i
-      %local-get   (snag index.i locals.l)
-      %global-get  (coin-to-val (snag index.i globals.store.l))
-    ==
+    ?:  ?=(%local-get -.i)
+      l(va.stack [(snag index.i locals.l) va.stack.l])
+    =+  glob=(glob:grab index.i store.l)
+    ?:  ?=(%| -.glob)
+      %+  buy  l
+      [%bloq -.p.glob %glob ~ i]
+    l(va.stack [(coin-to-val p.glob) va.stack.l])
   ::
   ++  set
     |=  i=instruction
     ?>  ?=(set:kind -.i)
-    ~!  -.i
     |=  l=local-state
     ^-  local-state
-    ?>  ?=([a=val rest=*] va.stack.l)
+    ?>  ?=([a=* rest=*] va.stack.l)
     =,  va.stack.l
     ?-    -.i
         %local-set
@@ -248,28 +371,22 @@
     ::
         %local-tee
       l(locals (snap locals.l index.i a))
+    ::
         %global-set
+      =+  glob=(glob:grab index.i store.l)
+      ?:  ?=(%| -.glob)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.glob %glob (change ~[v.p.glob] ~[a]) i]
       %=    l
           va.stack  rest
           globals.store
-        ::  turn a to coin-wasm based on example in globals,
-        ::  and replace the value in globals
-        ::
-        %^  snap  globals.store.l  index.i
+        =,  import-section.module.store.l
+        =+  idx=(sub index.i (lent globs))
+        %^  snap  globals.store.l  idx
         %+  val-to-coin  a
-        (snag index.i globals.store.l)
+        (snag idx globals.store.l)
       ==
     ::
-        %global-tee
-      %=    l
-          globals.store
-        ::  turn a to coin-wasm based on example in globals,
-        ::  and replace the value in globals
-        ::
-        %^  snap  globals.store.l  index.i
-        %+  val-to-coin  a
-        (snag index.i globals.store.l)
-      ==
     ==
   ::
   ++  branch

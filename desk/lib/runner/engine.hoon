@@ -4,30 +4,8 @@
   ::
 /-  *engine
 /+  *runner-op-def
+/+  parser-lib
 |%
-::  +change: convert stack values to coin-wasm list
-::
-++  change
-  |=  [a=(list valtype) b=(list val)]
-  ^-  (list coin-wasm)
-  ?.  &(?=(^ a) ?=(^ b))
-    ?>  &(?=(~ a) ?=(~ b))
-    ~
-  :_  $(a t.a, b t.b)
-  ;;  coin-wasm  ::  the compiler isn't convinced that the 
-  ?-    i.a      ::  expression below is a coin-wasm, why? :(
-      ?(num-type vec-type)
-    [i.a ?>(?=(@ i.b) i.b)]
-  ::
-      %extn
-    ?>(?=([%ref %null %extn] i.b) i.b)  ::  return non-null external references?
-  ::
-      %func
-    ?>  ?|  ?=([%ref %null %func] i.b)
-            ?=([%ref %func @] i.b)
-        ==
-    i.b
-  ==
 ::  +get-types: turn a (list coin-wasm) into a list of types of coins
 ::
 ++  get-types
@@ -38,9 +16,7 @@
   ^-  valtype
   ?.  ?=([%ref r=*] c)
     -.c
-  ?:  ?=(%func -.r.c)
-    %func
-  +.r.c
+  -.r.c
 ::  +mint:  get stack values from valtypes, used for locals
 ::
 ++  mint
@@ -51,12 +27,15 @@
   ^-  val
   ?-  i.a
     ?(num-type vec-type)  *@
-    ref-type  [%ref %null i.a]
-  ==
+    ref-type  :-  %ref
+              ?-  i.a
+                %extn  [%extn ~]
+                %func  [%func ~]
+  ==          ==
 ::  +place: places list `b` into list `a`, overwriting contents of `a`
 ::
 ++  place
-  |*  [[a=(list) off=@] b=(list)]
+  |*  [a=(list) off=@ b=(list)]
   |-  ^+  b
   ?~  b  a
   ?>  (lth off (lent a))
@@ -77,11 +56,11 @@
   ?:  ?=(%flor -.l)
     ~
   `q.l
-::  +make-export-map: turns export-section into a map [name=tape =export-desc]
+::  +make-export-map: turns export-section into a map [name=cord =export-desc]
 ::
 ++  make-export-map
   |=  =export-section
-  =|  out=(map tape export-desc)
+  =|  out=(map cord export-desc)
   |-  ^+  out
   ?~  export-section  out
   =,  i.export-section
@@ -92,125 +71,214 @@
 ::  +find-func-id: find func-id from a name of an exported function
 ::
 ++  find-func-id
-  |=  [name=tape =module]
+  |=  [name=cord =module]
   ^-  @
   =,  module
-  =/  =export-desc  (~(got by (make-export-map export-section)) name)
+  =/  =export-desc
+    (~(got by (make-export-map export-section)) name)
   ?>  ?=(%func -.export-desc)
   i.export-desc
 ::  +prep: instantiate Wasm module. Returns global state
-::  after the validation and import handling (TODO both),
+::  after the validation and import handling (TODO validation),
 ::  instantiation of table, globals and the membuffer,
-::  and running the start function (TODO)
+::  and running the start function
+::
+::  Attention: it takes a parsed module, but the store
+::  will contain engine version, with locals added and
+::  some superfluous sections removed
 ::
 ++  prep
-  |=  m=module
-  ^-  store
-  =|  s=store
-  =.  s  s(module m)
+  |=  [m=^module sh=shop]
+  ^-  result
   |^
-  ::  Globals
-  ::
-  =.  globals.s
-    |-  ^+  globals.s
-    ?~  global-section.m  (flop globals.s)
-    =*  glob  i.global-section.m
-    ::  Assert: no global imports (TODO remove limitation)
-    ::
-    ?>  ?=([%const coin=*] i.glob)
-    %=  $
-      global-section.m  t.global-section.m
-      globals.s  [coin.p.i.glob globals.s]
+  =|  st=store
+  =.  shop.st  sh
+  :: =.  s  s(module m)  fill $module while treating imports
+  =.  module.st
+    =,  m
+    :*
+      type-section
+      (import-upd import-section)
+      (fuse:parser-lib function-section code-section)
+      table-section
+      memory-section
+      global-section
+      export-section
+      elem-section
+      data-section
     ==
-  ::  Table
+  ;<  [* st=store]  _wasm-bind  (init-globals st m)
+  ;<  [* st=store]  _wasm-bind  (init-table st m)
+  ;<  [* st=store]  _wasm-bind  (init-elems st m)
+  ;<  [* st=store]  _wasm-bind  (init-mem st m)
+  ;<  [* st=store]  _wasm-bind  (init-data st m)
+  ;<  [* st=store]  _wasm-bind  (start st m)
+  [%0 ~ st]
   ::
-  ::  Initialize table
+  ++  import-upd
+    |=  i=^import-section
+    =|  out=import-section
+    |-  ^-  import-section
+    ?~  i
+      =,  out
+      %_  out
+        funcs   (flop funcs)
+        tables  (flop tables)
+        memos   (flop memos)
+        globs   (flop globs)
+      ==
+    =.  out
+      =,  i.i
+      =,  out
+      ?-  -.desc.i.i
+        %func  out(funcs [[[mod name] type-id.desc] funcs])
+        %tabl  out(tables [[[mod name] t.desc] tables])
+        %memo  out(memos [[[mod name] l.desc] memos])
+        %glob  out(globs [[[mod name] +.desc] globs])
+      ==
+    $(i t.i)
   ::
-  =?  table.s  ?=(^ table-section.m)
-    ?>  ?=(@ t.table-section.m)        ::  single table REMOVE
-    ?>  ?=(%func p.i.table-section.m)  ::  assert funcref (remove?)
-    init-table
-  ::  Memory
-  ::
-  =?  mem.s  ?=(^ memory-section.m)
-    ?>  ?=(@ t.memory-section.m)  ::  single memory
-    init-mem
-  s
+  ++  init-globals
+    |=  [st=store m=^module]
+    ^-  result
+    ?~  global-section.m
+      [%0 ~ st(globals (flop globals.st))]
+    =*  glob  i.global-section.m
+    =;  try-glob=(each (pair coin-wasm shop) $>(%1 result))  ::  coin & shop or block
+      ?.  ?=(%& -.try-glob)  p.try-glob
+      %=  $
+        global-section.m  t.global-section.m
+        globals.st  [p.p.try-glob globals.st]
+        shop.st  q.p.try-glob
+      ==
+    ::  if not global-get: it is %const
+    ::
+    ?.  ?=([%global-get index=@] i.glob)
+      [%& p.i.glob shop.st]
+    ::  else, get from imports
+    ::
+    ?:  ?=(^ shop.st)
+      [%& -.i.shop.st t.shop.st]  ::  sucessfull read from shop
+    :-  %|                        ::  block on empty shop
+    :+  %1
+      -:(snag index.i.glob globs.import-section.module.st)
+    [%glob ~ i.glob]
   ::
   ++  init-table
-    ^+  table.s
-    ::  initialize table with null refs
+    |=  [st=store m=^module]
+    ^-  result
+    :+  %0  ~
+    |-  ^-  store
+    ?~  table-section.m
+      st(tables (flop tables.st))
+    =*  tab  i.table-section.m
+    %=    $
+        table-section.m  t.table-section.m
     ::
-    ?>  ?=(^ table-section.m)
-    =.  table.s
-      (reap (lim-min q.i.table-section.m) [%ref %null %func])
-    |-  ^+  table.s
-    ?~  elem-section.m  table.s
+        tables.st
+      :_  tables.st
+      (reap (lim-min q.tab) [%ref %func ~])
+    ==
+  ::
+  ++  init-elems
+    |=  [st=store m=^module]
+    ^-  result
+    :+  %0  ~
+    |-  ^-  store
+    ?~  elem-section.m  st
     =*  elem  i.elem-section.m
     ?.  ?=(%acti -.m.elem)
       $(elem-section.m t.elem-section.m)
-    ::  Assert: only one table (remove)
-    ::
-    ?>  =(0 tab.m.elem)
     ::  Assert: only %func ref tables can be
     ::  initialized with an element segment
     ::
     ?>  ?=(%func t.elem)
     ::  Assert: i32 value in the offset
+    ::  (it theoretically can be a %global-get of import, revisit later?)
     ::
     ?>  ?=([%const %i32 n=@] off.m.elem)
+    =/  tab-loc-id=@
+      %+  sub  tab.m.elem                     ::  Assert: elems are instantiated locally
+      (lent tables.import-section.module.st)  ::  (to revisit?)
     %=    $
         elem-section.m  t.elem-section.m
     ::
-        table.s
-      %+  place  [table.s n.p.off.m.elem]
+        tables.st
+      %^  snap  tables.st  tab-loc-id
+      %^  place  (snag tab-loc-id tables.st)  ::  table to change
+        n.p.off.m.elem                        ::  offset
       %+  turn  i.elem
       |=  in=instruction
       ^-  $>(%ref coin-wasm)
-      ?>  ?=([%const coin=[%ref %func @]] in)  ::  Assert: %func refs only
-      coin.p.in
+      ?>  ?=([%ref-func @] in)  ::  Assert: %func refs only
+      [%ref %func `func-id.in]
     ::
     ==
   ::
   ++  init-mem
-    ^+  mem.s
-    ?>  ?=(^ memory-section.m)
-    =.  mem.s  mem.s(n-pages (lim-min i.memory-section.m))
-    |-  ^+  mem.s
-    ?~  data-section.m  mem.s
+    |=  [st=store m=^module]
+    ^-  result
+    :+  %0  ~
+    ?~  memory-section.m  st
+    ?>  ?=(@ t.memory-section.m)  ::  Assert: single memory
+    =*  mem  i.memory-section.m
+    st(mem `[0 (lim-min mem)])
+  ::
+  ++  init-data
+    |=  [st=store m=^module]
+    ^-  result
+    ?~  data-section.m  [%0 ~ st]
     =*  data  i.data-section.m
     ?.  ?=(%acti -.data)
       $(data-section.m t.data-section.m)
-    ::  Assert: const i32 value as offset (revisit: it might be a global-get)
+    ::  Assert: const i32 value as offset
+    ::  (it theoretically can be a %global-get of import, revisit later?)
     ::
     ?>  ?=([%const %i32 n=@] off.data)
     %=    $
         data-section.m  t.data-section.m
-        buffer.mem.s
-      (sew bloq=3 [n.p.off.data b.data] buffer.mem.s)  ::  where did p come from???
+        mem.st
+      :-  ~
+      :_  n-pages:(need mem.st)  ::  assert: data is instantiated only locally, revisit later?
+      (sew bloq=3 [n.p.off.data b.data] buffer:(need mem.st))
     ==
   ::
+  ++  start
+    |=  [st=store m=^module]
+    ^-  result
+    ?~  start-section.m  [%0 ~ st]
+    =/  [=stack * st-out=store]
+      (call u.start-section.m [[~ ~] ~ st])
+    ?+  br.stack  !!
+      ~            [%0 ~ st-out]
+      [%bloq p=*]  [%1 p.br.stack] 
+      [%trap ~]    [%2 ~]
+    ==
   --
 ::
 ++  wasm-need
-  |=  a=wasm-res
+  |=  a=result
   ^-  (quip coin-wasm store)
   ?>  ?=(%0 -.a)
   +.a
 ::
+++  wasm-bind
+  |=  [a=result b=$-((quip coin-wasm store) result)]
+  ^-  result
+  ?.  ?=(%0 -.a)  a
+  (b +.a)
+::
 ::  +invoke: call function by name, to call from the outside
 ::
 ++  invoke
-  |=  [name=tape in=(list coin-wasm) st=store]
-  ^-  $%  [%0 (list coin-wasm) store]  ::  success
-      ::  [%1 *]                       ::  import block, to define
-          [%2 ~]                       ::  trap, crash
-      ==
+  |=  [name=cord in=(list coin-wasm) st=store]
+  ^-  result
   =/  id=@  (find-func-id name module.st)
   ::  Type check for the input values
   ::
   =,  module.st
-  =/  =func-type  (snag (snag id function-section) type-section)
+  =/  =func-type
+    (snag type-id:(snag id function-section) type-section)
   ?>  =(params.func-type (get-types in))
   =/  [stack-out=stack * st-out=store]
     %+  call  id
@@ -222,7 +290,8 @@
     ~  :+  %0
          (change results.func-type (flop va.stack-out))
        st-out
-    [%trap ~]  [%2 ~]
+    [%bloq p=*]  [%1 p.br.stack-out] 
+    [%trap ~]    [%2 ~]
   ==
 ::  +call: call function by id, inside caller. TODO add imports
 ::
@@ -230,9 +299,18 @@
   |=  [id=@ l=local-state]
   ^-  local-state
   =,  module.store.l
-  =/  =func-type
-    (snag (snag id function-section) type-section)
-  =/  =code  (snag id code-section)
+  =+  f=(func:grab id store.l)  ::  (each function [[mod=cord name=cord] type-id=@])
+  =/  type-id=@  =>(f ?:(?=(%& -) type-id.p type-id.p))
+  =/  =func-type  (snag type-id type-section)
+  ::  import case
+  ::
+  ?:  ?=(%| -.f)
+    %+  buy  l(va.stack (slag (lent params.func-type) va.stack.l))
+    :^  %bloq  -.p.f  %func
+    %+  change  params.func-type
+    %-  flop
+    (scag (lent params.func-type) va.stack.l)
+  ::  local case
   ::  take input values
   ::
   =/  input-values=(pole val)
@@ -246,14 +324,14 @@
   ::  update local state
   ::
   =.  l
-    %+  eval  expression.code
+    %+  eval  expression.p.f
     ^-  local-state
     :+  stack=[~ ~]
-      locals=(weld input-values (mint locals.code))
+      locals=(weld input-values (mint locals.p.f))
     store=store.l
-  ::  If trap: forward trap
+  ::  If trap or bloq: forward
   ::
-  ?:  ?=([%trap ~] br.stack.l)  l
+  ?:  ?=([?(%trap %bloq) *] br.stack.l)  l
   ::  Assert: no branch or branch with label 0 or return
   ::
   ?>  ?|  ?=(~ br.stack.l)
@@ -281,15 +359,14 @@
   ?:  |(=(~ e) !=(~ br.stack.l))  ::  if navigating branch
     l                             ::  jump to the end of expression 
   $(l (apply -.e l), e +.e)
-::  +dec-br: "decrement" branch
+::  +dec-br: "decrement" branch. Preserve absolute branching
+::  coordinates (trap, return, block), and safely decrement
+::  relative target index. Used for code flow navigation
 ::
 ++  dec-br
   |=  br=branch
   ^-  branch
-  ?-  br
-    ~            ~
-    [%trap ~]    [%trap ~]
-    [%retr ~]    [%retr ~]
+  ?+  br  br
     [%targ %0]   ~
     [%targ i=@]  [%targ (dec i.br)]
   ==
@@ -306,13 +383,17 @@
       [%call func-id=@]
     (call func-id.i l)
   ::
-      [%block *]  ::  [%block result-type=(list valtype) body=expression]
+      [%block *]  ::  [%block type=block-type body=expression]
+    =/  n-params=@
+      %-  lent
+      ?^  type.i  params.type.i
+      params:(snag type.i type-section.module.store.l)
     ::  save the current frame
     ::
-    =/  rest-vals=(pole val)  va.stack.l  ::  nothing is consumed yet, to fix
+    =/  rest-vals=(pole val)  (slag n-params va.stack.l)
     ::  execute the block
     ::
-    =.  l  (eval body.i l(va.stack *(pole val)))
+    =.  l  (eval body.i l(va.stack (scag n-params va.stack.l)))
     ::  If the block was targeted, pop appropriate amount of vals
     ::
     =?  va.stack.l  ?=([%targ %0] br.stack.l)
@@ -325,45 +406,65 @@
     ::
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
-      [%loop *]  ::  [%loop result-type=(list valtype) body=(list instruction)], revisit type
+      [%loop *]  ::  [%loop type=block-type body=expression]
     |-  ^-  local-state  ::  not strictly necessary, but prevents from matching `i` again
+    =/  n-params=@
+      %-  lent
+      ?^  type.i  params.type.i
+      params:(snag type.i type-section.module.store.l)
     ::  save the current frame
     ::
-    =/  rest-vals=(pole val)  va.stack.l  ::  nothing is consumed yet, to fix
+    =/  rest-vals=(pole val)  (slag n-params va.stack.l)
     ::  execute the block
     ::
-    =.  l  (eval body.i l(va.stack *(pole val)))
+    =.  l  (eval body.i l(va.stack (scag n-params va.stack.l)))
     ::  If the loop was targeted, pop appropriate amount of vals,
     ::  push them on the stack, clear branching signal and jump to start
-    ::  (nothing is popped atm, fix)
     ::
     ?:  ?=([%targ %0] br.stack.l)
-      $(l l(va.stack rest-vals, br.stack ~))
+      $(va.stack.l (weld (scag n-params va.stack.l) rest-vals), br.stack.l ~)
     ::  Exit the block, navigate branch
     ::
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
-      [%call-indirect type-id=@ table-id=%0x0]
-    ?>  ?=([tab-id=@ rest=*] va.stack.l)
+      [%call-indirect type-id=@ table-id=@]
+    ?>  ?=([ref-id=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =+  tab=(table:grab table-id.i store.l)  ::  (each (list $>(%ref coin-wasm)) [[mod=cord name=cord] t=table])
+    ::  import table
+    ::
+    ?:  ?=(%| -.tab)
+      %+  buy  l(va.stack rest)
+      [%bloq -.p.tab %tabl (change ~[%i32] ~[ref-id]) i]
+    ::  local table
+    ::
     ::  Type check of reference
     ::
     =,  module.store.l
-    =,  va.stack.l
     =/  type-in-instr=func-type  (snag type-id.i type-section)
+    =+  ref=(snag ref-id p.tab)
     =/  type-of-ref=func-type
-      =+  ref=(snag tab-id table.store.l)
-      ?>  ?=([%ref %func n=@] ref)  ::  funcref only, add extern
-      (snag (snag n.ref function-section) type-section)
+      ?+    ref  !!
+          [%ref %func p=[~ @]]
+        (snag type-id:(snag u.p.ref function-section) type-section)
+      ::
+          [%ref %extn p=^]
+        type.u.p.ref
+      ==
     ?>  =(type-in-instr type-of-ref)
-    ::  Call referenced function, funcref only, add extern
+    ::  local func reference
     ::
-    =;  id-func=@
-      (call id-func l(va.stack rest))
-    =+  ref=(snag tab-id table.store.l)
-    ?>  ?=([%ref %func n=@] ref)
-    n.ref
+    ?:  ?=([%ref %func p=[~ @]] ref)
+      (call u.p.ref l(va.stack rest))
+    ::  external func reference
+    ::
+    ?>  ?=([%ref %extn p=^] ref)
+    %+  buy  l(va.stack (slag (lent params.type.u.p.ref) rest))
+    :+  %bloq  -.u.p.ref
+    =*  params  params.type.u.p.ref
+    [%func (change params (flop (scag (lent params) rest)))]
   ::
-      [%if *]  ::  [%if result-type=(list valtype) branch-true=(list instruction) branch-false=(list instruction)]
+      [%if *]  ::  [%if type=block-type branch-true=expression branch-false=expression]
     ?>  ?=([f=@ rest=*] va.stack.l)
     =,  va.stack.l
     ?.  =(0 f.va.stack.l)

@@ -27,7 +27,14 @@
       [%f32 @rs]
       [%f64 @rd]
       [vec-type @]
-      [%ref $%([%null ref-type] [%func @])]  ::  add external referenecs
+      $:  %ref                  ::  function reference, null or not
+          $%  [%func (unit @)]  ::  local
+              $:  %extn         ::  external
+                  %-  unit
+                  $:  [mod=cord name=cord]
+                      type=func-type
+      ==  ==  ==  ==
+  ::
   ==
 ::
 +$  limits
@@ -84,7 +91,6 @@
     [%local-get index=@]
     [%local-set index=@]
     [%local-tee index=@]
-    [%global-tee index=@]
     [%global-get index=@]
     [%global-set index=@]
   ::  Table instructions
@@ -120,7 +126,7 @@
     [%memory-fill mem-id=%0]
     ::  Numeric instructions
     ::
-    [%const p=$<(%v128 coin-wasm)]
+    [%const p=$<(?(%v128 %ref) coin-wasm)]
     ::::  comparison:
     ::::
     [%eqz type=?(%i32 %i64)]
@@ -284,12 +290,12 @@
   (list import)
 ::
 +$  import
-  $:  mod=tape
-      name=tape
+  $:  mod=cord
+      name=cord
       $=  desc
       $%
-        [%func id=@]
-        [%tabl table]
+        [%func type-id=@]
+        [%tabl t=table]
         [%memo l=limits]
         [%glob v=valtype m=?(%con %var)]  ::  constant or variable
   ==  ==
@@ -328,7 +334,7 @@
   $+  export-section
   (list export)
 ::
-+$  export  [name=tape =export-desc]
++$  export  [name=cord =export-desc]
 ::
 +$  export-desc
   $%  [%func i=@]
@@ -344,15 +350,15 @@
 ::  Element section
 ::
 +$  elem-section  (list elem)
-::  The constant instructions are going to contain
-::  %ref reference constants. The offset in %acti
+::  The %func-ref instructions are going to contain
+::  function references. The offset in %acti
 ::  active mode `off` and an element of `i` list 
 ::  of expressions are a single instruction because
 ::  they yield a single value
 ::
 +$  elem
   $:  t=ref-type
-      i=(list $>(%const instruction))
+      i=(list $>(?(%ref-func %ref-null) instruction))
       $=  m
       $%  [%pass ~]
           [%decl ~]
