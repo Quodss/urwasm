@@ -32,30 +32,6 @@
                 %extn  [%extn ~]
                 %func  [%func ~]
   ==          ==
-::  +place: places list `b` into list `a`, overwriting contents of `a`
-::
-++  place
-  |*  [a=(list) off=@ b=(list)]
-  |-  ^+  b
-  ?~  b  a
-  ?>  (lth off (lent a))
-  $(a (snap a off i.b), b t.b, off +(off))
-::  +lim-min: get minimum from limits
-::
-++  lim-min
-  |=  l=limits
-  ^-  @
-  ?:  ?=(%flor -.l)
-    p.l
-  p.l
-::  +lim-max: get maximum from limits
-::
-++  lim-max
-  |=  l=limits
-  ^-  (unit @)
-  ?:  ?=(%flor -.l)
-    ~
-  `q.l
 ::  +make-export-map: turns export-section into a map [name=cord =export-desc]
 ::
 ++  make-export-map
@@ -209,7 +185,7 @@
         elem-section.m  t.elem-section.m
     ::
         tables.st
-      %^  snap  tables.st  tab-loc-id
+      %^  shot  tables.st  tab-loc-id
       %^  place  (snag tab-loc-id tables.st)  ::  table to change
         n.p.off.m.elem                        ::  offset
       %+  turn  i.elem

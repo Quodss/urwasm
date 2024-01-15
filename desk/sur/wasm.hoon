@@ -106,14 +106,14 @@
     ::  Memory instructions
     ::
     $:  %load
-        type=valtype
+        type=num-type
         m=memarg
         n=(unit ?(%8 %16 %32))
         mode=(unit ?(%s %u))
     ==
     ::
     $:  %store
-        type=valtype
+        type=num-type
         m=memarg
         n=(unit ?(%8 %16 %32))
     ==

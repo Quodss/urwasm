@@ -7,7 +7,7 @@
 ::  To add a r-ary numerical instruction (an instruction
 ::  that only involves numerical stack values):
 ::    1. Register the instruction in respective r-ary-num
-::    type;
+::    type
 ::    2. Add an entry to the respective map m in r-ary:fetch
 ::    3. Define an arm for that instruction. The resulting
 ::    gate must take an instruction, producing a gate which
@@ -25,6 +25,38 @@
 /-  *engine
 ::
 |%
+++  page-size  ^~((bex 16))
+::  +place: places list `b` into list `a`, overwriting contents of `a`
+::
+++  place
+  |*  [a=(list) off=@ b=(list)]
+  |-  ^+  b
+  ?~  b  a
+  ?>  (lth off (lent a))
+  $(a (shot a off i.b), b t.b, off +(off))
+::  +lim-min: get minimum from limits
+::
+++  lim-min
+  |=  l=limits
+  ^-  @
+  ?:  ?=(%flor -.l)
+    p.l
+  p.l
+::  +lim-max: get maximum from limits
+::
+++  lim-max
+  |=  l=limits
+  ^-  (unit @)
+  ?:  ?=(%flor -.l)
+    ~
+  `q.l
+::
+++  lte-lim
+  |=  [a=@ l=limits]
+  ^-  ?
+  ?:  ?=(%flor -.l)
+    &
+  (lte a q.l)
 ::  +change: convert stack values to coin-wasm list
 ::
 ++  change
@@ -74,10 +106,12 @@
   ^-  coin-wasm
   ?@  v
     ?<  ?=(%ref -.ex)
-    ;;  coin-wasm  ::  the compiler isn't convinced that the 
-    [-.ex v]       ::  expression below is a coin-wasm, why? :(
+    ;;  coin-wasm    ::  the compiler isn't convinced that the 
+    [-.ex v]         ::  expression below is a coin-wasm, why? :(
   ?>  ?=(%ref -.ex)
+  ?>  =(+<.v +<.ex)  ::  assert: same reftypes
   v
+::  ++snug: unitized ++snag
 ::
 ++  snug
   |*  [a=@ b=(list)]
@@ -85,6 +119,13 @@
   ?~  b  ~
   ?:  =(0 a)  `i.b
   $(b t.b, a (dec a))
+::  ++shot: replace existing item in a list
+::
+++  shot
+  |*  [a=(list) b=@ c=*]
+  ^+  a
+  ?>  (lth b (lent a))
+  (snap a b c)
 ::  ++buy: resolve import. If shop is empty, build
 ::  a request, otherwise push values on the stack
 ::
@@ -104,7 +145,8 @@
   ==
 ::
 ::  |grab: import-related utils. Gates return either a local
-::  instance of an object or its external reference
+::  instance of an object (sometimes with its index)
+::  or its external reference
 ::
 ++  grab
   |%
@@ -119,12 +161,14 @@
   ::
   ++  table
     |=  [id=@ st=store]
-    ^-  %+  each  (list $>(%ref coin-wasm))
+    ^-  %+  each  (pair @ (list $>(%ref coin-wasm)))
         [[mod=cord name=cord] t=^table]
     =,  import-section.module.st
     =+  imp=(snug id tables)
     ?:  ?=(^ imp)  [%| u.imp]
     :-  %&
+    =+  idx=(sub id (lent tables))
+    :-  idx
     (snag (sub id (lent tables)) tables.st)
   ::
   ++  memo
@@ -138,40 +182,81 @@
   ::
   ++  glob
     |=  [id=@ st=store]
-    ^-  %+  each  coin-wasm
+    ^-  %+  each  (pair @ coin-wasm)
         [[mod=cord name=cord] v=valtype m=?(%con %var)]
     =,  import-section.module.st
     =+  imp=(snug id globs)
     ?:  ?=(^ imp)  [%| u.imp]
     :-  %&
-    (snag (sub id (lent globs)) globals.st)
+    =+  idx=(sub id (lent globs))
+    :-  idx
+    (snag idx globals.st)
   ::
   --
 ::  |kind: instruction classes
 ::
 ++  kind
   |%
-  +$  nullary
-    $?  %unreachable
-        %return
-        %memory-grow
-        %drop
-    ==
+  +$  nullary  $?  %unreachable
+                   %nop
+                   %return
+                   %drop
+               ==
   ::
+  +$  ref  ?(%ref-null %ref-is-null %ref-func)
   +$  get  ?(%global-get %local-get)
   +$  set  ?(%global-set %local-set %local-tee)
   +$  branch  ?(%br %br-if %br-table)
+  +$  table  $?
+              %table-get
+              %table-set
+              %table-init
+              %elem-drop
+              %table-copy
+              %table-grow
+              %table-size
+              %table-fill
+            ==
+  ::
+  +$  memo  $?
+              %memory-size
+              %memory-grow
+              %memory-init
+              %data-drop
+              %memory-copy
+              %memory-fill
+            ==
+  ::
   +$  unary-num
     $?
-      %popcnt  %ctz  %wrap  %extend
-      %eqz  %clz  %convert  %reinterpret
+      ::  integer
+      ::
+      %clz  %ctz  %popcnt
+      ::  float
+      ::
+      %abs  %neg  %sqrt  %ceil  %floor  %trunc
+      %nearest
+      ::  int test
+      ::
+      %eqz
+      ::  convert
+      ::
+      %wrap  %extend  %trunc  %convert  %demote
+      %promote  %reinterpret
     ==
   ::
   +$  binary-num
     $?
-      %add  %ne  %lt  %gt  %ge  %le  %shr  %shl
-      %sub  %mul  %div  %or  %xor  %rotl  %and
-      %eq
+      ::  Operations
+      ::
+      %add  %sub  %mul  %div  %rem  %and  %or  %xor
+      %shl  %shr  %rotl  %rotr
+      ::  float only
+      ::
+      %min  %max  %copysign
+      ::  Comparisons
+      ::
+      %eq  %ne  %lt  %gt  %le  %ge
     ==
   ::
   --
@@ -181,14 +266,18 @@
 ++  fetch-gate
   |=  i=$<(?(%call %loop %call-indirect %block %if) instruction)
   ^-  $-(local-state local-state)
-  ?+    -.i  ~|("missing instruction: {<i>}" !!)
+  ?-    -.i
+      %vec          (simd:fetch i)
       nullary:kind  (null:fetch i)
+      ref:kind      (ref:fetch i)
       %load         (load:fetch i)
       %store        (store:fetch i)
       %const        (const:fetch i)
       get:kind      (get:fetch i)
       set:kind      (set:fetch i)
       branch:kind   (branch:fetch i)
+      table:kind    (table:fetch i)
+      memo:kind     (memo:fetch i)
       %select       select:fetch
   ::
       unary-num:kind
@@ -211,6 +300,7 @@
 ::
 ++  fetch
   |%
+  ++  simd  !!
   ++  select
     |=  l=local-state
     ^-  local-state
@@ -220,6 +310,7 @@
         va.stack
       [?.(=(0 which) val1 val2) rest]
     ==
+  ::
   ++  null
     =-  |=  i=instruction
         (~(got by m) ;;(@tas -.i))
@@ -230,8 +321,8 @@
     %-  my
     :~
       unreachable+unreachable
+      nop+nop
       return+return
-      memory-grow+memory-grow
       drop+drop
     ==
     ::
@@ -240,33 +331,11 @@
       ^-  local-state
       l(br.stack [%trap ~])
     ::
+    ++  nop  |=(local-state +<)
     ++  return
       |=  l=local-state
       ^-  local-state
       l(br.stack [%retr ~])
-    ::
-    ++  memory-grow  ::  XX actually not nullary, move
-      |=  l=local-state
-      ^-  local-state
-      ?>  ?=([a=@ rest=*] va.stack.l)
-      =,  va.stack.l
-      =+  memo=(memo:grab 0 store.l)
-      ::  imported memory
-      ::
-      ?:  ?=(%| -.memo)
-        %+  buy  l(va.stack rest)
-        :*  %bloq
-            -.p.memo
-            %memo
-            (change ~[%i32] ~[a])
-            [%memory-grow %0]
-        ==
-      ::  local memory
-      ::
-      %=  l
-        va.stack  [n-pages.p.memo rest]
-        mem.store  `[buffer.p.memo (add n-pages.p.memo a)]
-      ==
     ::
     ++  drop
       |=  l=local-state
@@ -274,6 +343,47 @@
       l(va.stack +.va.stack.l)
     --
   ::
+  ++  ref
+    =-  |=  i=instruction
+        ?>  ?=(ref:kind -.i)
+        ^-  $-(local-state local-state)
+        ((~(got by m) ;;(@tas -.i)) i)
+    ^~
+    ^=  m
+    ^-  (map @tas $-(instruction $-(local-state local-state)))
+    |^
+    %-  my
+    :~
+      ref-null+ref-null
+      ref-is-null+ref-is-null
+      ref-func+ref-func
+    ==
+    ::
+    ++  ref-null
+      |=  i=instruction
+      ?>  ?=(%ref-null -.i)
+      |=  l=local-state
+      ^-  local-state
+      l(va.stack [[%ref t.i ~] va.stack.l])
+    ::
+    ++  ref-is-null
+      |=  *
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([ref=[%ref *] rest=*] va.stack.l)
+      =,  va.stack.l
+      =/  out=@
+        ?@(+>.ref 1 0)
+      l(va.stack [out rest])
+    ::
+    ++  ref-func
+      |=  i=instruction
+      ?>  ?=(%ref-func -.i)
+      |=  l=local-state
+      ^-  local-state
+      l(va.stack [[%ref %func ~ func-id.i] va.stack.l])
+    ::
+    --
   ++  load
     |=  i=instruction
     ?>  ?=(%load -.i)
@@ -294,9 +404,9 @@
     =;  loaded=@
       l(va.stack [loaded rest])
     ?~  n.i
-      ?+  type.i  !!
-        %i32  (cut 3 [index 4] buffer.p.mem)
-        %i64  (cut 3 [index 8] buffer.p.mem)
+      ?-  type.i
+        ?(%i32 %f32)  (cut 3 [index 4] buffer.p.mem)
+        ?(%i64 %f64)  (cut 3 [index 8] buffer.p.mem)
       ==
     ?>  ?=(^ mode.i)
     ?-    u.mode.i
@@ -316,11 +426,11 @@
     ^-  local-state
     ?>  ?=([content=@ addr=@ rest=*] va.stack.l)
     =,  va.stack.l
-    =+  mem=(memo:grab 0 store.l)
-    ?:  ?=(%| -.mem)
+    =+  memo=(memo:grab 0 store.l)
+    ?:  ?=(%| -.memo)
       %+  buy  l(va.stack rest)
       :*  %bloq
-          -.p.mem
+          -.p.memo
           %memo
           (change ~[%i32 %i32] ~[addr content])
           i
@@ -330,12 +440,12 @@
       %=    l
           va.stack  rest
       ::
-          mem.store
-        `[(sew bloq=3 [index size to-put] buffer.p.mem) n-pages.p.mem]
+          memo.store
+        `[(sew bloq=3 [index size to-put] buffer.p.memo) n-pages.p.memo]
       ==
     ?~  n.i
       :_  content
-      ?+(type.i !! %i32 4, %i64 8)
+      ?-(type.i ?(%i32 %f32) 4, ?(%i64 %f64) 8)
     [(div u.n.i 8) (mod content (bex u.n.i))]
   ::
   ++  const
@@ -380,11 +490,9 @@
       %=    l
           va.stack  rest
           globals.store
-        =,  import-section.module.store.l
-        =+  idx=(sub index.i (lent globs))
-        %^  snap  globals.store.l  idx
+        %^  snap  globals.store.l  p.p.glob
         %+  val-to-coin  a
-        (snag idx globals.store.l)
+        (snag p.p.glob globals.store.l)
       ==
     ::
     ==
@@ -410,6 +518,310 @@
         l(va.stack rest, br.stack [%targ label-default.i])
       l(va.stack rest, br.stack [%targ (snag a label-vec.i)])
     ==
+  ::
+  ++  table
+    =-  |=  i=instruction
+        ?>  ?=(table:kind -.i)
+        ^-  $-(local-state local-state)
+        ((~(got by m) ;;(@tas -.i)) i)
+    ^~
+    ^=  m
+    ^-  (map @tas $-(instruction $-(local-state local-state)))
+    |^
+    %-  my
+    :~
+      table-get+table-get
+      table-set+table-set
+      table-init+table-init
+      elem-drop+elem-drop
+      table-copy+table-copy
+      table-grow+table-grow
+      table-size+table-size
+      table-fill+table-fill
+    ==
+    ::
+    ++  table-get
+      |=  i=instruction
+      ?>  ?=(%table-get -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([a=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      =+  tab=(table:grab tab-id.i store.l)
+      ?:  ?=(%| -.tab)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.tab %tabl (change ~[%i32] ~[a]) i]
+      l(va.stack [(snag a p.tab) rest])
+    ::
+    ++  table-set
+      |=  i=instruction
+      ?>  ?=(%table-set -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([ref=$>(%ref coin-wasm) a=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      =+  tab=(table:grab tab-id.i store.l)
+      ?:  ?=(%| -.tab)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.tab %tabl (change ~[%i32 p.t.p.tab] ~[a ref]) i]
+      %=    l
+          va.stack  rest
+      ::
+          tables.store
+        %^  shot  tables.store.l  p.p.tab
+        (shot q.p.tab a ref)
+      ==
+    ::
+    ++  table-init
+      |=  i=instruction
+      ?>  ?=(%table-init -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ s=@ d=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      =+  tab=(table:grab tab-id.i store.l)
+      ?:  ?=(%| -.tab)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.tab %tabl (change ~[%i32 %i32 %i32] ~[d s n]) i]
+      =+  elem=(snag elem-id.i elem-section.module.store.l)
+      ?:  =(n 0)  l
+      =/  ref=$>(%ref coin-wasm)
+        =+  op=(snag s i.elem)
+        ?:  ?=(%ref-null -.op)
+          [%ref t.op ~]
+        [%ref %func ~ func-id.op]
+      =+  [d s n]=[d s n]  ::  save before changing l
+      =.  l
+        ((table-set [%table-set tab-id.i]) l(va.stack [ref d rest]))
+      ?>  (lth +(d) ^~((bex 32)))
+      ?>  (lth +(s) ^~((bex 32)))
+      $(va.stack.l [(dec n) +(s) +(d) va.stack.l])
+    ::
+    ++  elem-drop
+      |=  i=instruction
+      ?>  ?=(%elem-drop -.i)
+      |=  l=local-state
+      ^-  local-state
+      =,  module.store.l
+      =.  elem-section.module.store.l
+        %^  shot  elem-section  elem-id.i
+        [t ~ m]:(snag elem-id.i elem-section)
+      l
+    ::  Here I express %table-copy expression in
+    ::  exactly the same way it is defined in the spec
+    ::  in order to propagate %bloq's correctly, since
+    ::  only one of two tables might be local, or both,
+    ::  or neither
+    ::
+    ++  table-copy
+      |=  i=instruction
+      ?>  ?=(%table-copy -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ s=@ d=@ rest=*] va.stack.l)
+      ?:  =(n 0)  l
+      =+  [d s n]=[d s n]
+      =.  l
+        ?:  (lte d s)
+          =.  l
+            %-  (table-set [%table-set tab-id-x.i])
+            %-  (table-get [%table-get tab-id-y.i])
+            l(va.stack [s d rest])
+          ?>  (lth +(d) ^~((bex 32)))
+          ?>  (lth +(s) ^~((bex 32)))
+          l(va.stack [+(s) +(d) va.stack.l])
+        ?>  (lth (dec (add d n)) ^~((bex 32)))
+        ?>  (lth (dec (add s n)) ^~((bex 32)))
+        =.  l
+          %-  (table-set [%table-set tab-id-x.i])
+          %-  (table-get [%table-get tab-id-y.i])
+          l(va.stack [(dec (add s n)) (dec (add d n)) rest])
+        l(va.stack [s d va.stack.l])
+      $(va.stack.l [(dec n) va.stack.l])
+    ::
+    ++  table-grow
+      |=  i=instruction
+      ?>  ?=(%table-grow -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ val=$>(%ref coin-wasm) rest=*] va.stack.l)
+      =+  tab=(table:grab tab-id.i store.l)
+      ?:  ?=(%| -.tab)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.tab %tabl (change ~[p.t.p.tab %i32] ~[val n]) i]
+      ?.  %+  lte-lim  (add n (lent q.p.tab))
+          q:(snag p.p.tab table-section.module.store.l)
+        l(va.stack [^~((si-to-complement 32 -1)) rest])
+      %=    l
+          va.stack  [(lent q.p.tab) rest]
+      ::
+          tables.store
+        %^  shot  tables.store.l  p.p.tab
+        (weld q.p.tab (reap n val))
+      ==
+    ::
+    ++  table-size
+      |=  i=instruction
+      ?>  ?=(%table-size -.i)
+      |=  l=local-state
+      ^-  local-state
+      =+  tab=(table:grab tab-id.i store.l)
+      ?:  ?=(%| -.tab)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.tab %tabl ~ i]
+      l(va.stack [(lent q.p.tab) va.stack])
+    ::
+    ++  table-fill
+      |=  i=instruction
+      ?>  ?=(%table-fill -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ val=$>(%ref coin-wasm) i=@ rest=*] va.stack.l)
+      =+  tab=(table:grab tab-id.i store.l)
+      ?:  ?=(%| -.tab)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.tab %tabl (change ~[%i32 p.t.p.tab %i32] ~[i val n]) i]
+      %=    l
+          va.stack  rest
+      ::
+          tables.store
+          %^  shot  tables.store.l  p.p.tab
+          (place q.p.tab i (reap n val))
+      ==
+    ::
+    --
+  ++  memo
+    =-  |=  i=instruction
+        ?>  ?=(memo:kind -.i)
+        ^-  $-(local-state local-state)
+        ((~(got by m) ;;(@tas -.i)) i)
+    ^~
+    ^=  m
+    ^-  (map @tas $-(instruction $-(local-state local-state)))
+    |^
+    %-  my
+    :~
+      memory-size+memory-size
+      memory-grow+memory-grow
+      memory-init+memory-init
+      data-drop+data-drop
+      memory-copy+memory-copy
+      memory-fill+memory-fill
+    ==
+    ::
+    ++  memory-size
+      |=  i=instruction
+      ?>  ?=( -.i)
+      |=  l=local-state
+      ^-  local-state
+      =+  memo=(memo:grab 0 store.l)
+      ?:  ?=(%| -.memo)
+        %+  buy  l
+        [%bloq -.p.memo %memo ~ i]
+      l(va.stack [n-pages.p.memo va.stack.l])
+    ::
+    ++  memory-grow
+      |=  i=instruction
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([a=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      =+  memo=(memo:grab 0 store.l)
+      ::  imported memory
+      ::
+      ?:  ?=(%| -.memo)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.memo %memo (change ~[%i32] ~[a]) i]
+      ::  local memory
+      ::
+      %=  l
+        va.stack  [n-pages.p.memo rest]
+        mem.store  `[buffer.p.memo (add n-pages.p.memo a)]
+      ==
+    ::
+    ++  memory-init
+      |=  i=instruction
+      ?>  ?=(%memory-init -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ s=@ d=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      =+  memo=(memo:grab 0 store.l)
+      ?:  ?=(%| -.memo)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+      =/  data-bytes=octs
+        =+  data=(snag x.i data-section.module.store.l)
+        ?:(?=(%acti -.data) b.data b.data)
+      ?>  (lte (add s n) p.data-bytes)
+      ?>  (lte (add d n) (mul page-size n-pages.p.memo))
+      %=    l
+          va.stack  rest
+      ::
+          mem.store
+        :-  ~
+        :_  n-pages.p.memo
+        (sew 3 [d n (rsh [3 s] q.data-bytes)] buffer.p.memo)
+      ==
+    ::
+    ++  data-drop
+      |=  i=instruction
+      ?>  ?=(%data-drop -.i)
+      |=  l=local-state
+      ^-  local-state
+      =,  module.store.l
+      =.  data-section.module.store.l
+        %^  shot  data-section  x.i
+        =+  data=(snag x.i data-section)
+        ?-  -.data
+          %acti  data(b *octs)
+          %pass  data(b *octs)
+        ==
+      l
+    ::
+    ++  memory-copy
+      |=  i=instruction
+      ?>  ?=(%memory-copy -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ s=@ d=@ rest=*] va.stack.l)
+      =+  memo=(memo:grab 0 store.l)
+      ?:  ?=(%| -.memo)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+      ?>  (lte (add s n) (mul page-size n-pages.p.memo))
+      ?>  (lte (add d n) (mul page-size n-pages.p.memo))
+      %=    l
+          va.stack  rest
+      ::
+          mem.store
+        :-  ~
+        :_  n-pages.p.memo
+        (sew 3 [d n (rsh [3 s] buffer.p.memo)] buffer.p.memo)
+      ==
+    ::
+    ++  memory-fill
+      |=  i=instruction
+      ?>  ?=(%memory-fill -.i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([n=@ val=@ d=@ rest=*] va.stack.l)
+      =+  memo=(memo:grab 0 store.l)
+      ?:  ?=(%| -.memo)
+        %+  buy  l(va.stack rest)
+        [%bloq -.p.memo %memo (change ~[%i32 %i32 %i32] ~[d val n]) i]
+      ?>  (lte (add d n) (mul page-size n-pages.p.memo))
+      %=    l
+          va.stack  rest
+      ::
+          mem.store
+        :-  ~
+        :_  n-pages.p.memo
+        (sew 3 [d n (fil 3 n val)] buffer.p.memo)
+      ==
+    ::
+    --
+  ::
   ::  +unar: unary gate fetcher
   ::
   ++  unar
@@ -424,19 +836,32 @@
     |^
     %-  my
     :~
-      popcnt+popcnt  ctz+ctz  wrap+wrap
-      extend+extend  eqz+eqz  clz+clz  convert+convert
+      clz+clz
+      ctz+ctz
+      popcnt+popcnt
+      abs+abs
+      neg+neg
+      sqrt+sqrt
+      ceil+ceil
+      floor+floor
+      trunc+trunc
+      nearest+nearest
+      eqz+eqz
+      wrap+wrap
+      extend+extend
+      trunc+trunc
+      convert+convert
+      demote+demote
+      promote+promote
       reinterpret+reinterpret
     ==
     ::
-    ++  popcnt
-      |=  *
+    ++  clz
+      |=  i=instruction
+      ?>  ?=(%clz -.i)
+      =/  base=@  ?-(type.i %i32 32, %i64 64)
       |=  v=@
-      ^-  @
-      =+  counter=0
-      |-  ^-  @
-      ?:  =(v 0)  counter
-      $(v (div v 2), counter (add counter (mod v 2)))
+      (sub base (xeb v))
     ::
     ++  ctz
       |=  i=instruction
@@ -449,6 +874,63 @@
       ?:  =(counter counter-max)  counter
       ?:  =(1 (mod v 2))  counter
       $(v (div v 2), counter +(counter))
+    ::
+    ++  popcnt
+      |=  *
+      |=  v=@
+      ^-  @
+      =+  counter=0
+      |-  ^-  @
+      ?:  =(v 0)  counter
+      $(v (div v 2), counter (add counter (mod v 2)))
+    ::
+    ++  abs
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  neg
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  sqrt
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  ceil
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  floor
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  trunc
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  nearest
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  eqz
+      |=  *
+      |=  v=@
+      ^-  @
+      ?:(=(v 0) 1 0)
     ::
     ++  wrap
       |=  *
@@ -467,18 +949,11 @@
         %s  (si-to-complement base (complement-to-si source.i v))
       ==
     ::
-    ++  eqz
-      |=  *
+    ++  trunc
+      |=  i=instruction
+      ?>  
       |=  v=@
       ^-  @
-      ?:(=(v 0) 1 0)
-    ::
-    ++  clz
-      |=  i=instruction
-      ?>  ?=(%clz -.i)
-      =/  base=@  ?-(type.i %i32 32, %i64 64)
-      |=  v=@
-      (sub base (xeb v))
     ::
     ++  convert  ::  complete, check correctness
       |=  i=instruction
@@ -489,6 +964,18 @@
       |=  v=@
       ^-  @
       (sun:rd v)
+    ::
+    ++  demote
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
+    ::
+    ++  promote
+      |=  i=instruction
+      ?>  
+      |=  v=@
+      ^-  @
     ::
     ++  reinterpret  ::  complete, check correctness
       |=  i=instruction
