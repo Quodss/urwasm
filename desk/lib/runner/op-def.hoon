@@ -96,11 +96,11 @@
       va.stack
     %+  weld  
       %-  flop
-      (turn i.shop.store.l coin-to-val)
+      (turn p.i.shop.store.l coin-to-val)
     va.stack.l
   ::
-      shop.store
-    t.shop.store.l
+      store
+    [t.shop.store.l q.i.shop.store.l]
   ==
 ::
 ::  |grab: import-related utils. Gates return either a local

@@ -39,11 +39,11 @@
   ==
 ::
 +$  store
-  $:  =module                                 ::  engine representation of module
-      mem=(unit [buffer=@ n-pages=@])         ::  single membuffer
+  $:  =shop                                    ::  resolved imports
+      =module                                  ::  engine representation of module
+      mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
       tables=(list (list $>(%ref coin-wasm)))  ::  tables
       globals=(list coin-wasm)
-      =shop
   ==
 ::
 +$  local-state  [=stack locals=(list val) =store]
@@ -112,11 +112,15 @@
         instr=$>(?(%global-get %global-set) instruction)
     ==
   ==
-::  $shop: list of resolved requests. Right now each resolved
-::  request only provides values to be pushed on stack.
-::  In the future it should also provide updates to the store
-::  in a way that is legible to both the Hoon specification
-::  and the jet implementation. Lia instructions will help.
+::  $shop: list of resolved requests: values to be pushed on
+::  the stack and tail of the module store
 ::
-+$  shop  (list (list coin-wasm))  ::  values to be pushed on the stack
++$  shop
+  %-  list
+  %+  pair  (list coin-wasm)
+  $:  =module                                  ::  engine representation of module
+      mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
+      tables=(list (list $>(%ref coin-wasm)))  ::  tables
+      globals=(list coin-wasm)
+  ==
 --

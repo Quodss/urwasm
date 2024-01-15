@@ -325,8 +325,10 @@
 +$  global
   $:  v=valtype
       m=?(%con %var)
-      i=$>(?(%const %global-get) instruction)
-  ==
+      $=  i
+      $?  [%vec $>(%const instr-vec)]
+          $>(?(%const %global-get) instruction)
+  ==  ==
 ::
 ::  Export section
 ::

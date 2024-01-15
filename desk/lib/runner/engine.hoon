@@ -144,22 +144,27 @@
     ?~  global-section.m
       [%0 ~ st(globals (flop globals.st))]
     =*  glob  i.global-section.m
-    =;  try-glob=(each (pair coin-wasm shop) $>(%1 result))  ::  coin & shop or block
-      ?.  ?=(%& -.try-glob)  p.try-glob
+    ::  Const globals
+    ::
+    ?:  ?=([%const p=$<(?(%v128 %ref) coin-wasm)] i.glob)
       %=  $
         global-section.m  t.global-section.m
-        globals.st  [p.p.try-glob globals.st]
-        shop.st  q.p.try-glob
+        globals.st  [p.i.glob globals.st]
       ==
-    ::  if not global-get: it is %const
-    ::
-    ?.  ?=([%global-get index=@] i.glob)
-      [%& p.i.glob shop.st]
-    ::  else, get from imports
+    ?:  ?=([%vec %const p=$>(%v128 coin-wasm)] i.glob)
+      %=  $
+        global-section.m  t.global-section.m
+        globals.st  [p.i.glob globals.st]
+      ==
+    ::  Imported globals. We assume here that %global-get
+    ::  would not affect module store
     ::
     ?:  ?=(^ shop.st)
-      [%& -.i.shop.st t.shop.st]  ::  sucessfull read from shop
-    :-  %|                        ::  block on empty shop
+      %=  $
+        global-section.m  t.global-section.m
+        globals.st  [-.p.i.shop.st globals.st]
+        shop.st  t.shop.st
+      ==
     :+  %1
       -:(snag index.i.glob globs.import-section.module.st)
     [%glob ~ i.glob]
