@@ -415,8 +415,12 @@
     ::  import table
     ::
     ?:  ?=(%| -.tab)
-      %+  buy  l(va.stack rest)
-      [%bloq -.p.tab %tabl (change ~[%i32] ~[ref-id]) i]
+      =/  input=(list coin-wasm)
+        =+  params=params:(snag type-id.i type-section)
+        %+  change  params
+        (flop (scag (lent params) rest))
+      %+  buy  l(va.stack (slag (lent params) rest))
+      [%bloq -.p.tab %tabl (weld input (change ~[%i32] ~[ref-id])) i]
     ::  local table
     ::
     ::  Type check of reference
