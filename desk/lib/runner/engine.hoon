@@ -32,30 +32,6 @@
                 %extn  [%extn ~]
                 %func  [%func ~]
   ==          ==
-::  +place: places list `b` into list `a`, overwriting contents of `a`
-::
-++  place
-  |*  [a=(list) off=@ b=(list)]
-  |-  ^+  b
-  ?~  b  a
-  ?>  (lth off (lent a))
-  $(a (snap a off i.b), b t.b, off +(off))
-::  +lim-min: get minimum from limits
-::
-++  lim-min
-  |=  l=limits
-  ^-  @
-  ?:  ?=(%flor -.l)
-    p.l
-  p.l
-::  +lim-max: get maximum from limits
-::
-++  lim-max
-  |=  l=limits
-  ^-  (unit @)
-  ?:  ?=(%flor -.l)
-    ~
-  `q.l
 ::  +make-export-map: turns export-section into a map [name=cord =export-desc]
 ::
 ++  make-export-map
@@ -144,25 +120,31 @@
     ?~  global-section.m
       [%0 ~ st(globals (flop globals.st))]
     =*  glob  i.global-section.m
-    =;  try-glob=(each (pair coin-wasm shop) $>(%1 result))  ::  coin & shop or block
-      ?.  ?=(%& -.try-glob)  p.try-glob
+    ::  Const globals
+    ::
+    ?:  ?=([%const p=$<(?(%v128 %ref) coin-wasm)] i.glob)
       %=  $
         global-section.m  t.global-section.m
-        globals.st  [p.p.try-glob globals.st]
-        shop.st  q.p.try-glob
+        globals.st  [p.i.glob globals.st]
       ==
-    ::  if not global-get: it is %const
-    ::
-    ?.  ?=([%global-get index=@] i.glob)
-      [%& p.i.glob shop.st]
-    ::  else, get from imports
+    ?:  ?=([%vec %const p=$>(%v128 coin-wasm)] i.glob)
+      %=  $
+        global-section.m  t.global-section.m
+        globals.st  [p.i.glob globals.st]
+      ==
+    ::  Imported globals. We assume here that %global-get
+    ::  would not affect module store
     ::
     ?:  ?=(^ shop.st)
-      [%& -.i.shop.st t.shop.st]  ::  sucessfull read from shop
-    :-  %|                        ::  block on empty shop
+      %=  $
+        global-section.m  t.global-section.m
+        globals.st  [-.p.i.shop.st globals.st]
+        shop.st  t.shop.st
+      ==
     :+  %1
-      -:(snag index.i.glob globs.import-section.module.st)
-    [%glob ~ i.glob]
+      :-  -:(snag index.i.glob globs.import-section.module.st)
+      [%glob ~ i.glob]
+    [~ ~ ~]
   ::
   ++  init-table
     |=  [st=store m=^module]
@@ -204,7 +186,7 @@
         elem-section.m  t.elem-section.m
     ::
         tables.st
-      %^  snap  tables.st  tab-loc-id
+      %^  shot  tables.st  tab-loc-id
       %^  place  (snag tab-loc-id tables.st)  ::  table to change
         n.p.off.m.elem                        ::  offset
       %+  turn  i.elem
@@ -306,7 +288,7 @@
   ::
   ?:  ?=(%| -.f)
     %+  buy  l(va.stack (slag (lent params.func-type) va.stack.l))
-    :^  %bloq  -.p.f  %func
+    :+  -.p.f  %func
     %+  change  params.func-type
     %-  flop
     (scag (lent params.func-type) va.stack.l)
@@ -428,21 +410,25 @@
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
       [%call-indirect type-id=@ table-id=@]
+    =,  module.store.l
     ?>  ?=([ref-id=@ rest=*] va.stack.l)
     =,  va.stack.l
     =+  tab=(table:grab table-id.i store.l)  ::  (each (list $>(%ref coin-wasm)) [[mod=cord name=cord] t=table])
     ::  import table
     ::
     ?:  ?=(%| -.tab)
-      %+  buy  l(va.stack rest)
-      [%bloq -.p.tab %tabl (change ~[%i32] ~[ref-id]) i]
+      =+  params=params:(snag type-id.i type-section)
+      =/  input=(list coin-wasm)
+        %+  change  params
+        (flop (scag (lent params) rest))
+      %+  buy  l(va.stack (slag (lent params) rest))
+      [-.p.tab %tabl (weld input (change ~[%i32] ~[ref-id])) i]
     ::  local table
     ::
     ::  Type check of reference
     ::
-    =,  module.store.l
     =/  type-in-instr=func-type  (snag type-id.i type-section)
-    =+  ref=(snag ref-id p.tab)
+    =+  ref=(snag ref-id q.p.tab)
     =/  type-of-ref=func-type
       ?+    ref  !!
           [%ref %func p=[~ @]]
@@ -460,7 +446,7 @@
     ::
     ?>  ?=([%ref %extn p=^] ref)
     %+  buy  l(va.stack (slag (lent params.type.u.p.ref) rest))
-    :+  %bloq  -.u.p.ref
+    :-  -.u.p.ref
     =*  params  params.type.u.p.ref
     [%func (change params (flop (scag (lent params) rest)))]
   ::

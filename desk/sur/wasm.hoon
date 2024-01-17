@@ -106,14 +106,14 @@
     ::  Memory instructions
     ::
     $:  %load
-        type=valtype
+        type=num-type
         m=memarg
         n=(unit ?(%8 %16 %32))
         mode=(unit ?(%s %u))
     ==
     ::
     $:  %store
-        type=valtype
+        type=num-type
         m=memarg
         n=(unit ?(%8 %16 %32))
     ==
@@ -130,21 +130,21 @@
     ::::  comparison:
     ::::
     [%eqz type=?(%i32 %i64)]
-    [%eq type=valtype]
-    [%ne type=valtype]
-    [%lt type=valtype mode=(unit ?(%s %u))]
-    [%gt type=valtype mode=(unit ?(%s %u))]
-    [%le type=valtype mode=(unit ?(%s %u))]
-    [%ge type=valtype mode=(unit ?(%s %u))]
+    [%eq type=num-type]
+    [%ne type=num-type]
+    [%lt type=num-type mode=(unit ?(%s %u))]
+    [%gt type=num-type mode=(unit ?(%s %u))]
+    [%le type=num-type mode=(unit ?(%s %u))]
+    [%ge type=num-type mode=(unit ?(%s %u))]
     ::::  arithmetics:
     ::::
     [%clz type=?(%i32 %i64)]
     [%ctz type=?(%i32 %i64)]
     [%popcnt type=?(%i32 %i64)]
-    [%add type=valtype]
-    [%sub type=valtype]
-    [%mul type=valtype]
-    [%div type=valtype mode=(unit ?(%s %u))]
+    [%add type=num-type]
+    [%sub type=num-type]
+    [%mul type=num-type]
+    [%div type=num-type mode=(unit ?(%s %u))]
     [%rem type=?(%i32 %i64) mode=?(%s %u)]
     [%and type=?(%i32 %i64)]
     [%or type=?(%i32 %i64)]
@@ -159,7 +159,7 @@
     [%floor type=?(%f32 %f64)]
     ::
     $:  %trunc
-        type=valtype
+        type=num-type
         source-type=(unit ?(%f32 %f64))
         mode=(unit ?(%s %u))
         sat=?
@@ -175,7 +175,7 @@
     [%convert type=?(%f32 %f64) source-type=?(%i32 %i64) mode=?(%s %u)]
     [%demote ~]
     [%promote ~]
-    [%reinterpret type=valtype source-type=valtype]
+    [%reinterpret type=num-type source-type=num-type]
   ==  ::  $instr-short
 ::
 +$  lane-type  ?(%i8 %i16 num-type)
@@ -325,8 +325,10 @@
 +$  global
   $:  v=valtype
       m=?(%con %var)
-      i=$>(?(%const %global-get) instruction)
-  ==
+      $=  i
+      $?  [%vec $>(%const instr-vec)]
+          $>(?(%const %global-get) instruction)
+  ==  ==
 ::
 ::  Export section
 ::
