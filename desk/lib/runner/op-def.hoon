@@ -130,9 +130,11 @@
 ::  a request, otherwise push values on the stack
 ::
 ++  buy
-  |=  [l=local-state br=$>(%bloq branch)]
+  |=  [l=local-state req=[[mod=cord name=cord] =request]]
   ^-  local-state
-  ?~  shop.store.l  l(br.stack br)
+  ?~  shop.store.l
+    =,  store.l
+    l(br.stack [%bloq req mem tables globals])
   %=    l
       va.stack
     %+  weld  
@@ -141,7 +143,8 @@
     va.stack.l
   ::
       store
-    [t.shop.store.l q.i.shop.store.l]
+    =,  store.l
+    [t.shop module q.i.shop]
   ==
 ::
 ::  |grab: import-related utils. Gates return either a local
@@ -300,7 +303,11 @@
 ::
 ++  fetch
   |%
-  ++  simd  !!
+  ++  simd
+    |=  i=instruction
+    ^-  $-(local-state local-state)
+    !!
+  ::
   ++  select
     |=  l=local-state
     ^-  local-state
@@ -364,7 +371,15 @@
       ?>  ?=(%ref-null -.i)
       |=  l=local-state
       ^-  local-state
-      l(va.stack [[%ref t.i ~] va.stack.l])
+      %=    l
+          va.stack
+        :_  va.stack.l
+        :-  %ref
+        ?-  t.i
+          %extn  [%extn ~]
+          %func  [%func ~]
+        ==
+      ==
     ::
     ++  ref-is-null
       |=  *
@@ -395,8 +410,7 @@
     =+  mem=(memo:grab 0 store.l)
     ?:  ?=(%| -.mem)
       %+  buy  l(va.stack rest)
-      :*  %bloq
-          -.p.mem
+      :*  -.p.mem
           %memo
           (change ~[%i32] ~[addr])
           i
@@ -429,8 +443,7 @@
     =+  memo=(memo:grab 0 store.l)
     ?:  ?=(%| -.memo)
       %+  buy  l(va.stack rest)
-      :*  %bloq
-          -.p.memo
+      :*  -.p.memo
           %memo
           (change ~[%i32 %i32] ~[addr content])
           i
@@ -440,7 +453,7 @@
       %=    l
           va.stack  rest
       ::
-          memo.store
+          mem.store
         `[(sew bloq=3 [index size to-put] buffer.p.memo) n-pages.p.memo]
       ==
     ?~  n.i
@@ -465,8 +478,8 @@
     =+  glob=(glob:grab index.i store.l)
     ?:  ?=(%| -.glob)
       %+  buy  l
-      [%bloq -.p.glob %glob ~ i]
-    l(va.stack [(coin-to-val p.glob) va.stack.l])
+      [-.p.glob %glob ~ i]
+    l(va.stack [(coin-to-val q.p.glob) va.stack.l])
   ::
   ++  set
     |=  i=instruction
@@ -486,13 +499,12 @@
       =+  glob=(glob:grab index.i store.l)
       ?:  ?=(%| -.glob)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.glob %glob (change ~[v.p.glob] ~[a]) i]
+        [-.p.glob %glob (change ~[v.p.glob] ~[a]) i]
       %=    l
           va.stack  rest
           globals.store
         %^  snap  globals.store.l  p.p.glob
-        %+  val-to-coin  a
-        (snag p.p.glob globals.store.l)
+        (val-to-coin a q.p.glob)
       ==
     ::
     ==
@@ -550,20 +562,21 @@
       =+  tab=(table:grab tab-id.i store.l)
       ?:  ?=(%| -.tab)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.tab %tabl (change ~[%i32] ~[a]) i]
-      l(va.stack [(snag a p.tab) rest])
+        [-.p.tab %tabl (change ~[%i32] ~[a]) i]
+      l(va.stack [(snag a q.p.tab) rest])
     ::
     ++  table-set
       |=  i=instruction
       ?>  ?=(%table-set -.i)
       |=  l=local-state
       ^-  local-state
-      ?>  ?=([ref=$>(%ref coin-wasm) a=@ rest=*] va.stack.l)
+      ?>  ?=([ref=* a=@ rest=*] va.stack.l)
+      ?<  ?=(@ ref.va.stack.l)
       =,  va.stack.l
       =+  tab=(table:grab tab-id.i store.l)
       ?:  ?=(%| -.tab)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.tab %tabl (change ~[%i32 p.t.p.tab] ~[a ref]) i]
+        [-.p.tab %tabl (change ~[%i32 p.t.p.tab] ~[a ref]) i]
       %=    l
           va.stack  rest
       ::
@@ -582,15 +595,20 @@
       =+  tab=(table:grab tab-id.i store.l)
       ?:  ?=(%| -.tab)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.tab %tabl (change ~[%i32 %i32 %i32] ~[d s n]) i]
+        [-.p.tab %tabl (change ~[%i32 %i32 %i32] ~[d s n]) i]
       =+  elem=(snag elem-id.i elem-section.module.store.l)
       ?:  =(n 0)  l
       =/  ref=$>(%ref coin-wasm)
         =+  op=(snag s i.elem)
         ?:  ?=(%ref-null -.op)
-          [%ref t.op ~]
+          :-  %ref
+          ?-  t.op
+            %extn  [%extn ~]
+            %func  [%func ~]
+          ==
         [%ref %func ~ func-id.op]
-      =+  [d s n]=[d s n]  ::  save before changing l
+      =+  [rest d s n]=[rest d s n]  ::  save before changing l
+      =>  .(l `local-state`l)
       =.  l
         ((table-set [%table-set tab-id.i]) l(va.stack [ref d rest]))
       ?>  (lth +(d) ^~((bex 32)))
@@ -605,7 +623,9 @@
       =,  module.store.l
       =.  elem-section.module.store.l
         %^  shot  elem-section  elem-id.i
-        [t ~ m]:(snag elem-id.i elem-section)
+        =+  elem=(snag elem-id.i elem-section)
+        ^-  ^elem
+        [t.elem ~ m.elem]
       l
     ::  Here I express %table-copy expression in
     ::  exactly the same way it is defined in the spec
@@ -619,8 +639,10 @@
       |=  l=local-state
       ^-  local-state
       ?>  ?=([n=@ s=@ d=@ rest=*] va.stack.l)
+      =,  va.stack.l
       ?:  =(n 0)  l
-      =+  [d s n]=[d s n]
+      =+  [d s n rest]=[d s n rest]
+      =>  .(va.stack.l `(pole val)`va.stack.l)
       =.  l
         ?:  (lte d s)
           =.  l
@@ -644,11 +666,13 @@
       ?>  ?=(%table-grow -.i)
       |=  l=local-state
       ^-  local-state
-      ?>  ?=([n=@ val=$>(%ref coin-wasm) rest=*] va.stack.l)
+      ?>  ?=([n=@ val=* rest=*] va.stack.l)
+      ?<  ?=(@ val.va.stack.l)
+      =,  va.stack.l
       =+  tab=(table:grab tab-id.i store.l)
       ?:  ?=(%| -.tab)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.tab %tabl (change ~[p.t.p.tab %i32] ~[val n]) i]
+        [-.p.tab %tabl (change ~[p.t.p.tab %i32] ~[val n]) i]
       ?.  %+  lte-lim  (add n (lent q.p.tab))
           q:(snag p.p.tab table-section.module.store.l)
         l(va.stack [^~((si-to-complement 32 -1)) rest])
@@ -667,20 +691,22 @@
       ^-  local-state
       =+  tab=(table:grab tab-id.i store.l)
       ?:  ?=(%| -.tab)
-        %+  buy  l(va.stack rest)
-        [%bloq -.p.tab %tabl ~ i]
-      l(va.stack [(lent q.p.tab) va.stack])
+        %+  buy  l
+        [-.p.tab %tabl ~ i]
+      l(va.stack [(lent q.p.tab) va.stack.l])
     ::
     ++  table-fill
       |=  i=instruction
       ?>  ?=(%table-fill -.i)
       |=  l=local-state
       ^-  local-state
-      ?>  ?=([n=@ val=$>(%ref coin-wasm) i=@ rest=*] va.stack.l)
-      =+  tab=(table:grab tab-id.i store.l)
+      ?>  ?=([n=@ val=* i=@ rest=*] va.stack.l)
+      ?<  ?=(@ val.va.stack.l)
+      =,  va.stack.l
+      =+  tab=(table:grab tab-id.^i store.l)
       ?:  ?=(%| -.tab)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.tab %tabl (change ~[%i32 p.t.p.tab %i32] ~[i val n]) i]
+        [-.p.tab %tabl (change ~[%i32 p.t.p.tab %i32] ~[i val n]) ^i]
       %=    l
           va.stack  rest
       ::
@@ -711,17 +737,18 @@
     ::
     ++  memory-size
       |=  i=instruction
-      ?>  ?=( -.i)
+      ?>  ?=(%memory-size -.i)
       |=  l=local-state
       ^-  local-state
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
         %+  buy  l
-        [%bloq -.p.memo %memo ~ i]
+        [-.p.memo %memo ~ i]
       l(va.stack [n-pages.p.memo va.stack.l])
     ::
     ++  memory-grow
       |=  i=instruction
+      ?>  ?=(%memory-grow -.i)
       |=  l=local-state
       ^-  local-state
       ?>  ?=([a=@ rest=*] va.stack.l)
@@ -731,7 +758,7 @@
       ::
       ?:  ?=(%| -.memo)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.memo %memo (change ~[%i32] ~[a]) i]
+        [-.p.memo %memo (change ~[%i32] ~[a]) i]
       ::  local memory
       ::
       %=  l
@@ -749,7 +776,7 @@
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+        [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
       =/  data-bytes=octs
         =+  data=(snag x.i data-section.module.store.l)
         ?:(?=(%acti -.data) b.data b.data)
@@ -785,10 +812,11 @@
       |=  l=local-state
       ^-  local-state
       ?>  ?=([n=@ s=@ d=@ rest=*] va.stack.l)
+      =,  va.stack.l
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+        [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
       ?>  (lte (add s n) (mul page-size n-pages.p.memo))
       ?>  (lte (add d n) (mul page-size n-pages.p.memo))
       %=    l
@@ -806,10 +834,11 @@
       |=  l=local-state
       ^-  local-state
       ?>  ?=([n=@ val=@ d=@ rest=*] va.stack.l)
+      =,  va.stack.l
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
         %+  buy  l(va.stack rest)
-        [%bloq -.p.memo %memo (change ~[%i32 %i32 %i32] ~[d val n]) i]
+        [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d val n]) i]
       ?>  (lte (add d n) (mul page-size n-pages.p.memo))
       %=    l
           va.stack  rest
@@ -886,45 +915,175 @@
     ::
     ++  abs
       |=  i=instruction
-      ?>  
+      ?>  ?=(%abs -.i)
       |=  v=@
       ^-  @
+      =/  sign=?
+        ?-  type.i
+          %f32  (sig:rs v)
+          %f64  (sig:rd v)
+        ==
+      ?:  sign  v
+      %+  add  v
+      ?-  type.i
+        %f32  ^~((bex 31))
+        %f64  ^~((bex 63))
+      ==
     ::
     ++  neg
       |=  i=instruction
-      ?>  
+      ?>  ?=(%neg -.i)
       |=  v=@
       ^-  @
+      %+  add  v
+      ?-  type.i
+        %f32  ^~((bex 31))
+        %f64  ^~((bex 63))
+      ==
     ::
     ++  sqrt
       |=  i=instruction
-      ?>  
+      ?>  ?=(%sqrt -.i)
       |=  v=@
       ^-  @
+      ?-  type.i
+        %f32  (sqt:rs v)
+        %f64  (sqt:rd v)
+      ==
     ::
     ++  ceil
       |=  i=instruction
-      ?>  
+      ?>  ?=(%ceil -.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  ~(. rs %u)
+            %f64  ~(. rd %u)
+          ==
+      =/  neg-one=@   ?-(type.i %f32 .-1, %f64 .~-1)
+      =/  neg-zero=@  ?-(type.i %f32 .-0, %f64 .~-0)
       |=  v=@
       ^-  @
+      =/  int=(unit @s)  (toi:r v)
+      ?~  int  v
+      ?:  =(--0 u.int)  v
+      ?:  &((gth:r v neg-one) (lth:r v `@`0))  neg-zero
+      (san:r u.int)
     ::
     ++  floor
       |=  i=instruction
-      ?>  
+      ?>  ?=(%floor -.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  ~(. rs %d)
+            %f64  ~(. rd %d)
+          ==
+      =/  one=@   ?-(type.i %f32 .1, %f64 .~1)
       |=  v=@
       ^-  @
+      =/  int=(unit @s)  (toi:r v)
+      ?~  int  v
+      ?:  =(--0 u.int)  v
+      ?:  &((gth:r v `@`0) (lth:r v one))  0
+      (san:r u.int)
     ::
     ++  trunc
       |=  i=instruction
-      ?>  
+      ?>  ?=(%trunc -.i)
+      ?~  mode.i
+        ::  no conversion
+        ::
+        ?>  ?=(?(%f32 %f64) type.i)
+        =+  ^=  r
+            ?-  type.i
+              %f32  rs
+              %f64  rd
+            ==
+        =/  one=@       ?-(type.i %f32 .1, %f64 .~1)
+        =/  neg-zero=@  ?-(type.i %f32 .-0, %f64 .~-0)
+        =/  neg-one=@   ?-(type.i %f32 .-1, %f64 .~-1)
+        |=  v=@
+        ^-  @
+        =/  int=(unit @s)  (toi:r v)
+        ?~  int  v
+        ?:  =(--0 u.int)  v
+        ?:  &((lth:r v one) (gth:r v `@`0))  0
+        ?:  &((lth:r v `@`0) (gth:r v neg-one))  neg-zero
+        (san:r u.int)
+      ::  conversion
+      ::
+      ?>  ?=(?(%i32 %i64) type.i)
+      ?>  ?=(^ mode.i)
+      ?>  ?=(^ source-type.i)
+      =+  ^=  r
+          ?-  u.source-type.i
+            %f32  rs
+            %f64  rd
+          ==
+      =/  one=@       ?-(u.source-type.i %f32 .1, %f64 .~1)
+      =/  neg-zero=@  ?-(u.source-type.i %f32 .-0, %f64 .~-0)
+      =/  neg-one=@   ?-(u.source-type.i %f32 .-1, %f64 .~-1)
+      =/  base=@      ?-(type.i %i32 32, %i64 64)
+      =/  [below=@s above=@s]
+        =,  si
+        ?-    u.mode.i
+            %s
+          :-  (sum (new | (bex (dec base))) -1)
+          (new & (bex (dec base)))
+        ::
+            %u
+          :-  -1
+          (new & (bex base))
+        ==
+      =/  [lower-int=@ upper-int=@]
+        =,  si
+        ?-    u.mode.i
+            %u
+          [0 (dec (bex base))]
+        ::
+            %s
+          :-  (si-to-complement base (new | (bex (dec base))))
+          (si-to-complement base (new & (dec (bex (dec base)))))
+        ==
       |=  v=@
       ^-  @
+      =/  int=(unit @s)  (toi:r v)
+      ?~  int
+        ?.  sat.i  !!
+        =/  =fn  (sea:r v)
+        ?:  ?=(%n -.fn)  0
+        ?:  ?=(%i -.fn)
+          ?:  s.fn
+            upper-int
+          lower-int
+        !!
+      ?.  =((cmp:si u.int below) --1)
+        ?.  sat.i  !!
+        lower-int
+      ?.  =((cmp:si above u.int) --1)
+        ?.  sat.i  !!
+        upper-int
+      ?-    u.mode.i
+        %u  (abs:si u.int)
+        %s  (si-to-complement base u.int)
+      ==
     ::
     ++  nearest
       |=  i=instruction
-      ?>  
+      ?>  ?=(%nearest -.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  ~(. rs %n)
+            %f64  ~(. rd %n)
+          ==
+      =/  neg-zero=@  ?-(type.i %f32 .-0, %f64 .~-0)
       |=  v=@
       ^-  @
+      =/  int=(unit @s)  (toi:r v)
+      ?~  int  v
+      ?:  =(--0 u.int)
+        ?:  (gth:r v `@`0)  0
+        neg-zero
+      (san:r u.int)
     ::
     ++  eqz
       |=  *
@@ -949,42 +1108,36 @@
         %s  (si-to-complement base (complement-to-si source.i v))
       ==
     ::
-    ++  trunc
-      |=  i=instruction
-      ?>  
-      |=  v=@
-      ^-  @
-    ::
-    ++  convert  ::  complete, check correctness
+    ++  convert
       |=  i=instruction
       ?>  ?=(%convert -.i)
-      ?>  ?=(%f64 type.i)
-      ?>  ?=(%i64 source-type.i)
-      ?>  ?=(%u mode.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  rs
+            %f64  rd
+          ==
+      =/  base=@  ?-(source-type.i %i32 32, %i64 64)
       |=  v=@
       ^-  @
-      (sun:rd v)
+      ?:  ?=(%u mode.i)
+        (sun:r v)
+      (san:r (complement-to-si base v))
     ::
     ++  demote
-      |=  i=instruction
-      ?>  
+      |=  *
       |=  v=@
       ^-  @
+      (bit:rs (sea:rd v))
     ::
     ++  promote
-      |=  i=instruction
-      ?>  
+      |=  *
       |=  v=@
       ^-  @
+      (bit:rd (sea:rs v))
     ::
-    ++  reinterpret  ::  complete, check correctness
-      |=  i=instruction
-      ?>  ?=(%reinterpret -.i)
-      ?>  ?=(%f64 type.i)
-      ?>  ?=(%i64 source-type.i)
-      |=  v=@
-      ^-  @
-      v
+    ++  reinterpret
+      |=  *
+      |=(v=@ v)
     ::
     --
   ::  +bina: binary gate fetcher.
@@ -1002,9 +1155,27 @@
     |^
     %-  my
     :~
-      add+add  ne+ne  lt+lt  gt+gt  ge+ge  le+le  shr+shr  shl+shl
-      sub+sub  mul+mul  div+div  or+or  xor+xor  rotl+rotl  and+and
+      add+add
+      sub+sub
+      mul+mul
+      div+div
+      rem+rem
+      and+and
+      or+or
+      xor+xor
+      shl+shl
+      shr+shr
+      rotl+rotl
+      rotr+rotr
+      min+min
+      max+max
+      copysign+copysign
       eq+eq
+      ne+ne
+      lt+lt
+      gt+gt
+      le+le
+      ge+ge
     ==
     ::
     ++  add
@@ -1013,16 +1184,217 @@
       =/  modul=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
       |=  [v=@ w=@]
       ^-  @
-      ?+  type.i  !!
+      ?-  type.i
         ?(%i32 %i64)  (~(sum fo modul) v w)
         %f32  (add:rs v w)
         %f64  (add:rd v w)
       ==
     ::
-    ++  ne
+    ++  sub
+      |=  i=instruction
+      ?>  ?=(%sub -.i)
+      =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
+      |=  [v=@ w=@]
+      ^-  @
+      ?-  type.i
+        ?(%i32 %i64)  (~(dif fo base) v w)
+        %f32  (sub:rs v w)
+        %f64  (sub:rd v w)
+      ==
+    ::
+    ++  mul
+      |=  i=instruction
+      ?>  ?=(%mul -.i)
+      =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
+      |=  [v=@ w=@]
+      ^-  @
+      ?-  type.i
+        ?(%i32 %i64)  (~(pro fo base) v w)
+        %f32  (mul:rs v w)
+        %f64  (mul:rd v w)
+      ==
+    ::
+    ++  div
+      |=  i=instruction
+      ?>  ?=(%div -.i)
+      =/  base=@  ?+(type.i 0 %i32 32, %i64 64)
+      =/  mode=?(%u %s)  (fall mode.i %u)
+      |=  [v=@ w=@]
+      ^-  @
+      ?-    type.i
+          ?(%i32 %i64)
+        ?-  mode
+          %u  (^div v w)
+          %s  %+  si-to-complement  base
+              %+  fra:si
+                (complement-to-si base v)
+              (complement-to-si base w)
+        ==
+      ::
+          %f32  (div:rs v w)
+          %f64  (div:rd v w)
+      ==
+    ::
+    ++  rem
+      |=  i=instruction
+      ?>  ?=(%rem -.i)
+      ?:  =(%u mode.i)  mod
+      =/  base=@  ?-(type.i %i32 32, %i64 64)
+      |=  [v=@ w=@]
+      ^-  @
+      %+  si-to-complement  base
+      %+  rem:si
+        (complement-to-si base v)
+      (complement-to-si base w)
+    ::
+    ++  and
       |=  *
       |=  [v=@ w=@]
       ^-  @
+      (dis v w)  ::  ATTENTION! loobean disjunction is boolean conjunction
+    ::
+    ++  or
+      |=  *
+      |=  [v=@ w=@]
+      ^-  @
+      (con v w)  ::  ATTENTION! loobean conjunction is boolean disjunction
+    ::
+    ++  xor
+      |=  *
+      |=  [v=@ w=@]
+      ^-  @
+      (mix v w)
+    ::
+    ++  shl
+      |=  i=instruction
+      ?>  ?=(%shl -.i)
+      =/  base=@   ?-(type.i %i32 32, %i64 64)
+      |=  [v=@ w=@]
+      ^-  @
+      (lsh [0 (mod w base)] v)
+    ::
+    ++  shr
+      |=  i=instruction
+      ?>  ?=(%shr -.i)
+      =/  negat=@  ?-(type.i %i32 (bex 31), %i64 (bex 63))
+      =/  negat-dec=@  (dec negat)
+      =/  base=@   ?-(type.i %i32 32, %i64 64)
+      |=  [v=@ w=@]
+      ^-  @
+      ?-    mode.i
+          %u  (rsh [0 (mod w base)] v)
+          %s
+        ?:  (lth v negat)
+          (rsh [0 (mod w base)] v)
+        ;:  ^add
+          negat
+          (^sub negat-dec (dec (bex (^sub (dec base) (mod w base)))))
+          (rsh [0 (mod w base)] (^sub v negat))
+        ==
+      ==
+    ::
+    ++  rotl
+      |=  i=instruction
+      ?>  ?=(%rotl -.i)
+      =/  base=@  ?-(type.i %i32 32, %i64 64)
+      =/  n=@  ?-(type.i %i32 5, %i64 6)
+      |=  [v=@ w=@]
+      ^-  @
+      (~(rol fe n) 0 (mod w base) v)
+    ::
+    ++  rotr
+      |=  i=instruction
+      ?>  ?=(%rotr -.i)
+      =/  base=@  ?-(type.i %i32 32, %i64 64)
+      =/  n=@  ?-(type.i %i32 5, %i64 6)
+      |=  [v=@ w=@]
+      ^-  @
+      (~(ror fe n) 0 (mod w base) v)
+
+    ::
+    ++  min
+      |=  i=instruction
+      ?>  ?=(%min -.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  rs
+            %f64  rd
+          ==
+      |=  [v=@ w=@]
+      ^-  @
+      =/  [fn-1=fn fn-2=fn]  [(sea:r v) (sea:r w)]
+      ?:  =(%n -.fn-1)  v
+      ?:  =(%n -.fn-2)  w
+      ?:((lth:r v w) v w)
+    ::
+    ++  max
+      |=  i=instruction
+      ?>  ?=(%max -.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  rs
+            %f64  rd
+          ==
+      |=  [v=@ w=@]
+      ^-  @
+      =/  [fn-1=fn fn-2=fn]  [(sea:r v) (sea:r w)]
+      ?:  =(%n -.fn-1)  v
+      ?:  =(%n -.fn-2)  w
+      ?:((gth:r v w) v w)
+    ::
+    ++  copysign
+      |=  i=instruction
+      ?>  ?=(%copysign -.i)
+      =+  ^=  r
+          ?-  type.i
+            %f32  rs
+            %f64  rd
+          ==
+      =/  sign=@   ?-(type.i %f32 (bex 31), %f64 (bex 63))
+      =/  modul=@  ?-(type.i %f32 (bex 32), %f64 (bex 64))
+      |=  [v=@ w=@]
+      ^-  @
+      ?:  =((sig:r v) (sig:r w))  v
+      (~(sum fo modul) v sign)
+    ::
+    ++  eq
+      |=  i=instruction
+      ?>  ?=(%eq -.i)
+      ?:  ?=(?(%i32 %i64) type.i)
+        |=  [v=@ w=@]
+        ^-  @
+        ?:(=(v w) 1 0)
+      =+  ^=  r
+          ?-  type.i
+            %f32  rs
+            %f64  rd
+          ==
+      |=  [v=@ w=@]
+      ^-  @
+      =/  [fn-1=fn fn-2=fn]  [(sea:r v) (sea:r w)]
+      ?:  |(=(%n -.fn-1) =(%n -.fn-2))  0
+      ?:  &(?=(%f -.fn-1) ?=(%f -.fn-2) =(0 a.fn-1) =(0 a.fn-2))
+        1
+      ?:(=(v w) 1 0)
+    ::
+    ++  ne
+      |=  i=instruction
+      ?>  ?=(%ne -.i)
+      ?:  ?=(?(%i32 %i64) type.i)
+        |=  [v=@ w=@]
+        ^-  @
+        ?:(!=(v w) 1 0)
+      =+  ^=  r
+          ?-  type.i
+            %f32  rs
+            %f64  rd
+          ==
+      |=  [v=@ w=@]
+      ^-  @
+      =/  [fn-1=fn fn-2=fn]  [(sea:r v) (sea:r w)]
+      ?:  |(=(%n -.fn-1) =(%n -.fn-2))  1
+      ?:  &(?=(%f -.fn-1) ?=(%f -.fn-2) =(0 a.fn-1) =(0 a.fn-2))
+        0
       ?:(!=(v w) 1 0)
     ::
     ++  lt
@@ -1032,7 +1404,7 @@
       =/  negat=@  ?+(type.i 0 %i32 (bex 31), %i64 (bex 63))
       |=  [v=@ w=@]
       ^-  @
-      ?+    type.i  !!
+      ?-    type.i
           %f32  ?:((lth:rs v w) 1 0)
           %f64  ?:((lth:rd v w) 1 0)
       ::
@@ -1079,111 +1451,6 @@
       %.  [w v]
       (le ;;(instruction [%le +.i]))
     ::
-    ++  shr
-      |=  i=instruction
-      ?>  ?=(%shr -.i)
-      =/  negat=@  ?-(type.i %i32 (bex 31), %i64 (bex 63))
-      =/  negat-dec=@  (dec negat)
-      =/  base=@   ?-(type.i %i32 32, %i64 64)
-      |=  [v=@ w=@]
-      ^-  @
-      ?-    mode.i
-          %u  (rsh [0 (mod w base)] v)
-          %s
-        ?:  (lth v negat)
-          (rsh [0 (mod w base)] v)
-        ;:  ^add
-          negat
-          (^sub negat-dec (dec (bex (^sub (dec base) (mod w base)))))
-          (rsh [0 (mod w base)] (^sub v negat))
-        ==
-      ==
-    ::
-    ++  shl
-      |=  i=instruction
-      ?>  ?=(%shl -.i)
-      =/  base=@   ?-(type.i %i32 32, %i64 64)
-      |=  [v=@ w=@]
-      ^-  @
-      (lsh [0 (mod w base)] v)
-    ::
-    ++  sub
-      |=  i=instruction
-      ?>  ?=(%sub -.i)
-      =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
-      |=  [v=@ w=@]
-      ^-  @
-      ?+  type.i  !!
-        ?(%i32 %i64)  (~(dif fo base) v w)
-        %f32  (sub:rs v w)
-        %f64  (sub:rd v w)
-      ==
-    ::
-    ++  mul
-      |=  i=instruction
-      ?>  ?=(%mul -.i)
-      =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
-      |=  [v=@ w=@]
-      ^-  @
-      ?+  type.i  !!  ::  assert numerical values, add v128
-        ?(%i32 %i64)  (~(pro fo base) v w)
-        %f32  (mul:rs v w)
-        %f64  (mul:rd v w)
-      ==
-    ::
-    ++  div
-      |=  i=instruction
-      ?>  ?=(%div -.i)
-      =/  base=@  ?+(type.i 0 %i32 32, %i64 64)
-      =/  mode=?(%u %s)  (fall mode.i %u)
-      |=  [v=@ w=@]
-      ^-  @
-      ?+    type.i  !!
-          ?(%i32 %i64)
-        ?-  mode
-          %u  (^div v w)
-          %s  %+  si-to-complement  base
-              %+  fra:si
-                (complement-to-si base v)
-              (complement-to-si base w)
-        ==
-      ::
-          %f32  (div:rs v w)
-          %f64  (div:rd v w)
-      ==
-    ::
-    ++  or
-      |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      (con v w)  ::  ATTENTION! loobean conjunction is boolean disjunction
-    ::
-    ++  xor
-      |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      (mix v w)
-    ::
-    ++  rotl
-      |=  i=instruction
-      ?>  ?=(%rotl -.i)
-      =/  base=@  ?-(type.i %i32 32, %i64 64)
-      =/  n=@  ?-(type.i %i32 5, %i64 6)
-      |=  [v=@ w=@]
-      ^-  @
-      (~(rol fe n) 0 (mod w base) v)
-    ::
-    ++  and
-      |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      (dis v w)  ::  ATTENTION! loobean disjunction is boolean conjunction
-    ::
-    ++  eq
-      |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      ?:(=(v w) 1 0)
     --
   --
 --

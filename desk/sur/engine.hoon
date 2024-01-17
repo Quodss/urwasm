@@ -61,22 +61,27 @@
       [%trap ~]    ::  deterministic crash
   ::
       $:  %bloq    ::  blocked on import request
-          [mod=cord name=cord]
-          =request
+          [[mod=cord name=cord] =request]
+          mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
+          tables=(list (list $>(%ref coin-wasm)))  ::  tables
+          globals=(list coin-wasm)
+          
   ==  ==
 ::  $result: what we get after instantiation of
 ::  or invocation from a module
 ::
 +$  result
   $%
-    [%0 out=(list coin-wasm) st=store]  ::  success
+    [%0 out=(list coin-wasm) st=store]             ::  success
   ::
-    $:  %1                              ::  block
-        [mod=cord name=cord]          ::  /module/name           
-        =request                      ::  request
+    $:  %1                                         ::  block
+        [[mod=cord name=cord] =request]          ::  /module/name, request
+        mem=(unit [buffer=@ n-pages=@])         
+        tables=(list (list $>(%ref coin-wasm))) 
+        globals=(list coin-wasm)
     ==
   ::
-    [%2 ~]                              ::  trap, crash
+    [%2 ~]                                         ::  trap, crash
   ==
 ::
 +$  request
@@ -113,13 +118,12 @@
     ==
   ==
 ::  $shop: list of resolved requests: values to be pushed on
-::  the stack and tail of the module store
+::  the stack and values from the module store
 ::
 +$  shop
   %-  list
   %+  pair  (list coin-wasm)
-  $:  =module                                  ::  engine representation of module
-      mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
+  $:  mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
       tables=(list (list $>(%ref coin-wasm)))  ::  tables
       globals=(list coin-wasm)
   ==

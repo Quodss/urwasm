@@ -142,8 +142,9 @@
         shop.st  t.shop.st
       ==
     :+  %1
-      -:(snag index.i.glob globs.import-section.module.st)
-    [%glob ~ i.glob]
+      :-  -:(snag index.i.glob globs.import-section.module.st)
+      [%glob ~ i.glob]
+    [~ ~ ~]
   ::
   ++  init-table
     |=  [st=store m=^module]
@@ -287,7 +288,7 @@
   ::
   ?:  ?=(%| -.f)
     %+  buy  l(va.stack (slag (lent params.func-type) va.stack.l))
-    :^  %bloq  -.p.f  %func
+    :+  -.p.f  %func
     %+  change  params.func-type
     %-  flop
     (scag (lent params.func-type) va.stack.l)
@@ -409,25 +410,25 @@
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
   ::
       [%call-indirect type-id=@ table-id=@]
+    =,  module.store.l
     ?>  ?=([ref-id=@ rest=*] va.stack.l)
     =,  va.stack.l
     =+  tab=(table:grab table-id.i store.l)  ::  (each (list $>(%ref coin-wasm)) [[mod=cord name=cord] t=table])
     ::  import table
     ::
     ?:  ?=(%| -.tab)
+      =+  params=params:(snag type-id.i type-section)
       =/  input=(list coin-wasm)
-        =+  params=params:(snag type-id.i type-section)
         %+  change  params
         (flop (scag (lent params) rest))
       %+  buy  l(va.stack (slag (lent params) rest))
-      [%bloq -.p.tab %tabl (weld input (change ~[%i32] ~[ref-id])) i]
+      [-.p.tab %tabl (weld input (change ~[%i32] ~[ref-id])) i]
     ::  local table
     ::
     ::  Type check of reference
     ::
-    =,  module.store.l
     =/  type-in-instr=func-type  (snag type-id.i type-section)
-    =+  ref=(snag ref-id p.tab)
+    =+  ref=(snag ref-id q.p.tab)
     =/  type-of-ref=func-type
       ?+    ref  !!
           [%ref %func p=[~ @]]
@@ -445,7 +446,7 @@
     ::
     ?>  ?=([%ref %extn p=^] ref)
     %+  buy  l(va.stack (slag (lent params.type.u.p.ref) rest))
-    :+  %bloq  -.u.p.ref
+    :-  -.u.p.ref
     =*  params  params.type.u.p.ref
     [%func (change params (flop (scag (lent params) rest)))]
   ::
