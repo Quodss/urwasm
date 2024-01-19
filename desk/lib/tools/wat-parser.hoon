@@ -1,3 +1,8 @@
+::  An example of using urwasm in production: parsing of
+::  .wat format
+::  Wasm module was parsed beforehand and added as a jammed
+::  noun to save time
+::
 /-  *engine
 /+  parser=parser-lib
 /+  *runner-engine
@@ -5,6 +10,9 @@
 /*  bin-atom  %atom  /lib/tools/wat2wasm/atom
 ::
 |=  string-in=tape
+::  check text correctness to avoid having to call realloc
+::
+?>  (levy string-in (curr lte 0x7f))
 ^-  ^module
 !.
 =+  st=+:(wasm-need (prep ;;(^module (cue bin-atom)) ~))
