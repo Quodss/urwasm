@@ -76,6 +76,7 @@
     (fail tub)
   ::  ++feel: rule modifier. Tests equality of
   ::  the parsing result with a given noun
+  ::
   ++  feel
     |*  [a=* sef=rule]
     |=  tub=nail
@@ -607,8 +608,7 @@
     ++  shuffle
       |=  =(list @)
       ^-  instruction:sur
-      :+  %vec  %shuffle
-      (can 3 (turn list (lead 1)))
+      [%vec %shuffle list]
     ::
     ++  lane
       |=  [op=@ l=@]
@@ -617,19 +617,19 @@
         ?~  unit  ~
         `[%vec u.unit]
       ?+  op  ~
-        %21  `[%extract %i8 l]
-        %22  `[%extract %i8 l]
+        %21  `[%extract %i8 l %s]
+        %22  `[%extract %i8 l %u]
         %23  `[%replace %i8 l]
-        %24  `[%extract %i16 l]
-        %25  `[%extract %i16 l]
+        %24  `[%extract %i16 l %s]
+        %25  `[%extract %i16 l %u]
         %26  `[%replace %i16 l]
-        %27  `[%extract %i32 l]
+        %27  `[%extract %i32 l %u]
         %28  `[%replace %i32 l]
-        %29  `[%extract %i64 l]
+        %29  `[%extract %i64 l %u]
         %30  `[%replace %i64 l]
-        %31  `[%extract %f32 l]
+        %31  `[%extract %f32 l %u]
         %32  `[%replace %f32 l]
-        %33  `[%extract %f64 l]
+        %33  `[%extract %f64 l %u]
         %34  `[%replace %f64 l]
       ==
     --

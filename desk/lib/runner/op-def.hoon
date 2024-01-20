@@ -407,6 +407,7 @@
       l(va.stack [[%ref %func ~ func-id.i] va.stack.l])
     ::
     --
+  ::
   ++  load
     |=  i=instruction
     ?>  ?=(%load -.i)
@@ -456,7 +457,7 @@
       %+  buy  l(va.stack rest)
       :*  -.p.memo
           %memo
-          (change ~[%i32 %i32] ~[addr content])
+          (change ~[%i32 type.i] ~[addr content])
           i
       ==
     =/  index=@  (add addr offset.m.i)
@@ -1469,8 +1470,8 @@
   =<  fetch
   |%
   ::  ++rope: ++rip but with leading zeros.
-  ::  Takes atom to disassemble, bloq size
-  ::  and number of blocks
+  ::  Takes bloq size, number of blocks and
+  ::  an atom to dissasemble
   ::
   ++  rope
     |=  [b=bloq s=step a=@]
@@ -1478,6 +1479,16 @@
     ?:  =(s 0)  ~
     :-  (end b a)
     $(a (rsh b a), s (dec s))
+  ::
+  ++  lane-size
+    |=  lt=lane-type
+    ^-  @
+    ?-  lt
+      %i8   8
+      %i16  16
+      ?(%i32 %f32)  32
+      ?(%i64 %f64)  64
+    ==
   ::
   ++  fetch
     |=  i=instr-vec
@@ -1530,10 +1541,13 @@
       (cury en-si (mul 2 p.u.kind.i))
     ::
         %zero
-      !!
+      l(va.stack [(mem-load index (div p.u.kind.i 8) p.mem) rest])
     ::
         %splat
-      !!
+      =;  loaded=@
+        l(va.stack [loaded rest])
+      =+  lane=(mem-load index (div p.u.kind.i 8) p.mem)
+      (fil (xeb p.u.kind.i) (div 128 p.u.kind.i) lane)
     ::
     ==
   ::
@@ -1542,49 +1556,121 @@
     ?>  ?=(%load-lane -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    ?>  ?=([vec=@ addr=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =/  index=@  (add addr offset.m.i)
+    =+  mem=(memo:grab 0 store.l)
+    ?:  ?=(%| -.mem)
+      %+  buy  l(va.stack rest)
+      :*  -.p.mem
+          %memo
+          (change ~[%i32 %v128] ~[addr vec])
+          [%vec i]
+      ==
+    =+  lane=(mem-load index (div p.i 8) p.mem)
+    %=    l
+        va.stack
+      [(sew (xeb p.i) [l.i 1 lane] vec) rest]
+    ==
   ::
   ++  store
     |=  i=instr-vec
     ?>  ?=(%store -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    ?>  ?=([vec=@ addr=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =+  memo=(memo:grab 0 store.l)
+    ?:  ?=(%| -.memo)
+      %+  buy  l(va.stack rest)
+      :*  -.p.memo
+          %memo
+          (change ~[%i32 %v128] ~[addr vec])
+          [%vec i]
+      ==
+    =/  index=@  (add addr offset.m.i)
+    %=    l
+        va.stack  rest
+    ::
+        mem.store
+      `(mem-store index 16 vec p.memo)
+    ==
   ::
   ++  store-lane
     |=  i=instr-vec
     ?>  ?=(%store-lane -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    ?>  ?=([vec=@ addr=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =+  memo=(memo:grab 0 store.l)
+    ?:  ?=(%| -.memo)
+      %+  buy  l(va.stack rest)
+      :*  -.p.memo
+          %memo
+          (change ~[%i32 %v128] ~[addr vec])
+          [%vec i]
+      ==
+    =/  index=@  (add addr offset.m.i)
+    =+  lane=(cut (xeb p.i) [l.i 1] vec)
+    %=    l
+        va.stack  rest
+    ::
+        mem.store
+      `(mem-store index (div p.i 8) lane p.memo)
+    ==
   ::
   ++  const
     |=  i=instr-vec
     ?>  ?=(%const -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    l(va.stack [(coin-to-val p.i) va.stack.l])
   ::
   ++  shuffle
     |=  i=instr-vec
     ?>  ?=(%shuffle -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    ?>  ?=([c2=@ c1=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =/  seq=(list @)
+      (weld (rope 3 16 c1) (rope 3 16 c2))
+    %=    l
+        va.stack
+      :_  rest
+      %+  can  3
+      %-  turn  :_  (lead 1)
+      %+  turn  lane-ids.i
+      (curr snag seq)
+    ==
   ::
   ++  extract
     |=  i=instr-vec
     ?>  ?=(%extract -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    ?>  ?=([vec=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =+  size=(lane-size p.i)
+    =+  lane=(cut (xeb size) [l.i 1] vec)
+    =;  to-put=@
+      l(va.stack [to-put rest])
+    ?:  ?=(%u mode.i)  lane
+    (en-si 32 (to-si size lane))
   ::
   ++  replace
     |=  i=instr-vec
     ?>  ?=(%replace -.i)
     |=  l=local-state
     ^-  local-state
-    !!
+    ?>  ?=([lane=@ vec=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    %=    l
+        va.stack
+      :_  rest
+      (sew (xeb (lane-size p.i)) [l.i 1 lane] vec)
+    ==
   ::
   ++  plain
     =-  |=  i=instr-vec

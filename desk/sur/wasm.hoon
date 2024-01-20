@@ -199,8 +199,8 @@
     [%store-lane m=memarg p=?(%8 %16 %32 %64) l=@]
   ::  Misc
     [%const p=$>(%v128 coin-wasm)]
-    [%shuffle lane-ids=@]
-    [%extract p=lane-type l=@]
+    [%shuffle lane-ids=(list @)]
+    [%extract p=lane-type l=@ mode=?(%s %u)]
     [%replace p=lane-type l=@]
   ::  Plain
   ::
