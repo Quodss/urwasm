@@ -25,6 +25,12 @@
 /-  *engine
 ::
 |%
+++  check-apply
+  |=  [instr=$-(local-state local-state) l=local-state]
+  ^-  local-state
+  ?:  ?=(^ br.stack.l)  l
+  (instr l)
+::
 ++  page-size  ^~((bex 16))
 ::  +place: places list `b` into list `a`, overwriting contents of `a`
 ::
@@ -622,7 +628,8 @@
       =+  [rest d s n]=[rest d s n]  ::  save before changing l
       =>  .(l `local-state`l)
       =.  l
-        ((table-set [%table-set tab-id.i]) l(va.stack [ref d rest]))
+        %+  check-apply  (table-set [%table-set tab-id.i])
+        l(va.stack [ref d rest])
       ?>  (lth +(d) ^~((bex 32)))
       ?>  (lth +(s) ^~((bex 32)))
       $(va.stack.l [(dec n) +(s) +(d) va.stack.l])
@@ -658,8 +665,8 @@
       =.  l
         ?:  (lte d s)
           =.  l
-            %-  (table-set [%table-set tab-id-x.i])
-            %-  (table-get [%table-get tab-id-y.i])
+            %+  check-apply  (table-set [%table-set tab-id-x.i])
+            %+  check-apply  (table-get [%table-get tab-id-y.i])
             l(va.stack [s d rest])
           ?>  (lth +(d) ^~((bex 32)))
           ?>  (lth +(s) ^~((bex 32)))
@@ -667,8 +674,8 @@
         ?>  (lth (dec (add d n)) ^~((bex 32)))
         ?>  (lth (dec (add s n)) ^~((bex 32)))
         =.  l
-          %-  (table-set [%table-set tab-id-x.i])
-          %-  (table-get [%table-get tab-id-y.i])
+          %+  check-apply  (table-set [%table-set tab-id-x.i])
+          %+  check-apply  (table-get [%table-get tab-id-y.i])
           l(va.stack [(dec (add s n)) (dec (add d n)) rest])
         l(va.stack [s d va.stack.l])
       $(va.stack.l [(dec n) va.stack.l])
