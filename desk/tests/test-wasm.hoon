@@ -73,7 +73,7 @@
     =^  out=(list coin-wasm)  st
       %-  wasm-need
       %^  invoke  '__wbindgen_add_to_stack_pointer'
-      ~[[%i32 (si-to-complement:op-def 32 -16)]]  st
+      ~[[%i32 (en-si:op-def 32 -16)]]  st
     =/  retptr=@  ?>(?=([[%i32 n=@] ~] out) n.i.out)
     =^  out=(list coin-wasm)  st
       %-  wasm-need

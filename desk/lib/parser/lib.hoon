@@ -20,6 +20,7 @@
 ++  main
   |=  wasm=octs
   =,  sur
+  ^-  module
   =|  out=module
   =/  bytes=tape  (trip q.wasm)
   ::  add leading zeros
@@ -148,8 +149,7 @@
       |=  =(list @)
       ;;  @rs
       %+  can  3
-      %+  fuse  (reap 4 1)
-      list
+      (turn list (lead 1))
     (stun [4 4] next)
   ::
   ++  f64
@@ -157,8 +157,7 @@
       |=  =(list @)
       ;;  @rd
       %+  can  3
-      %+  fuse  (reap 8 1)
-      list
+      (turn list (lead 1))
     (stun [8 8] next)
   ::  ++vec: parse .wasm vector of rule
   ::
@@ -603,13 +602,13 @@
       |=  =(list @)
       ^-  instruction:sur
       :^  %vec  %const  %v128
-      (can 3 (fuse (reap 16 1) list))
+      (can 3 (turn list (lead 1)))
     ::
     ++  shuffle
       |=  =(list @)
       ^-  instruction:sur
       :+  %vec  %shuffle
-      (can 3 (fuse (reap 16 1) list))
+      (can 3 (turn list (lead 1)))
     ::
     ++  lane
       |=  [op=@ l=@]
@@ -947,7 +946,7 @@
     ^-  octs
     :-  (lent tape)
     %+  can  3
-    (fuse (reap (lent tape) 1) tape)
+    (turn tape (lead 1))
   ::
   ++  handle-data
     |=  $=  p

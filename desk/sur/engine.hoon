@@ -103,14 +103,19 @@
     $:  %memo
         args=(list coin-wasm)
         $=  instr
-        $>
-          $?  %load         %store
-              %memory-size  %memory-grow
-              %memory-init  %memory-copy
-              %memory-fill
-          ==
-        instruction
-    ==
+        $?  $>  $?  %load         %store
+                    %memory-size  %memory-grow
+                    %memory-init  %memory-copy
+                    %memory-fill
+                ==
+            instr-short
+        ::
+            $:  %vec
+                $>  $?  %load   %load-lane
+                        %store  %store-lane
+                    ==
+                instr-vec
+    ==  ==  ==
   ::
     $:  %glob
         args=(list coin-wasm)

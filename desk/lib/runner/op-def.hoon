@@ -78,7 +78,7 @@
     ?>(?=([%ref %func *] i.b) i.b)
   ==
 ::
-++  complement-to-si
+++  to-si
   |=  [base=@ n=@]
   ^-  @s
   =.  n  (mod n (bex base))
@@ -87,7 +87,7 @@
   ?:  sign  n
   (sub (bex base) n)
 ::
-++  si-to-complement
+++  en-si
   |=  [base=@ s=@s]
   ^-  @
   ?:  (syn:si s)
@@ -196,6 +196,19 @@
     (snag idx globals.st)
   ::
   --
+::
+++  mem-store
+  |=  [index=@ size=@ content=@ buffer=@ n-pages=@]
+  ^-  [buffer=@ n-pages=@]
+  ?>  (lth (add index size) (mul n-pages page-size))
+  [(sew 3 [index size content] buffer) n-pages]
+::
+++  mem-load
+  |=  [index=@ size=@ buffer=@ n-pages=@]
+  ^-  @
+  ?>  (lth (add index size) (mul n-pages page-size))
+  (cut 3 [index size] buffer)
+::
 ::  |kind: instruction classes
 ::
 ++  kind
@@ -270,7 +283,7 @@
   |=  i=$<(?(%call %loop %call-indirect %block %if) instruction)
   ^-  $-(local-state local-state)
   ?-    -.i
-      %vec          (simd:fetch i)
+      %vec          (simd:fetch +.i)
       nullary:kind  (null:fetch i)
       ref:kind      (ref:fetch i)
       %load         (load:fetch i)
@@ -303,11 +316,6 @@
 ::
 ++  fetch
   |%
-  ++  simd
-    |=  i=instruction
-    ^-  $-(local-state local-state)
-    !!
-  ::
   ++  select
     |=  l=local-state
     ^-  local-state
@@ -418,19 +426,22 @@
     =;  loaded=@
       l(va.stack [loaded rest])
     ?~  n.i
-      ?-  type.i
-        ?(%i32 %f32)  (cut 3 [index 4] buffer.p.mem)
-        ?(%i64 %f64)  (cut 3 [index 8] buffer.p.mem)
+      ?-    type.i
+          ?(%i32 %f32)
+        (mem-load index 4 p.mem)
+      ::
+          ?(%i64 %f64)
+        (mem-load index 8 p.mem)
       ==
     ?>  ?=(^ mode.i)
     ?-    u.mode.i
         %u
-      (cut 3 [index (div u.n.i 8)] buffer.p.mem)
+      (mem-load index (div u.n.i 8) p.mem)
     ::
         %s
-      %+  si-to-complement  ?+(type.i !! %i32 32, %i64 64)
-      %+  complement-to-si  u.n.i
-      (cut 3 [index (div u.n.i 8)] buffer.p.mem)
+      %+  en-si  ?+(type.i !! %i32 32, %i64 64)
+      %+  to-si  u.n.i
+      (mem-load index (div u.n.i 8) p.mem)
     ==
   ::
   ++  store
@@ -454,7 +465,7 @@
           va.stack  rest
       ::
           mem.store
-        `[(sew bloq=3 [index size to-put] buffer.p.memo) n-pages.p.memo]
+        `(mem-store index size to-put p.memo)
       ==
     ?~  n.i
       :_  content
@@ -675,7 +686,7 @@
         [-.p.tab %tabl (change ~[p.t.p.tab %i32] ~[val n]) i]
       ?.  %+  lte-lim  (add n (lent q.p.tab))
           q:(snag p.p.tab table-section.module.store.l)
-        l(va.stack [^~((si-to-complement 32 -1)) rest])
+        l(va.stack [^~((en-si 32 -1)) rest])
       %=    l
           va.stack  [(lent q.p.tab) rest]
       ::
@@ -1041,8 +1052,8 @@
           [0 (dec (bex base))]
         ::
             %s
-          :-  (si-to-complement base (new | (bex (dec base))))
-          (si-to-complement base (new & (dec (bex (dec base)))))
+          :-  (en-si base (new | (bex (dec base))))
+          (en-si base (new & (dec (bex (dec base)))))
         ==
       |=  v=@
       ^-  @
@@ -1064,7 +1075,7 @@
         upper-int
       ?-    u.mode.i
         %u  (abs:si u.int)
-        %s  (si-to-complement base u.int)
+        %s  (en-si base u.int)
       ==
     ::
     ++  nearest
@@ -1105,7 +1116,7 @@
       ^-  @
       ?-  mode.i
         %u  (mod v base)
-        %s  (si-to-complement base (complement-to-si source.i v))
+        %s  (en-si base (to-si source.i v))
       ==
     ::
     ++  convert
@@ -1121,7 +1132,7 @@
       ^-  @
       ?:  ?=(%u mode.i)
         (sun:r v)
-      (san:r (complement-to-si base v))
+      (san:r (to-si base v))
     ::
     ++  demote
       |=  *
@@ -1225,10 +1236,10 @@
           ?(%i32 %i64)
         ?-  mode
           %u  (^div v w)
-          %s  %+  si-to-complement  base
+          %s  %+  en-si  base
               %+  fra:si
-                (complement-to-si base v)
-              (complement-to-si base w)
+                (to-si base v)
+              (to-si base w)
         ==
       ::
           %f32  (div:rs v w)
@@ -1242,10 +1253,10 @@
       =/  base=@  ?-(type.i %i32 32, %i64 64)
       |=  [v=@ w=@]
       ^-  @
-      %+  si-to-complement  base
+      %+  en-si  base
       %+  rem:si
-        (complement-to-si base v)
-      (complement-to-si base w)
+        (to-si base v)
+      (to-si base w)
     ::
     ++  and
       |=  *
@@ -1452,5 +1463,135 @@
       (le ;;(instruction [%le +.i]))
     ::
     --
+  --
+::
+++  simd
+  =<  fetch
+  |%
+  ::  ++rope: ++rip but with leading zeros.
+  ::  Takes atom to disassemble, bloq size
+  ::  and number of blocks
+  ::
+  ++  rope
+    |=  [b=bloq s=step a=@]
+    ^-  (list @)
+    ?:  =(s 0)  ~
+    :-  (end b a)
+    $(a (rsh b a), s (dec s))
+  ::
+  ++  fetch
+    |=  i=instr-vec
+    ^-  $-(local-state local-state)
+    ?+    -.i  (plain i)
+        %load        (load i)
+        %load-lane   (load-lane i)
+        %store       (store i)
+        %store-lane  (store-lane i)
+    ::
+        %const    (const i)
+        %shuffle  (shuffle i)
+        %extract  (extract i)
+        %replace  (replace i)
+    ::
+    ==
+  ::
+  ++  load
+    |=  i=instr-vec
+    ?>  ?=(%load -.i)
+    |=  l=local-state
+    ^-  local-state
+    ?>  ?=([addr=@ rest=*] va.stack.l)
+    =,  va.stack.l
+    =/  index=@  (add addr offset.m.i)
+    =+  mem=(memo:grab 0 store.l)
+    ?:  ?=(%| -.mem)
+      %+  buy  l(va.stack rest)
+      :*  -.p.mem
+          %memo
+          (change ~[%i32] ~[addr])
+          [%vec i]
+      ==
+    ?~  kind.i
+      l(va.stack [(mem-load index 16 p.mem) rest])
+    ?-    q.u.kind.i
+        [%extend p=?(%s %u)]
+      =;  loaded=@
+        l(va.stack [loaded rest])
+      =+  bloq=(xeb p.u.kind.i) 
+      =/  lanes=(list @)
+        %^  rope  bloq  (div 64 p.u.kind.i)
+        (mem-load index 8 p.mem)
+      %+  can  +(bloq)
+      %-  turn  :_  (lead 1)
+      ?:  ?=(%u p.q.u.kind.i)
+        lanes
+      %+  turn  lanes
+      %+  cork  (cury to-si p.u.kind.i)
+      (cury en-si (mul 2 p.u.kind.i))
+    ::
+        %zero
+      !!
+    ::
+        %splat
+      !!
+    ::
+    ==
+  ::
+  ++  load-lane
+    |=  i=instr-vec
+    ?>  ?=(%load-lane -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  store
+    |=  i=instr-vec
+    ?>  ?=(%store -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  store-lane
+    |=  i=instr-vec
+    ?>  ?=(%store-lane -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  const
+    |=  i=instr-vec
+    ?>  ?=(%const -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  shuffle
+    |=  i=instr-vec
+    ?>  ?=(%shuffle -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  extract
+    |=  i=instr-vec
+    ?>  ?=(%extract -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  replace
+    |=  i=instr-vec
+    ?>  ?=(%replace -.i)
+    |=  l=local-state
+    ^-  local-state
+    !!
+  ::
+  ++  plain
+    =-  |=  i=instr-vec
+        ^-  $-(local-state local-state)
+        ~+
+        !!
+    ~
+  ::
   --
 --

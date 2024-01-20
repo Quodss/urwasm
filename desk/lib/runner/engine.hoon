@@ -360,7 +360,7 @@
 ++  apply
   |=  [i=instruction l=local-state]
   ^-  local-state
-  :: !.
+  !.
   ?+    i  ((fetch-gate i) l)
       [%call func-id=@]
     (call func-id.i l)
