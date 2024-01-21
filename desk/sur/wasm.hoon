@@ -54,6 +54,7 @@
       results=(list valtype)
   ==
 ::
++$  lane-type  ?(%i8 %i16 num-type)
 +$  instruction
   $%([%vec instr-vec] instr-short)
 ::
@@ -130,31 +131,31 @@
     ::::  comparison:
     ::::
     [%eqz type=?(%i32 %i64)]
-    [%eq type=num-type]
-    [%ne type=num-type]
-    [%lt type=num-type mode=(unit ?(%s %u))]
-    [%gt type=num-type mode=(unit ?(%s %u))]
-    [%le type=num-type mode=(unit ?(%s %u))]
-    [%ge type=num-type mode=(unit ?(%s %u))]
-    ::::  arithmetics:
+    [%eq type=lane-type]
+    [%ne type=lane-type]
+    [%lt type=lane-type mode=(unit ?(%s %u))]
+    [%gt type=lane-type mode=(unit ?(%s %u))]
+    [%le type=lane-type mode=(unit ?(%s %u))]
+    [%ge type=lane-type mode=(unit ?(%s %u))]
+    ::::  arithmetics, some instructions are extended to accomodate simd:
     ::::
     [%clz type=?(%i32 %i64)]
     [%ctz type=?(%i32 %i64)]
-    [%popcnt type=?(%i32 %i64)]
-    [%add type=num-type]
-    [%sub type=num-type]
-    [%mul type=num-type]
-    [%div type=num-type mode=(unit ?(%s %u))]
+    [%popcnt type=?(%i8 %i32 %i64)]
+    [%add type=lane-type]
+    [%sub type=lane-type]
+    [%mul type=lane-type]
+    [%div type=lane-type mode=(unit ?(%s %u))]
     [%rem type=?(%i32 %i64) mode=?(%s %u)]
     [%and type=?(%i32 %i64)]
     [%or type=?(%i32 %i64)]
     [%xor type=?(%i32 %i64)]
-    [%shl type=?(%i32 %i64)]
-    [%shr type=?(%i32 %i64) mode=?(%s %u)]
+    [%shl type=?(%i8 %i16 %i32 %i64)]
+    [%shr type=?(%i8 %i16 %i32 %i64) mode=?(%s %u)]
     [%rotl type=?(%i32 %i64)]
     [%rotr type=?(%i32 %i64)]
-    [%abs type=?(%f32 %f64)]
-    [%neg type=?(%f32 %f64)]
+    [%abs type=lane-type]
+    [%neg type=lane-type]
     [%ceil type=?(%f32 %f64)]
     [%floor type=?(%f32 %f64)]
     ::
@@ -178,7 +179,6 @@
     [%reinterpret type=num-type source-type=num-type]
   ==  ::  $instr-short
 ::
-+$  lane-type  ?(%i8 %i16 num-type)
 ::  0xFD prefixed instructions
 ::
 +$  instr-vec

@@ -25,8 +25,48 @@
 /-  *engine
 ::
 |%
-++  check-apply
-  |=  [instr=$-(local-state local-state) l=local-state]
+::  stdlib functional hacks' fixes, won't compile otherwise.
+::  to remove with hoon.hoon %138
+::
+++  corl
+  |*  [a=$-(* *) b=$-(* *)]
+  =<  +:|.((a (b)))
+  |*  c=_,.+<.b
+  (a (b c))
+::
+++  cork  |*([a=$-(* *) b=$-(* *)] (corl b a))
+++  curr
+  |*  [a=$-(^ *) c=*]
+  |*  b=_,.+<-.a
+  (a b c)
+::
+++  cury
+  |*  [a=$-(^ *) b=*]
+  |*  c=_,.+<+.a
+  (a b c)
+::
+++  lane-size
+  |=  lt=lane-type
+  ^-  @
+  ?-  lt
+    %i8   8
+    %i16  16
+    ?(%i32 %f32)  32
+    ?(%i64 %f64)  64
+  ==
+::
+++  fuse                        ::  from ~paldev
+  |*  [a=(list) b=(list)]
+  ^-  (list [_?>(?=(^ a) i.a) _?>(?=(^ b) i.b)])
+  ?~  a  ~
+  ?~  b  ~
+  :-  [i.a i.b]
+  $(a t.a, b t.b)
+::
+::  ++chap: check branching signal, apply instruction
+::
+++  chap
+  |=  [l=local-state instr=$-(local-state local-state)]
   ^-  local-state
   ?:  ?=(^ br.stack.l)  l
   (instr l)
@@ -99,6 +139,24 @@
   ?:  (syn:si s)
     +:(old:si s)
   (sub (bex base) +:(old:si s))
+::
+++  sat
+  |=  [size=@ s=@s mode=?(%u %s)]
+  ^-  @
+  =,  si
+  =;  sat-s=@s
+    (en-si size sat-s)
+  ?:  =(%u mode)
+    ?:  =(--1 (cmp s (sum (new & (bex size)) -1)))
+      (sum (new & (bex size)) -1)
+    ?:  =(-1 (cmp s --0))
+      --0
+    s
+  ?:  =(--1 (cmp s (sum (new & (bex (dec size))) -1)))
+    (sum (new & (bex (dec size))) -1)
+  ?:  =(-1 (cmp s (new | (bex (dec size)))))
+    (new | (bex (dec size)))
+  s
 ::
 ++  coin-to-val
   |=  c=coin-wasm
@@ -289,7 +347,7 @@
   |=  i=$<(?(%call %loop %call-indirect %block %if) instruction)
   ^-  $-(local-state local-state)
   ?-    -.i
-      %vec          (simd:fetch +.i)
+      %vec          (simd +.i)
       nullary:kind  (null:fetch i)
       ref:kind      (ref:fetch i)
       %load         (load:fetch i)
@@ -615,6 +673,7 @@
         %+  buy  l(va.stack rest)
         [-.p.tab %tabl (change ~[%i32 %i32 %i32] ~[d s n]) i]
       =+  elem=(snag elem-id.i elem-section.module.store.l)
+      |-  ^-  local-state
       ?:  =(n 0)  l
       =/  ref=$>(%ref coin-wasm)
         =+  op=(snag s i.elem)
@@ -628,8 +687,9 @@
       =+  [rest d s n]=[rest d s n]  ::  save before changing l
       =>  .(l `local-state`l)
       =.  l
-        %+  check-apply  (table-set [%table-set tab-id.i])
+        %-  (table-set [%table-set tab-id.i])
         l(va.stack [ref d rest])
+      ?:  ?=(^ br.stack.l)  l
       ?>  (lth +(d) ^~((bex 32)))
       ?>  (lth +(s) ^~((bex 32)))
       $(va.stack.l [(dec n) +(s) +(d) va.stack.l])
@@ -665,19 +725,24 @@
       =.  l
         ?:  (lte d s)
           =.  l
-            %+  check-apply  (table-set [%table-set tab-id-x.i])
-            %+  check-apply  (table-get [%table-get tab-id-y.i])
-            l(va.stack [s d rest])
+            %.  l(va.stack [s d rest])
+            ;~  chap
+              (table-get [%table-get tab-id-y.i])
+              (table-set [%table-set tab-id-x.i])
+            ==
           ?>  (lth +(d) ^~((bex 32)))
           ?>  (lth +(s) ^~((bex 32)))
           l(va.stack [+(s) +(d) va.stack.l])
         ?>  (lth (dec (add d n)) ^~((bex 32)))
         ?>  (lth (dec (add s n)) ^~((bex 32)))
         =.  l
-          %+  check-apply  (table-set [%table-set tab-id-x.i])
-          %+  check-apply  (table-get [%table-get tab-id-y.i])
-          l(va.stack [(dec (add s n)) (dec (add d n)) rest])
+          %.  l(va.stack [(dec (add s n)) (dec (add d n)) rest])
+          ;~  chap
+              (table-get [%table-get tab-id-y.i])
+              (table-set [%table-set tab-id-x.i])
+            ==
         l(va.stack [s d va.stack.l])
+      ?:  ?=(^ br.stack.l)  l
       $(va.stack.l [(dec n) va.stack.l])
     ::
     ++  table-grow
@@ -935,6 +1000,12 @@
     ++  abs
       |=  i=instruction
       ?>  ?=(%abs -.i)
+      ?.  ?=(?(%f32 %f64) type.i)
+        =+  size=(lane-size type.i)
+        |=  v=@
+        =/  v-signed=@s  (to-si size v)
+        ?.  =(-1 (cmp:si v-signed --0))  v
+        (mod (en-si size (pro:si -1 v-signed)) (bex size))
       |=  v=@
       ^-  @
       =/  sign=?
@@ -952,13 +1023,11 @@
     ++  neg
       |=  i=instruction
       ?>  ?=(%neg -.i)
+      =+  size=(lane-size type.i)
       |=  v=@
       ^-  @
-      %+  add  v
-      ?-  type.i
-        %f32  ^~((bex 31))
-        %f64  ^~((bex 63))
-      ==
+      %+  ~(sum fo (bex size))  v
+      (bex (dec size))
     ::
     ++  sqrt
       |=  i=instruction
@@ -1200,11 +1269,10 @@
     ++  add
       |=  i=instruction
       ?>  ?=(%add -.i)
-      =/  modul=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
+      =/  modulo=@  (bex (lane-size type.i))
       |=  [v=@ w=@]
       ^-  @
-      ?-  type.i
-        ?(%i32 %i64)  (~(sum fo modul) v w)
+      ?+  type.i  (~(sum fo modulo) v w) 
         %f32  (add:rs v w)
         %f64  (add:rd v w)
       ==
@@ -1212,11 +1280,10 @@
     ++  sub
       |=  i=instruction
       ?>  ?=(%sub -.i)
-      =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
+      =/  modulo=@  (bex (lane-size type.i))
       |=  [v=@ w=@]
       ^-  @
-      ?-  type.i
-        ?(%i32 %i64)  (~(dif fo base) v w)
+      ?+  type.i  (~(dif fo modulo) v w)
         %f32  (sub:rs v w)
         %f64  (sub:rd v w)
       ==
@@ -1224,11 +1291,10 @@
     ++  mul
       |=  i=instruction
       ?>  ?=(%mul -.i)
-      =/  base=@  ?+(type.i 0 %i32 (bex 32), %i64 (bex 64))
+      =/  base=@  (bex (lane-size type.i))
       |=  [v=@ w=@]
       ^-  @
-      ?-  type.i
-        ?(%i32 %i64)  (~(pro fo base) v w)
+      ?+  type.i  (~(pro fo base) v w)
         %f32  (mul:rs v w)
         %f64  (mul:rd v w)
       ==
@@ -1236,22 +1302,23 @@
     ++  div
       |=  i=instruction
       ?>  ?=(%div -.i)
-      =/  base=@  ?+(type.i 0 %i32 32, %i64 64)
+      =/  size=@  (lane-size type.i)
       =/  mode=?(%u %s)  (fall mode.i %u)
       |=  [v=@ w=@]
       ^-  @
       ?-    type.i
-          ?(%i32 %i64)
-        ?-  mode
-          %u  (^div v w)
-          %s  %+  en-si  base
-              %+  fra:si
-                (to-si base v)
-              (to-si base w)
-        ==
-      ::
           %f32  (div:rs v w)
           %f64  (div:rd v w)
+      ::
+          *
+        ?-  mode
+          %u  (^div v w)
+          %s  %+  en-si  size
+              %+  fra:si
+                (to-si size v)
+              (to-si size w)
+        ==
+      ::
       ==
     ::
     ++  rem
@@ -1268,36 +1335,30 @@
     ::
     ++  and
       |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      (dis v w)  ::  ATTENTION! loobean disjunction is boolean conjunction
+      dis  ::  ATTENTION! loobean disjunction is boolean conjunction
     ::
     ++  or
       |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      (con v w)  ::  ATTENTION! loobean conjunction is boolean disjunction
+      con  ::  ATTENTION! loobean conjunction is boolean disjunction
     ::
     ++  xor
       |=  *
-      |=  [v=@ w=@]
-      ^-  @
-      (mix v w)
+      mix
     ::
     ++  shl
       |=  i=instruction
       ?>  ?=(%shl -.i)
-      =/  base=@   ?-(type.i %i32 32, %i64 64)
+      =/  base=@   (lane-size type.i)
       |=  [v=@ w=@]
       ^-  @
-      (lsh [0 (mod w base)] v)
+      (mod (lsh [0 (mod w base)] v) (bex base))
     ::
     ++  shr
       |=  i=instruction
       ?>  ?=(%shr -.i)
-      =/  negat=@  ?-(type.i %i32 (bex 31), %i64 (bex 63))
+      =/  base=@   (lane-size type.i)
+      =/  negat=@  (bex (dec base))
       =/  negat-dec=@  (dec negat)
-      =/  base=@   ?-(type.i %i32 32, %i64 64)
       |=  [v=@ w=@]
       ^-  @
       ?-    mode.i
@@ -1379,7 +1440,7 @@
     ++  eq
       |=  i=instruction
       ?>  ?=(%eq -.i)
-      ?:  ?=(?(%i32 %i64) type.i)
+      ?.  ?=(?(%f32 %f64) type.i)
         |=  [v=@ w=@]
         ^-  @
         ?:(=(v w) 1 0)
@@ -1399,7 +1460,7 @@
     ++  ne
       |=  i=instruction
       ?>  ?=(%ne -.i)
-      ?:  ?=(?(%i32 %i64) type.i)
+      ?.  ?=(?(%f32 %f64) type.i)
         |=  [v=@ w=@]
         ^-  @
         ?:(!=(v w) 1 0)
@@ -1427,7 +1488,7 @@
           %f32  ?:((lth:rs v w) 1 0)
           %f64  ?:((lth:rd v w) 1 0)
       ::
-          ?(%i32 %i64)
+          *
         ?-    mode
             %u  ?:((lth v w) 1 0)
             %s
@@ -1474,7 +1535,7 @@
   --
 ::
 ++  simd
-  =<  fetch
+  =<  fetch-vec
   |%
   ::  ++rope: ++rip but with leading zeros.
   ::  Takes bloq size, number of blocks and
@@ -1487,17 +1548,7 @@
     :-  (end b a)
     $(a (rsh b a), s (dec s))
   ::
-  ++  lane-size
-    |=  lt=lane-type
-    ^-  @
-    ?-  lt
-      %i8   8
-      %i16  16
-      ?(%i32 %f32)  32
-      ?(%i64 %f64)  64
-    ==
-  ::
-  ++  fetch
+  ++  fetch-vec
     |=  i=instr-vec
     ^-  $-(local-state local-state)
     ?+    -.i  (plain i)
@@ -1680,11 +1731,482 @@
     ==
   ::
   ++  plain
-    =-  |=  i=instr-vec
-        ^-  $-(local-state local-state)
-        ~+
-        !!
-    ~
+    |=  i=instr-vec
+    ^-  $-(local-state local-state)
+    ~+
+    |^
+    ?+    -.i  !!
+        vec-unary:kind
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([a=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      l(va.stack [((vec-unar i) a) rest])
+    ::
+        vec-binary:kind
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([b=@ a=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      l(va.stack [((vec-bina i) a b) rest])
+    ::
+        lane-wise-unary:kind
+      =/  op=$-(@ @)  (get-op-unar i)
+      =/  size=@  (get-size i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([vec=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      %=    l
+          va.stack
+        :_  rest
+        %+  can  (xeb size)
+        %-  turn  :_  (lead 1)
+        (turn (rope (xeb size) (div 128 size) vec) op)
+      ==
+    ::
+        lane-wise-binary:kind
+      =/  op=$-([@ @] @)  (get-op-bina i)
+      =/  size=@  (get-size i)
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([vec2=@ vec1=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      %=    l
+          va.stack
+        :_  rest
+        %+  can  (xeb size)
+        %-  turn  :_  (lead 1)
+        %-  turn  :_  op
+        %+  fuse  (rope (xeb size) (div 128 size) vec1)
+        (rope (xeb size) (div 128 size) vec2)
+      ==
+    ::
+        %bitselect
+      |=  l=local-state
+      ^-  local-state
+      ?>  ?=([vec3=@ vec2=@ vec1=@ rest=*] va.stack.l)
+      =,  va.stack.l
+      %=    l
+        va.stack
+        :_  rest
+        ::  ++con is ior, ++dis is iand
+        ::
+        (con (dis vec1 vec3) (dis vec2 (not 7 1 vec3)))
+      ==
+    ==
+    ::  |kind: instruction classes for SIMD instructions
+    ::
+    ++  kind
+      |%
+      +$  vec-unary
+        $?  %splat  %not  %any-true  %all-true
+            %bitmask  %extadd  %extend  %convert
+            %demote  %promote
+        ==
+      ::
+      +$  vec-binary
+        $?  %swizzle  %and  %andnot  %or  %xor
+            %narrow  %shl  %shr  %extmul  %dot
+        ==
+      ::
+      +$  lane-wise-unary
+        $?
+          %abs  %neg  %popcnt  %ceil  %floor  %trunc
+          %nearest  %sqrt
+        ==
+      ::
+      +$  lane-wise-binary
+        $?  %eq  %ne  %lt  %gt  %le  %ge  %add  %sub 
+            %min  %max  %avgr  %q15mul-r-sat  %mul  %div
+            %pmin  %pmax
+        ==
+      --
+    ::
+    ++  vec-unar
+      |:  i=`$>(vec-unary:kind instr-vec)`[%not ~]
+      ^-  $-(@ @)
+      ?-    -.i
+          %splat
+        =+  size=(lane-size p.i)
+        =+  bloq=(xeb size)
+        =+  number=(div 128 size)
+        |=  a=@
+        ^-  @
+        (fil bloq number a)
+      ::
+          %not
+        |=  a=@
+        ^-  @
+        (not 7 1 a)
+      ::
+          %any-true
+        |=  a=@
+        ^-  @
+        ?.(=(0 a) 1 0)
+      ::
+          %all-true
+        =+  size=(lane-size p.i)
+        =+  bloq=(xeb size)
+        =+  n=(div 128 size)
+        |=  a=@
+        ^-  @
+        ?:  (lien (rope bloq n a) (curr test 0))
+          0
+        1
+      ::
+          %bitmask
+        =+  size=(lane-size p.i)
+        =+  bloq=(xeb size)
+        =+  n=(div 128 size)
+        |=  a=@
+        %+  can  0
+        %-  turn  :_  (lead 1)
+        %-  weld  :_  (reap (sub 32 n) `@`0)
+        %+  turn
+          (turn (rope bloq n a) (cury to-si size))
+        |=  a=@s
+        ^-  @
+        ?:  =(-1 (cmp:si a --0))
+          1
+        0
+      ::
+          %extadd
+        =+  half-size=(div (lane-size p.i) 2)
+        =+  half-bloq=(xeb half-size)
+        =+  n=(div 128 half-size)
+        |=  a=@
+        =/  lanes-extend=(list @)
+          =+  lanes=(rope half-bloq n a)
+          ?:  ?=(%u mode.i)  lanes
+          %+  turn  lanes
+          %+  cork  (cury to-si half-size)
+          (cury en-si (mul 2 half-size))
+        %+  can  +(half-bloq)
+        %-  turn  :_  (lead 1)
+        %-  turn  :_  ~(sum fo (mul 2 half-size))
+        %+  fuse  (scag (div n 2) lanes-extend)
+        (slag (div n 2) lanes-extend)
+      ::
+          %extend
+        =+  half-size=(div (lane-size p.i) 2)
+        =+  half-bloq=(xeb half-size)
+        =+  n=(div 128 half-size)
+        |=  a=@
+        =/  lanes-extend=(list @)
+          =+  lanes=(rope half-bloq n a)
+          =.  lanes
+            ?:  =(%low half.i)
+              (scag (div n 2) lanes)
+            (slag (div n 2) lanes)
+          ?:  =(%u mode.i)  lanes
+          %+  turn  lanes
+          %+  cork  (cury to-si half-size)
+          (cury en-si (mul 2 half-size))
+        %+  can  +(half-bloq)
+        (turn lanes-extend (lead 1))
+      ::
+          %convert
+        =+  size=(lane-size p.i)
+        =+  bloq=(xeb size)
+        =+  ^=  r
+          ?-  p.i
+            %f32  rs
+            %f64  rd
+          ==
+        |=  a=@
+        =+  lanes=(rope 5 4 a)
+        =?  lanes  =(%f64 p.i)  (scag 2 lanes)
+        %+  can  bloq
+        %-  turn  :_  (lead 1)
+        %+  turn  lanes
+        ?:  ?=(%u mode.i)  sun:r
+        (cork san:r (cury to-si size))
+      ::
+          %demote
+        |=  a=@
+        =+  lanes=(rope 6 2 a)
+        %+  can  5
+        %-  turn  :_  (lead 1)
+        %-  weld  :_  (reap 2 `@`0)
+        (turn lanes (corl bit:rs sea:rd))
+      ::
+          %promote
+        |=  a=@
+        =+  half-lanes=(rope 5 2 a)
+        %+  can  5
+        %-  turn  :_  (lead 1)
+        (turn half-lanes (corl bit:rd sea:rs))
+      ::
+      ==
+    ::
+    ++  vec-bina
+      |:  i=`$>(vec-binary:kind instr-vec)`[%and ~]
+      ^-  $-([@ @] @)
+      ?-    -.i
+          %swizzle
+        |=  [a=@ b=@]
+        ^-  @
+        %+  can  3
+        %-  turn  :_  (lead 1)
+        %+  turn  (rope 3 16 b)
+        %+  corl  (curr fall 0)
+        (curr snug (rope 3 16 a))
+      ::
+          %and
+        dis
+      ::
+          %andnot
+        |=  [a=@ b=@]
+        ^-  @
+        (dis a (not 7 1 b))
+      ::
+          %or
+        con
+      ::
+          %xor
+        mix
+      ::
+          %narrow
+        =+  double-size=(mul 2 (lane-size p.i))
+        =+  double-bloq=(xeb double-size)
+        =+  n=(div 128 double-size)
+        |=  [a=@ b=@]
+        ^-  @
+        %+  can  (dec double-bloq)
+        %-  turn  :_  (lead 1)
+        %+  turn
+          %+  weld  (rope double-bloq n a)
+          (rope double-bloq n b)
+        %+  cork  (cury to-si double-size)
+        (curr (cury sat (div double-size 2)) mode.i)
+      ::
+          %shl
+        =+  size=(lane-size p.i)
+        =+  bloq=(xeb size)
+        =+  n=(div 128 size)
+        |=  [vec=@ j=@]
+        ^-  @
+        %+  can  bloq
+        %-  turn  :_  (lead 1)
+        %+  turn
+          (rope bloq n vec)
+        (curr (bina:fetch [%shl p.i]) j)
+      ::
+          %shr
+        =+  size=(lane-size p.i)
+        =+  bloq=(xeb size)
+        =+  n=(div 128 size)
+        |=  [vec=@ j=@]
+        ^-  @
+        %+  can  bloq
+        %-  turn  :_  (lead 1)
+        %+  turn
+          (rope bloq n vec)
+        (curr (bina:fetch [%shr p.i mode.i]) j)
+      ::
+          %extmul
+        =+  half-size=(div (lane-size p.i) 2)
+        =+  half-bloq=(xeb half-size)
+        =+  n=(div 128 half-size)
+        =+  mode=mode.i
+        |=  [a=@ b=@]
+        =/  half-lanes-a=(list @)
+          =-  ?:  =(%u mode)  -
+              %+  turn  -
+              %+  cork  (cury to-si half-size)
+              (cury en-si (mul 2 half-size))
+          %.  [(div n 2) (rope half-bloq n a)]
+          ?:  =(%low half.i)  scag
+          slag
+        =/  half-lanes-b=(list @)
+          =-  ?:  =(%u mode)  -
+              %+  turn  -
+              %+  cork  (cury to-si half-size)
+              (cury en-si (mul 2 half-size))
+          %.  [(div n 2) (rope half-bloq n b)]
+          ?:  =(%low half.i)  scag
+          slag
+        %+  can  +(half-bloq)
+        %-  turn  :_  (lead 1)
+        %+  turn
+          (fuse half-lanes-a half-lanes-b)
+        ~(pro fo (mul 2 half-size))
+      ::
+          %dot
+        |=  [a=@ b=@]
+        =/  lanes-a=(list @)
+          %+  turn  (rope 4 8 a)
+          %+  cork  (cury to-si 16)
+          (cury en-si 32)
+        =/  lanes-b=(list @)
+          %+  turn  (rope 4 8 b)
+          %+  cork  (cury to-si 16)
+          (cury en-si 32)
+        =/  i1-i2=(list @)
+          (turn (fuse lanes-a lanes-b) ~(pro fo 32))
+        %+  can  5
+        %-  turn  :_  (lead 1)
+        %+  turn
+          (fuse (scag 4 i1-i2) (slag 4 i1-i2))
+        ~(sum fo 32)
+      ::
+      ==
+    ::
+    ++  get-op-unar
+      |:  i=`$>(lane-wise-unary:kind instr-vec)`[%popcnt ~]
+      ^-  $-(@ @)
+      ?-    -.i
+          %abs
+        (unar:fetch [%abs p.i])
+      ::
+          %neg
+        (unar:fetch [%neg p.i])
+      ::
+          %popcnt
+        (unar:fetch [%neg %i8])
+      ::
+          %ceil
+        (unar:fetch [%ceil p.i])
+      ::
+          %floor
+        (unar:fetch [%floor p.i])
+      ::
+          %trunc
+        =/  mode=(unit ?(%s %u))
+          ?:  ?=(?(%f32 %f64) p.i)  ~
+          `mode.i
+        (unar:fetch [%trunc p.i `from.i mode &])
+      ::
+          %nearest
+        (unar:fetch [%nearest p.i])
+      ::
+          %sqrt
+        (unar:fetch [%sqrt p.i])
+      ::
+      ==
+    ::
+    ++  get-op-bina
+      |:  i=`$>(lane-wise-binary:kind instr-vec)`[%q15mul-r-sat ~]
+      ^-  $-([@ @] @)
+      ?-    -.i
+          %eq
+        (bina:fetch [%eq p.i])
+      ::
+          %ne
+        (bina:fetch [%ne p.i])
+      ::
+          %lt
+        (bina:fetch [%lt p.i `mode.i])
+      ::
+          %gt
+        (bina:fetch [%gt p.i `mode.i])
+      ::
+          %le
+        (bina:fetch [%le p.i `mode.i])
+      ::
+          %ge
+        (bina:fetch [%ge p.i `mode.i])
+      ::
+          %add
+        ?~  sat.i
+          (bina:fetch [%add p.i])
+        =+  size=(lane-size p.i)
+        |=  [a=@ b=@]
+        ^-  @
+        %+  sat  size
+        :_  u.sat.i
+        =,  si
+        (sum (to-si size a) (to-si size b))
+      ::
+          %sub 
+        ?~  sat.i
+          (bina:fetch [%sub p.i])
+        =+  size=(lane-size p.i)
+        |=  [a=@ b=@]
+        ^-  @
+        %+  sat  size
+        :_  u.sat.i
+        =,  si
+        (dif (to-si size a) (to-si size b))
+      ::
+          %min
+        ?:  ?=(?(%f32 %f64) p.i)
+          (bina:fetch [%min p.i])
+        ?:  =(%u mode.i)  min
+        =+  size=(lane-size p.i)
+        |=  [a=@ b=@]
+        ?:  =(--1 (cmp:si (to-si size a) (to-si size b)))
+          b
+        a
+      ::
+          %max
+        ?:  ?=(?(%f32 %f64) p.i)
+          (bina:fetch [%max p.i])
+        ?:  =(%u mode.i)  max
+        =+  size=(lane-size p.i)
+        |=  [a=@ b=@]
+        ?:  =(-1 (cmp:si (to-si size a) (to-si size b)))
+          b
+        a
+      ::
+          %avgr
+        |=  [a=@ b=@]
+        ^-  @
+        (div :(add a b 1) 2)
+      ::
+          %q15mul-r-sat
+        |=  [a=@ b=@]
+        ^-  @
+        =+  shr=(bina:fetch [%shr %i16 %s])
+        %+  sat  16
+        :_  %s
+        (to-si 16 (shr (add (mul a b) ^~((bex 14))) 15))
+      ::
+          %mul
+        (bina:fetch [%mul p.i])
+      ::
+          %div
+        (bina:fetch [%div p.i ~])
+      ::
+          %pmin
+        =+  flt=(bina:fetch [%lt p.i ~])
+        |=  [a=@ b=@]
+        ^-  @
+        ?:  =(1 (flt b a))  b
+        a
+      ::
+          %pmax
+        =+  fgt=(bina:fetch [%gt p.i ~])
+        |=  [a=@ b=@]
+        ^-  @
+        ?:  =(1 (fgt b a))  b
+        a
+      ::
+      ==
+    ::  ++get-size: get size of a line-wise simd instruction.
+    ::  simd instructions that we care about either 
+    ::  have the size at +2, or +6, or we set the size
+    ::  manually in the case of %q15mul-r-sat and others
+    ::
+    ++  get-size
+      |=  i=^
+      ^-  @
+      ?+    +.i  !!
+          ~
+        ?+  -.i  !!
+          %q15mul-r-sat  16
+          %popcnt  8
+        ==
+      ::
+          lane-type
+        (lane-size +.i)
+      ::
+          [p=lane-type *]
+        
+        (lane-size p.+.i)
+      ==
+    --
   ::
   --
 --

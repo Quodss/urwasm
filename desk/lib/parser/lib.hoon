@@ -4,16 +4,6 @@
 /+  op-map=parser-op-map
 /+  simd-map=parser-simd-map
 |%
-::
-::
-++  fuse                        ::  from ~paldev
-  |*  [a=(list) b=(list)]
-  ^-  (list [_?>(?=(^ a) i.a) _?>(?=(^ b) i.b)])
-  ?~  a  ~
-  ?~  b  ~
-  :-  [i.a i.b]
-  $(a t.a, b t.b)
-::
 ::  ++main: parsing function. Extends octstream with
 ::  leading zeros, then applies ++module:r parsing rule.
 ::

@@ -75,7 +75,7 @@
     :*
       type-section
       (import-upd import-section)
-      (fuse:parser-lib function-section code-section)
+      (fuse function-section code-section)
       table-section
       memory-section
       global-section
