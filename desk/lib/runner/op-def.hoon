@@ -1884,7 +1884,7 @@
           (cury en-si (mul 2 half-size))
         %+  can  +(half-bloq)
         %-  turn  :_  (lead 1)
-        %-  turn  :_  ~(sum fo (mul 2 half-size))
+        %-  turn  :_  ~(sum fo (bex (mul 2 half-size)))
         %+  fuse  (scag (div n 2) lanes-extend)
         (slag (div n 2) lanes-extend)
       ::
@@ -2049,7 +2049,7 @@
         %-  turn  :_  (lead 1)
         %+  turn
           (fuse (scag 4 i1-i2) (slag 4 i1-i2))
-        ~(sum fo 32)
+        ~(sum fo ^~((bex 32)))
       ::
       ==
     ::
