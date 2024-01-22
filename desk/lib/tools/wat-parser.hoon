@@ -1,7 +1,5 @@
 ::  An example of using urwasm in production: parsing of
 ::  .wat format
-::  Wasm module was parsed beforehand and added as a jammed
-::  noun to save time
 ::
 /-  *engine
 /+  parser=parser-lib
