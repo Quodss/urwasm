@@ -205,10 +205,16 @@
     |.  ~+
     ;~(sfix (star instr) end)
   ::
-  ++  expr-else
-    %+  knee  *expression:sur
+  ++  expr-pair
+    %+  knee  [*expression:sur *expression:sur]
     |.  ~+
-    ;~(sfix (star instr) else)
+    ;~  plug
+      (star instr)
+      ;~  pose
+        (cold ~ end)
+        ;~(pfix else ;~(sfix (star instr) end))
+      ==
+    ==
   ::
   ++  end        (just '\0b')
   ++  else       (just '\05')
@@ -229,7 +235,6 @@
       instr-one
       instr-two
       br-table
-      if-else
       block
       loop
       if
@@ -293,13 +298,9 @@
   ::
   ++  if
     %+  cook  handle-if
-    ;~(pfix if-op ;~(plug block-type expr))
-  ::
-  ++  if-else
-    %+  cook  handle-if-else
     ;~  pfix
       if-op
-      ;~(plug block-type expr-else expr)
+      ;~(plug block-type expr-pair)
     ==
   ::
   ++  block-type
@@ -436,11 +437,6 @@
     [%loop type body]
   ::
   ++  handle-if
-    |=  [type=block-type:sur body=expression:sur]
-    ^-  instruction:sur
-    [%if type body ~]
-  ::
-  ++  handle-if-else
     |=  $:  type=block-type:sur
             body-true=expression:sur
             body-false=expression:sur

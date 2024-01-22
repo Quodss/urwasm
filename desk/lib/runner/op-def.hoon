@@ -2203,8 +2203,7 @@
         (lane-size +.i)
       ::
           [p=lane-type *]
-        
-        (lane-size p.+.i)
+        (lane-size p.i)
       ==
     --
   ::
