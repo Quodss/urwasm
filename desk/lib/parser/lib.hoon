@@ -212,7 +212,7 @@
       (star instr)
       ;~  pose
         (cold ~ end)
-        ;~(pfix else ;~(sfix (star instr) end))
+        (ifix [else end] (star instr))
       ==
     ==
   ::
