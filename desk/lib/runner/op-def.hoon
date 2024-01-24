@@ -63,10 +63,10 @@
 ::
 ++  torn
   |*  [a=(list) b=$-(* (unit))]
-  ^-  (unit (list _=+($:b ?>(?=(^ -) u))))
+  ^-  (unit (list _(need $:b)))
   ?~  a  [~ ~]
-  ;<  c=_=+($:b ?>(?=(^ -) u))         _biff  (b i.a)
-  ;<  d=(list _=+($:b ?>(?=(^ -) u)))  _biff  $(a t.a)
+  ;<  c=_(need $:b)         _biff  (b i.a)
+  ;<  d=(list _(need $:b))  _biff  $(a t.a)
   (some [c d])
 ::
 ++  lane-size
