@@ -429,22 +429,25 @@
     ::
     =/  type-in-instr=func-type  (snag type-id.i type-section)
     =+  ref=(snag ref-id q.p.tab)
-    =/  type-of-ref=func-type
-      ?+    ref  !!
+    =/  type-of-ref=(unit func-type)
+      ?+    ref  ~
           [%ref %func p=[~ @]]
-        (snag type-id:(snag u.p.ref function-section) type-section)
+        `(snag type-id:(snag u.p.ref function-section) type-section)
       ::
           [%ref %extn p=^]
-        type.u.p.ref
+        `type.u.p.ref
       ==
-    ?>  =(type-in-instr type-of-ref)
+    ?~  type-of-ref  l(br.stack [%trap ~])
+    ?.  =(type-in-instr u.type-of-ref)
+      l(br.stack [%trap ~])
     ::  local func reference
     ::
     ?:  ?=([%ref %func p=[~ @]] ref)
       (call u.p.ref l(va.stack rest))
     ::  external func reference
     ::
-    ?>  ?=([%ref %extn p=^] ref)
+    ?.  ?=([%ref %extn p=^] ref)
+      l(br.stack [%trap ~])
     %+  buy  l(va.stack (slag (lent params.type.u.p.ref) rest))
     :-  -.u.p.ref
     =*  params  params.type.u.p.ref
