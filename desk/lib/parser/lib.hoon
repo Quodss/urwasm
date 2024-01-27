@@ -109,7 +109,7 @@
     ;~  pose
       ::  single byte: positive
       ::
-      (cook |=(n=@ (new:si & n)) (shim 0 (dec (bex (min (dec n-bits) 6)))))
+      (cook (cury new:si &) (shim 0 (dec (bex (min (dec n-bits) 6)))))
       ::  single byte: negative
       ::
       %+  cook
@@ -128,7 +128,7 @@
         =,  si
         (sum (dif n --128) (pro --128 m))
       ;~  plug
-        (cook |=(n=@ (new:si & n)) (shim 128 255))
+        (cook (cury new:si &) (shim 128 255))
         this(n-bits (sub n-bits 7))
       ==
     ==

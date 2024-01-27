@@ -63,21 +63,17 @@
 ::
 ++  torn
   |*  [a=(list) b=$-(* (unit))]
-  ^-  (unit (list _(need $:b)))
-  ?~  a  [~ ~]
-  ;<  c=_(need $:b)         _biff  (b i.a)
-  ;<  d=(list _(need $:b))  _biff  $(a t.a)
-  (some [c d])
+  =|  l=(list _(need $:b))
+  |-  ^-  (unit (list _(need $:b)))
+  ?~  a  `(flop l)
+  =+  c=(b i.a)
+  ?~  c  ~
+  $(a t.a, l [u.c l])
 ::
 ++  lane-size
   |=  lt=lane-type
   ^-  @
-  ?-  lt
-    %i8   8
-    %i16  16
-    ?(%i32 %f32)  32
-    ?(%i64 %f64)  64
-  ==
+  (slav %ud (rsh 3 lt))
 ::
 ++  fuse                        ::  from ~paldev
   |*  [a=(list) b=(list)]

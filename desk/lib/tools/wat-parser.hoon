@@ -12,7 +12,6 @@
 ::  check text correctness to avoid having to call realloc
 ::
 ?>  (levy string-in (curr lte 0x7f))
-!.
 ~&  'parse wat2wasm module'
 =+  m=(main:parser bin)
 ~&  'instantiate'
