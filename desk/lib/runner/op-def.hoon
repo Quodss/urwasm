@@ -23,7 +23,11 @@
 ::::  /hoon/op-def/lib
   ::
 /-  *engine
+::  "All operators use round-to-nearest ties-to-even,
+::  except where otherwise specified."
 ::
+=/  rs  ~(. rs %n)
+=/  rd  ~(. rd %n)
 |%
 ::  stdlib functional hacks' fixes, won't compile otherwise.
 ::  to remove with hoon.hoon %138
@@ -1662,7 +1666,7 @@
       =;  loaded=(unit @)
         ?~  loaded  l(br.stack [%trap ~])
         l(va.stack [u.loaded rest])
-      =+  bloq=(xeb p.u.kind.i)
+      =+  bloq=(xeb (dec p.u.kind.i))
       =+  get=(mem-load index 8 p.mem)
       ?~  get  ~
       =/  lanes=(list @)
@@ -1687,7 +1691,7 @@
         l(va.stack [u.loaded rest])
       =+  lane=(mem-load index (div p.u.kind.i 8) p.mem)
       ?~  lane  ~
-      `(fil (xeb p.u.kind.i) (div 128 p.u.kind.i) u.lane)
+      `(fil (xeb (dec p.u.kind.i)) (div 128 p.u.kind.i) u.lane)
     ::
     ==
   ::
@@ -1711,7 +1715,7 @@
     ?~  lane  l(br.stack [%trap ~])
     %=    l
         va.stack
-      [(sew (xeb p.i) [l.i 1 u.lane] vec) rest]
+      [(sew (xeb (dec p.i)) [l.i 1 u.lane] vec) rest]
     ==
   ::
   ++  store
@@ -1755,7 +1759,7 @@
           [%vec i]
       ==
     =/  index=@  (add addr offset.m.i)
-    =+  lane=(cut (xeb p.i) [l.i 1] vec)
+    =+  lane=(cut (xeb (dec p.i)) [l.i 1] vec)
     =+  mem-stored=(mem-store index (div p.i 8) lane p.memo)
     ?~  mem-stored  l(br.stack [%trap ~])
     %=    l
@@ -1798,7 +1802,7 @@
     ?>  ?=([vec=@ rest=*] va.stack.l)
     =,  va.stack.l
     =+  size=(lane-size p.i)
-    =+  lane=(cut (xeb size) [l.i 1] vec)
+    =+  lane=(cut (xeb (dec size)) [l.i 1] vec)
     =;  to-put=@
       l(va.stack [to-put rest])
     ?:  ?=(%u mode.i)  lane
@@ -1814,7 +1818,7 @@
     %=    l
         va.stack
       :_  rest
-      (sew (xeb (lane-size p.i)) [l.i 1 lane] vec)
+      (sew (xeb (dec (lane-size p.i))) [l.i 1 lane] vec)
     ==
   ::
   ++  plain
@@ -1851,8 +1855,8 @@
       =;  val=(unit @)
         ?~  val  l(br.stack [%trap ~])
         l(va.stack [u.val rest])
-      ;<  =(list @)  _biff  (torn (rope (xeb size) (div 128 size) vec) op)
-      `(can (xeb size) (turn list (lead 1)))
+      ;<  =(list @)  _biff  (torn (rope (xeb (dec size)) (div 128 size) vec) op)
+      `(can (xeb (dec size)) (turn list (lead 1)))
     ::
         lane-wise-binary:kind
       =/  op=$-([@ @] (unit @))  (get-op-bina i)
@@ -1866,9 +1870,9 @@
         l(va.stack [u.val rest])
       ;<  =(list @)  _biff
         %-  torn  :_  op
-        %+  fuse  (rope (xeb size) (div 128 size) vec1)
-        (rope (xeb size) (div 128 size) vec2)
-      `(can (xeb size) (turn list (lead 1)))
+        %+  fuse  (rope (xeb (dec size)) (div 128 size) vec1)
+        (rope (xeb (dec size)) (div 128 size) vec2)
+      `(can (xeb (dec size)) (turn list (lead 1)))
     ::
         %bitselect
       |=  l=local-state
@@ -1917,7 +1921,7 @@
       ?-    -.i
           %splat
         =+  size=(lane-size p.i)
-        =+  bloq=(xeb size)
+        =+  bloq=(xeb (dec size))
         =+  number=(div 128 size)
         |=  a=@
         ^-  @
@@ -1935,7 +1939,7 @@
       ::
           %all-true
         =+  size=(lane-size p.i)
-        =+  bloq=(xeb size)
+        =+  bloq=(xeb (dec size))
         =+  n=(div 128 size)
         |=  a=@
         ^-  @
@@ -1945,7 +1949,7 @@
       ::
           %bitmask
         =+  size=(lane-size p.i)
-        =+  bloq=(xeb size)
+        =+  bloq=(xeb (dec size))
         =+  n=(div 128 size)
         |=  a=@
         %+  can  0
@@ -1961,7 +1965,7 @@
       ::
           %extadd
         =+  half-size=(div (lane-size p.i) 2)
-        =+  half-bloq=(xeb half-size)
+        =+  half-bloq=(xeb (dec half-size))
         =+  n=(div 128 half-size)
         |=  a=@
         =/  lanes-extend=(list @)
@@ -1978,7 +1982,7 @@
       ::
           %extend
         =+  half-size=(div (lane-size p.i) 2)
-        =+  half-bloq=(xeb half-size)
+        =+  half-bloq=(xeb (dec half-size))
         =+  n=(div 128 half-size)
         |=  a=@
         =/  lanes-extend=(list @)
@@ -1996,7 +2000,7 @@
       ::
           %convert
         =+  size=(lane-size p.i)
-        =+  bloq=(xeb size)
+        =+  bloq=(xeb (dec size))
         =+  ^=  r
           ?-  p.i
             %f32  rs
@@ -2057,7 +2061,7 @@
       ::
           %narrow
         =+  double-size=(mul 2 (lane-size p.i))
-        =+  double-bloq=(xeb double-size)
+        =+  double-bloq=(xeb (dec double-size))
         =+  n=(div 128 double-size)
         |=  [a=@ b=@]
         ^-  @
@@ -2071,7 +2075,7 @@
       ::
           %shl
         =+  size=(lane-size p.i)
-        =+  bloq=(xeb size)
+        =+  bloq=(xeb (dec size))
         =+  n=(div 128 size)
         =+  shl=(sure (bina:fetch [%shl p.i]))
         |=  [vec=@ j=@]
@@ -2084,7 +2088,7 @@
       ::
           %shr
         =+  size=(lane-size p.i)
-        =+  bloq=(xeb size)
+        =+  bloq=(xeb (dec size))
         =+  n=(div 128 size)
         =+  shr=(sure (bina:fetch [%shr p.i mode.i]))
         |=  [vec=@ j=@]
@@ -2097,7 +2101,7 @@
       ::
           %extmul
         =+  half-size=(div (lane-size p.i) 2)
-        =+  half-bloq=(xeb half-size)
+        =+  half-bloq=(xeb (dec half-size))
         =+  n=(div 128 half-size)
         =+  mode=mode.i
         |=  [a=@ b=@]
