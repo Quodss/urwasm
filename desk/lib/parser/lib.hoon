@@ -237,6 +237,7 @@
       :_  ~
       ?:  =(a b)  a
       [a b]
+    ?>  (gth i.t.l b)
     ?:  =(i.t.l +(b))
       $(b i.t.l, t.l t.t.l)
     :-  ?:  =(a b)  a
@@ -244,7 +245,7 @@
     $(a i.t.l, b i.t.l, t.l t.t.l)
   ::
   ++  instr
-    %-  stew  ^.  stet
+    ~+  %-  stew  ^.  stet
     ;:  welp
       ^.  limo
       :~

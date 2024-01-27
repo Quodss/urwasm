@@ -1855,7 +1855,8 @@
       =;  val=(unit @)
         ?~  val  l(br.stack [%trap ~])
         l(va.stack [u.val rest])
-      ;<  =(list @)  _biff  (torn (rope (xeb (dec size)) (div 128 size) vec) op)
+      ;<  =(list @)  _biff
+        (torn (rope (xeb (dec size)) (div 128 size) vec) op)
       `(can (xeb (dec size)) (turn list (lead 1)))
     ::
         lane-wise-binary:kind
@@ -2256,12 +2257,20 @@
       ::
           %q15mul-r-sat
         %-  mayb
+        =+  sign-bit=(bex 15)
+        =+  base=(bex 16)
+        =+  size=16
         |=  [a=@ b=@]
         ^-  @
-        =+  shr=(sure (bina:fetch [%shr %i16 %s]))
-        %+  sat  16
+        =/  sign=?  &
+        =?  .  (gte a sign-bit)
+          .(a (~(sum fo base) (not 4 1 a) 1), sign !sign)
+        =?  .  (gte b sign-bit)
+          .(b (~(sum fo base) (not 4 1 b) 1), sign !sign)
+        %+  sat  size
         :_  %s
-        (to-si 16 (shr (add (mul a b) ^~((bex 14))) 15))
+        %+  new:si  sign
+        (rsh [0 15] (add (mul a b) ^~((bex 14))))
       ::
           %mul
         (bina:fetch [%mul p.i])

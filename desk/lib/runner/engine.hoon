@@ -404,7 +404,10 @@
     ::  push them on the stack, clear branching signal and jump to start
     ::
     ?:  ?=([%targ %0] br.stack.l)
-      $(va.stack.l (weld (scag n-params va.stack.l) rest-vals), br.stack.l ~)
+      %=  $
+        va.stack.l  (weld (scag n-params va.stack.l) rest-vals)
+        br.stack.l  ~
+      ==
     ::  Exit the block, navigate branch
     ::
     l(va.stack (weld va.stack.l rest-vals), br.stack (dec-br br.stack.l))
@@ -456,7 +459,7 @@
       [%if *]  ::  [%if type=block-type branch-true=expression branch-false=expression]
     ?>  ?=([f=@ rest=*] va.stack.l)
     =,  va.stack.l
-    ?.  =(0 f.va.stack.l)
+    ?.  =(0 f)
       $(i [%block type branch-true]:i, va.stack.l rest)
     $(i [%block type branch-false]:i, va.stack.l rest)
   ::
