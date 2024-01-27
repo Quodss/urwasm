@@ -13,7 +13,7 @@
 ::
 ?>  (levy string-in (curr lte 0x7f))
 ~&  'parse wat2wasm module'
-=+  m=(main:parser bin)
+=+  m=~>(%bout (main:parser bin))
 ~&  'instantiate'
 =+  st=+:(wasm-need (prep m ~))
 =^  out=(list coin-wasm)  st
@@ -37,6 +37,7 @@
 =.  st
   =<  +  %-  wasm-need
   ~&  'invoke process'
+  ~>  %bout
   %^  invoke  'process'
   ~[[%i32 retptr] [%i32 ptr0] [%i32 len0]]  st
 ?>  ?=(^ mem.st)
