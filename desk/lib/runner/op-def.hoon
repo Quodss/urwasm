@@ -45,15 +45,35 @@
   |*  c=_,.+<+.a
   (a b c)
 ::
+::  ++mayb: turn output of gat into a unit
+::
+++  mayb
+  |*  gat=$-(* *)
+  |:  a=+6.gat
+  ^-  (unit _$:gat)
+  `(gat a)
+::  ++sure: unwrap output of gat
+::
+++  sure
+  |*  gat=$-(* (unit))
+  |*  a=_+6.gat
+  (need (gat a))
+::
+:: ++torn: map a list with a gate, collapsing units
+::
+++  torn
+  |*  [a=(list) b=$-(* (unit))]
+  =|  l=(list _(need $:b))
+  |-  ^-  (unit (list _(need $:b)))
+  ?~  a  `(flop l)
+  =+  c=(b i.a)
+  ?~  c  ~
+  $(a t.a, l [u.c l])
+::
 ++  lane-size
   |=  lt=lane-type
   ^-  @
-  ?-  lt
-    %i8   8
-    %i16  16
-    ?(%i32 %f32)  32
-    ?(%i64 %f64)  64
-  ==
+  (slav %ud (rsh 3 lt))
 ::
 ++  fuse                        ::  from ~paldev
   |*  [a=(list) b=(list)]
@@ -263,15 +283,17 @@
 ::
 ++  mem-store
   |=  [index=@ size=@ content=@ buffer=@ n-pages=@]
-  ^-  [buffer=@ n-pages=@]
-  ?>  (lth (add index size) (mul n-pages page-size))
-  [(sew 3 [index size content] buffer) n-pages]
+  ^-  (unit [buffer=@ n-pages=@])
+  ?.  (lth (add index size) (mul n-pages page-size))
+    ~
+  `[(sew 3 [index size content] buffer) n-pages]
 ::
 ++  mem-load
   |=  [index=@ size=@ buffer=@ n-pages=@]
-  ^-  @
-  ?>  (lth (add index size) (mul n-pages page-size))
-  (cut 3 [index size] buffer)
+  ^-  (unit @)
+  ?.  (lth (add index size) (mul n-pages page-size))
+    ~
+  `(cut 3 [index size] buffer)
 ::
 ::  |kind: instruction classes
 ::
@@ -365,14 +387,18 @@
     ^-  local-state
     ?>  ?=([a=@ rest=*] va.stack.l)
     =,  va.stack.l
-    l(va.stack [((unar:fetch i) a) rest])
+    =+  val=((unar:fetch i) a)
+    ?~  val  l(br.stack [%trap ~])
+    l(va.stack [u.val rest])
   ::
       binary-num:kind
     |=  l=local-state
     ^-  local-state
     ?>  ?=([b=@ a=@ rest=*] va.stack.l)
     =,  va.stack.l
-    l(va.stack [((bina:fetch i) a b) rest])
+    =+  val=((bina:fetch i) a b)
+    ?~  val  l(br.stack [%trap ~])
+    l(va.stack [u.val rest])
   ::
   ==
 ::
@@ -488,8 +514,9 @@
           (change ~[%i32] ~[addr])
           i
       ==
-    =;  loaded=@
-      l(va.stack [loaded rest])
+    =;  loaded=(unit @)
+      ?~  loaded  l(br.stack [%trap ~])
+      l(va.stack [u.loaded rest])
     ?~  n.i
       ?-    type.i
           ?(%i32 %f32)
@@ -504,8 +531,8 @@
       (mem-load index (div u.n.i 8) p.mem)
     ::
         %s
-      %+  en-si  ?+(type.i !! %i32 32, %i64 64)
-      %+  to-si  u.n.i
+      %-  bind  :_  (cury en-si ?+(type.i !! %i32 32, %i64 64))
+      %-  bind  :_  (cury to-si u.n.i)
       (mem-load index (div u.n.i 8) p.mem)
     ==
   ::
@@ -526,11 +553,13 @@
       ==
     =/  index=@  (add addr offset.m.i)
     =;  [size=@ to-put=@]
+      =+  stored=(mem-store index size to-put p.memo)
+      ?~  stored  l(br.stack [%trap ~])
       %=    l
           va.stack  rest
       ::
           mem.store
-        `(mem-store index size to-put p.memo)
+        `u.stored
       ==
     ?~  n.i
       :_  content
@@ -690,8 +719,10 @@
         %-  (table-set [%table-set tab-id.i])
         l(va.stack [ref d rest])
       ?:  ?=(^ br.stack.l)  l
-      ?>  (lth +(d) ^~((bex 32)))
-      ?>  (lth +(s) ^~((bex 32)))
+      ?.  ?&  (lth +(d) ^~((bex 32)))
+              (lth +(s) ^~((bex 32)))
+          ==
+        l(br.stack [%trap ~])
       $(va.stack.l [(dec n) +(s) +(d) va.stack.l])
     ::
     ++  elem-drop
@@ -730,11 +761,15 @@
               (table-get [%table-get tab-id-y.i])
               (table-set [%table-set tab-id-x.i])
             ==
-          ?>  (lth +(d) ^~((bex 32)))
-          ?>  (lth +(s) ^~((bex 32)))
+          ?.  ?&  (lth +(d) ^~((bex 32)))
+                  (lth +(s) ^~((bex 32)))
+              ==
+            l(br.stack [%trap ~])
           l(va.stack [+(s) +(d) va.stack.l])
-        ?>  (lth (dec (add d n)) ^~((bex 32)))
-        ?>  (lth (dec (add s n)) ^~((bex 32)))
+        ?.  ?&  (lth (dec (add d n)) ^~((bex 32)))
+                (lth (dec (add s n)) ^~((bex 32)))
+            ==
+          l(br.stack [%trap ~])
         =.  l
           %.  l(va.stack [(dec (add s n)) (dec (add d n)) rest])
           ;~  chap
@@ -864,8 +899,10 @@
       =/  data-bytes=octs
         =+  data=(snag x.i data-section.module.store.l)
         ?:(?=(%acti -.data) b.data b.data)
-      ?>  (lte (add s n) p.data-bytes)
-      ?>  (lte (add d n) (mul page-size n-pages.p.memo))
+      ?.  ?&  (lte (add s n) p.data-bytes)
+              (lte (add d n) (mul page-size n-pages.p.memo))
+          ==
+        l(br.stack [%trap ~])
       %=    l
           va.stack  rest
       ::
@@ -901,8 +938,10 @@
       ?:  ?=(%| -.memo)
         %+  buy  l(va.stack rest)
         [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
-      ?>  (lte (add s n) (mul page-size n-pages.p.memo))
-      ?>  (lte (add d n) (mul page-size n-pages.p.memo))
+      ?.  ?&  (lte (add s n) (mul page-size n-pages.p.memo))
+              (lte (add d n) (mul page-size n-pages.p.memo))
+          ==
+        l(br.stack [%trap ~])
       %=    l
           va.stack  rest
       ::
@@ -923,7 +962,8 @@
       ?:  ?=(%| -.memo)
         %+  buy  l(va.stack rest)
         [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d val n]) i]
-      ?>  (lte (add d n) (mul page-size n-pages.p.memo))
+      ?.  (lte (add d n) (mul page-size n-pages.p.memo))
+        l(br.stack [%trap ~])
       %=    l
           va.stack  rest
       ::
@@ -940,12 +980,12 @@
   ++  unar
     =-  |=  i=instruction
         ?>  ?=(unary-num:kind -.i)
-        ^-  $-(@ @)
+        ^-  $-(@ (unit @))
         ~+
         ((~(got by m) ;;(@tas -.i)) i)
     ^~
     ^=  m
-    ^-  (map @tas $-(instruction $-(@ @)))
+    ^-  (map @tas $-(instruction $-(@ (unit @))))
     |^
     %-  my
     :~
@@ -971,6 +1011,7 @@
     ::
     ++  clz
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%clz -.i)
       =/  base=@  ?-(type.i %i32 32, %i64 64)
       |=  v=@
@@ -978,6 +1019,7 @@
     ::
     ++  ctz
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%ctz -.i)
       =/  counter-max=@  ?-(type.i %i32 32, %i64 64)
       |=  v=@
@@ -990,6 +1032,7 @@
     ::
     ++  popcnt
       |=  *
+      %-  mayb
       |=  v=@
       ^-  @
       =+  counter=0
@@ -999,6 +1042,7 @@
     ::
     ++  abs
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%abs -.i)
       ?.  ?=(?(%f32 %f64) type.i)
         =+  size=(lane-size type.i)
@@ -1022,6 +1066,7 @@
     ::
     ++  neg
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%neg -.i)
       =+  size=(lane-size type.i)
       |=  v=@
@@ -1031,6 +1076,7 @@
     ::
     ++  sqrt
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%sqrt -.i)
       |=  v=@
       ^-  @
@@ -1041,6 +1087,7 @@
     ::
     ++  ceil
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%ceil -.i)
       =+  ^=  r
           ?-  type.i
@@ -1059,6 +1106,7 @@
     ::
     ++  floor
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%floor -.i)
       =+  ^=  r
           ?-  type.i
@@ -1089,6 +1137,7 @@
         =/  one=@       ?-(type.i %f32 .1, %f64 .~1)
         =/  neg-zero=@  ?-(type.i %f32 .-0, %f64 .~-0)
         =/  neg-one=@   ?-(type.i %f32 .-1, %f64 .~-1)
+        %-  mayb
         |=  v=@
         ^-  @
         =/  int=(unit @s)  (toi:r v)
@@ -1133,30 +1182,31 @@
           (en-si base (new & (dec (bex (dec base)))))
         ==
       |=  v=@
-      ^-  @
+      ^-  (unit @)
       =/  int=(unit @s)  (toi:r v)
       ?~  int
-        ?.  sat.i  !!
+        ?.  sat.i  ~
         =/  =fn  (sea:r v)
-        ?:  ?=(%n -.fn)  0
+        ?:  ?=(%n -.fn)  ``@`0
         ?:  ?=(%i -.fn)
           ?:  s.fn
-            upper-int
-          lower-int
-        !!
+            `upper-int
+          `lower-int
+        ~
       ?.  =((cmp:si u.int below) --1)
-        ?.  sat.i  !!
-        lower-int
+        ?.  sat.i  ~
+        `lower-int
       ?.  =((cmp:si above u.int) --1)
-        ?.  sat.i  !!
-        upper-int
+        ?.  sat.i  ~
+        `upper-int
       ?-    u.mode.i
-        %u  (abs:si u.int)
-        %s  (en-si base u.int)
+        %u  `(abs:si u.int)
+        %s  `(en-si base u.int)
       ==
     ::
     ++  nearest
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%nearest -.i)
       =+  ^=  r
           ?-  type.i
@@ -1175,18 +1225,21 @@
     ::
     ++  eqz
       |=  *
+      %-  mayb
       |=  v=@
       ^-  @
       ?:(=(v 0) 1 0)
     ::
     ++  wrap
       |=  *
+      %-  mayb
       |=  v=@
       ^-  @
       (mod v ^~((bex 32)))
     ::
     ++  extend
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%extend -.i)
       =/  base=@  ?-(type.i %i32 32, %i64 64)
       |=  v=@
@@ -1198,6 +1251,7 @@
     ::
     ++  convert
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%convert -.i)
       =+  ^=  r
           ?-  type.i
@@ -1213,18 +1267,21 @@
     ::
     ++  demote
       |=  *
+      %-  mayb
       |=  v=@
       ^-  @
       (bit:rs (sea:rd v))
     ::
     ++  promote
       |=  *
+      %-  mayb
       |=  v=@
       ^-  @
       (bit:rd (sea:rs v))
     ::
     ++  reinterpret
       |=  *
+      %-  mayb
       |=(v=@ v)
     ::
     --
@@ -1234,12 +1291,12 @@
   ++  bina
     =-  |=  i=instruction
         ?>  ?=(binary-num:kind -.i)
-        ^-  $-([@ @] @)
+        ^-  $-([@ @] (unit @))
         ~+
         ((~(got by m) ;;(@tas -.i)) i)
     ^~
     ^=  m
-    ^-  (map @tas $-(instruction $-([@ @] @)))
+    ^-  (map @tas $-(instruction $-([@ @] (unit @))))
     |^
     %-  my
     :~
@@ -1268,6 +1325,7 @@
     ::
     ++  add
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%add -.i)
       =/  modulo=@  (bex (lane-size type.i))
       |=  [v=@ w=@]
@@ -1279,6 +1337,7 @@
     ::
     ++  sub
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%sub -.i)
       =/  modulo=@  (bex (lane-size type.i))
       |=  [v=@ w=@]
@@ -1290,6 +1349,7 @@
     ::
     ++  mul
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%mul -.i)
       =/  base=@  (bex (lane-size type.i))
       |=  [v=@ w=@]
@@ -1305,12 +1365,14 @@
       =/  size=@  (lane-size type.i)
       =/  mode=?(%u %s)  (fall mode.i %u)
       |=  [v=@ w=@]
-      ^-  @
+      ^-  (unit @)
       ?-    type.i
-          %f32  (div:rs v w)
-          %f64  (div:rd v w)
+          %f32  `(div:rs v w)
+          %f64  `(div:rd v w)
       ::
           *
+        ?:  =(w 0)  ~
+        :-  ~
         ?-  mode
           %u  (^div v w)
           %s  %+  en-si  size
@@ -1323,6 +1385,7 @@
     ::
     ++  rem
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%rem -.i)
       ?:  =(%u mode.i)  mod
       =/  base=@  ?-(type.i %i32 32, %i64 64)
@@ -1335,18 +1398,19 @@
     ::
     ++  and
       |=  *
-      dis  ::  ATTENTION! loobean disjunction is boolean conjunction
+      (mayb dis)  ::  ATTENTION! loobean disjunction is boolean conjunction
     ::
     ++  or
       |=  *
-      con  ::  ATTENTION! loobean conjunction is boolean disjunction
+      (mayb con)  ::  ATTENTION! loobean conjunction is boolean disjunction
     ::
     ++  xor
       |=  *
-      mix
+      (mayb mix)
     ::
     ++  shl
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%shl -.i)
       =/  base=@   (lane-size type.i)
       |=  [v=@ w=@]
@@ -1355,6 +1419,7 @@
     ::
     ++  shr
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%shr -.i)
       =/  base=@   (lane-size type.i)
       =/  negat=@  (bex (dec base))
@@ -1375,6 +1440,7 @@
     ::
     ++  rotl
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%rotl -.i)
       =/  base=@  ?-(type.i %i32 32, %i64 64)
       =/  n=@  ?-(type.i %i32 5, %i64 6)
@@ -1384,6 +1450,7 @@
     ::
     ++  rotr
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%rotr -.i)
       =/  base=@  ?-(type.i %i32 32, %i64 64)
       =/  n=@  ?-(type.i %i32 5, %i64 6)
@@ -1394,6 +1461,7 @@
     ::
     ++  min
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%min -.i)
       =+  ^=  r
           ?-  type.i
@@ -1409,6 +1477,7 @@
     ::
     ++  max
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%max -.i)
       =+  ^=  r
           ?-  type.i
@@ -1424,6 +1493,7 @@
     ::
     ++  copysign
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%copysign -.i)
       =+  ^=  r
           ?-  type.i
@@ -1439,6 +1509,7 @@
     ::
     ++  eq
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%eq -.i)
       ?.  ?=(?(%f32 %f64) type.i)
         |=  [v=@ w=@]
@@ -1459,6 +1530,7 @@
     ::
     ++  ne
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%ne -.i)
       ?.  ?=(?(%f32 %f64) type.i)
         |=  [v=@ w=@]
@@ -1479,6 +1551,7 @@
     ::
     ++  lt
       |=  i=instruction
+      %-  mayb
       ?>  ?=(%lt -.i)
       =/  mode=?(%s %u)  (fall mode.i %u)
       =/  negat=@  ?+(type.i 0 %i32 (bex 31), %i64 (bex 63))
@@ -1510,7 +1583,7 @@
       |=  i=instruction
       ?>  ?=(%gt -.i)
       |=  [v=@ w=@]
-      ^-  @
+      ^-  (unit @)
       %.  [w v]
       (lt ;;(instruction [%lt +.i]))
     ::
@@ -1518,8 +1591,8 @@
       |=  i=instruction
       ?>  ?=(%le -.i)
       |=  [v=@ w=@]
-      ^-  @
-      ?:  =(v w)  1
+      ^-  (unit @)
+      ?:  =(v w)  `1
       %.  [v w]
       (lt ;;(instruction [%lt +.i]))
     ::
@@ -1527,7 +1600,7 @@
       |=  i=instruction
       ?>  ?=(%ge -.i)
       |=  [v=@ w=@]
-      ^-  @
+      ^-  (unit @)
       %.  [w v]
       (le ;;(instruction [%le +.i]))
     ::
@@ -1581,15 +1654,20 @@
           [%vec i]
       ==
     ?~  kind.i
-      l(va.stack [(mem-load index 16 p.mem) rest])
+      =+  loaded=(mem-load index 16 p.mem)
+      ?~  loaded  l(br.stack [%trap ~])
+      l(va.stack [u.loaded rest])
     ?-    q.u.kind.i
         [%extend p=?(%s %u)]
-      =;  loaded=@
-        l(va.stack [loaded rest])
-      =+  bloq=(xeb p.u.kind.i) 
+      =;  loaded=(unit @)
+        ?~  loaded  l(br.stack [%trap ~])
+        l(va.stack [u.loaded rest])
+      =+  bloq=(xeb p.u.kind.i)
+      =+  get=(mem-load index 8 p.mem)
+      ?~  get  ~
       =/  lanes=(list @)
-        %^  rope  bloq  (div 64 p.u.kind.i)
-        (mem-load index 8 p.mem)
+        (rope bloq (div 64 p.u.kind.i) u.get)
+      :-  ~
       %+  can  +(bloq)
       %-  turn  :_  (lead 1)
       ?:  ?=(%u p.q.u.kind.i)
@@ -1599,13 +1677,17 @@
       (cury en-si (mul 2 p.u.kind.i))
     ::
         %zero
-      l(va.stack [(mem-load index (div p.u.kind.i 8) p.mem) rest])
+      =+  get=(mem-load index (div p.u.kind.i 8) p.mem)
+      ?~  get  l(br.stack [%trap ~])
+      l(va.stack [u.get rest])
     ::
         %splat
-      =;  loaded=@
-        l(va.stack [loaded rest])
+      =;  loaded=(unit @)
+        ?~  loaded  l(br.stack [%trap ~])
+        l(va.stack [u.loaded rest])
       =+  lane=(mem-load index (div p.u.kind.i 8) p.mem)
-      (fil (xeb p.u.kind.i) (div 128 p.u.kind.i) lane)
+      ?~  lane  ~
+      `(fil (xeb p.u.kind.i) (div 128 p.u.kind.i) u.lane)
     ::
     ==
   ::
@@ -1626,9 +1708,10 @@
           [%vec i]
       ==
     =+  lane=(mem-load index (div p.i 8) p.mem)
+    ?~  lane  l(br.stack [%trap ~])
     %=    l
         va.stack
-      [(sew (xeb p.i) [l.i 1 lane] vec) rest]
+      [(sew (xeb p.i) [l.i 1 u.lane] vec) rest]
     ==
   ::
   ++  store
@@ -1647,11 +1730,13 @@
           [%vec i]
       ==
     =/  index=@  (add addr offset.m.i)
+    =+  mem-stored=(mem-store index 16 vec p.memo)
+    ?~  mem-stored  l(br.stack [%trap ~])
     %=    l
         va.stack  rest
     ::
         mem.store
-      `(mem-store index 16 vec p.memo)
+      `u.mem-stored
     ==
   ::
   ++  store-lane
@@ -1671,11 +1756,13 @@
       ==
     =/  index=@  (add addr offset.m.i)
     =+  lane=(cut (xeb p.i) [l.i 1] vec)
+    =+  mem-stored=(mem-store index (div p.i 8) lane p.memo)
+    ?~  mem-stored  l(br.stack [%trap ~])
     %=    l
         va.stack  rest
     ::
         mem.store
-      `(mem-store index (div p.i 8) lane p.memo)
+      `u.mem-stored
     ==
   ::
   ++  const
@@ -1741,46 +1828,47 @@
       ^-  local-state
       ?>  ?=([a=@ rest=*] va.stack.l)
       =,  va.stack.l
-      l(va.stack [((vec-unar i) a) rest])
+      =+  val=((vec-unar i) a)
+      ?~  val  l(br.stack [%trap ~])
+      l(va.stack [val rest])
     ::
         vec-binary:kind
       |=  l=local-state
       ^-  local-state
       ?>  ?=([b=@ a=@ rest=*] va.stack.l)
       =,  va.stack.l
-      l(va.stack [((vec-bina i) a b) rest])
+      =+  val=((vec-bina i) a b)
+      ?~  val  l(br.stack [%trap ~])
+      l(va.stack [val rest])
     ::
         lane-wise-unary:kind
-      =/  op=$-(@ @)  (get-op-unar i)
+      =/  op=$-(@ (unit @))  (get-op-unar i)
       =/  size=@  (get-size i)
       |=  l=local-state
       ^-  local-state
       ?>  ?=([vec=@ rest=*] va.stack.l)
       =,  va.stack.l
-      %=    l
-          va.stack
-        :_  rest
-        %+  can  (xeb size)
-        %-  turn  :_  (lead 1)
-        (turn (rope (xeb size) (div 128 size) vec) op)
-      ==
+      =;  val=(unit @)
+        ?~  val  l(br.stack [%trap ~])
+        l(va.stack [u.val rest])
+      ;<  =(list @)  _biff  (torn (rope (xeb size) (div 128 size) vec) op)
+      `(can (xeb size) (turn list (lead 1)))
     ::
         lane-wise-binary:kind
-      =/  op=$-([@ @] @)  (get-op-bina i)
+      =/  op=$-([@ @] (unit @))  (get-op-bina i)
       =/  size=@  (get-size i)
       |=  l=local-state
       ^-  local-state
       ?>  ?=([vec2=@ vec1=@ rest=*] va.stack.l)
       =,  va.stack.l
-      %=    l
-          va.stack
-        :_  rest
-        %+  can  (xeb size)
-        %-  turn  :_  (lead 1)
-        %-  turn  :_  op
+      =;  val=(unit @)
+        ?~  val  l(br.stack [%trap ~])
+        l(va.stack [u.val rest])
+      ;<  =(list @)  _biff
+        %-  torn  :_  op
         %+  fuse  (rope (xeb size) (div 128 size) vec1)
         (rope (xeb size) (div 128 size) vec2)
-      ==
+      `(can (xeb size) (turn list (lead 1)))
     ::
         %bitselect
       |=  l=local-state
@@ -1985,25 +2073,27 @@
         =+  size=(lane-size p.i)
         =+  bloq=(xeb size)
         =+  n=(div 128 size)
+        =+  shl=(sure (bina:fetch [%shl p.i]))
         |=  [vec=@ j=@]
         ^-  @
         %+  can  bloq
         %-  turn  :_  (lead 1)
         %+  turn
           (rope bloq n vec)
-        (curr (bina:fetch [%shl p.i]) j)
+        (curr shl j)
       ::
           %shr
         =+  size=(lane-size p.i)
         =+  bloq=(xeb size)
         =+  n=(div 128 size)
+        =+  shr=(sure (bina:fetch [%shr p.i mode.i]))
         |=  [vec=@ j=@]
         ^-  @
         %+  can  bloq
         %-  turn  :_  (lead 1)
         %+  turn
           (rope bloq n vec)
-        (curr (bina:fetch [%shr p.i mode.i]) j)
+        (curr shr j)
       ::
           %extmul
         =+  half-size=(div (lane-size p.i) 2)
@@ -2055,7 +2145,7 @@
     ::
     ++  get-op-unar
       |:  i=`$>(lane-wise-unary:kind instr-vec)`[%popcnt ~]
-      ^-  $-(@ @)
+      ^-  $-(@ (unit @))
       ?-    -.i
           %abs
         (unar:fetch [%abs p.i])
@@ -2088,7 +2178,7 @@
     ::
     ++  get-op-bina
       |:  i=`$>(lane-wise-binary:kind instr-vec)`[%q15mul-r-sat ~]
-      ^-  $-([@ @] @)
+      ^-  $-([@ @] (unit @))
       ?-    -.i
           %eq
         (bina:fetch [%eq p.i])
@@ -2112,6 +2202,7 @@
         ?~  sat.i
           (bina:fetch [%add p.i])
         =+  size=(lane-size p.i)
+        %-  mayb
         |=  [a=@ b=@]
         ^-  @
         %+  sat  size
@@ -2123,6 +2214,7 @@
         ?~  sat.i
           (bina:fetch [%sub p.i])
         =+  size=(lane-size p.i)
+        %-  mayb
         |=  [a=@ b=@]
         ^-  @
         %+  sat  size
@@ -2133,8 +2225,9 @@
           %min
         ?:  ?=(?(%f32 %f64) p.i)
           (bina:fetch [%min p.i])
-        ?:  =(%u mode.i)  min
+        ?:  =(%u mode.i)  (mayb min)
         =+  size=(lane-size p.i)
+        %-  mayb
         |=  [a=@ b=@]
         ?:  =(--1 (cmp:si (to-si size a) (to-si size b)))
           b
@@ -2143,22 +2236,25 @@
           %max
         ?:  ?=(?(%f32 %f64) p.i)
           (bina:fetch [%max p.i])
-        ?:  =(%u mode.i)  max
+        ?:  =(%u mode.i)  (mayb max)
         =+  size=(lane-size p.i)
+        %-  mayb
         |=  [a=@ b=@]
         ?:  =(-1 (cmp:si (to-si size a) (to-si size b)))
           b
         a
       ::
           %avgr
+        %-  mayb
         |=  [a=@ b=@]
         ^-  @
         (div :(add a b 1) 2)
       ::
           %q15mul-r-sat
+        %-  mayb
         |=  [a=@ b=@]
         ^-  @
-        =+  shr=(bina:fetch [%shr %i16 %s])
+        =+  shr=(sure (bina:fetch [%shr %i16 %s]))
         %+  sat  16
         :_  %s
         (to-si 16 (shr (add (mul a b) ^~((bex 14))) 15))
@@ -2170,14 +2266,16 @@
         (bina:fetch [%div p.i ~])
       ::
           %pmin
-        =+  flt=(bina:fetch [%lt p.i ~])
+        =+  flt=(sure (bina:fetch [%lt p.i ~]))
+        %-  mayb
         |=  [a=@ b=@]
         ^-  @
         ?:  =(1 (flt b a))  b
         a
       ::
           %pmax
-        =+  fgt=(bina:fetch [%gt p.i ~])
+        =+  fgt=(sure (bina:fetch [%gt p.i ~]))
+        %-  mayb
         |=  [a=@ b=@]
         ^-  @
         ?:  =(1 (fgt b a))  b

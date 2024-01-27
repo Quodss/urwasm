@@ -109,7 +109,7 @@
     ;~  pose
       ::  single byte: positive
       ::
-      (cook |=(n=@ (new:si & n)) (shim 0 (dec (bex (min (dec n-bits) 6)))))
+      (cook (cury new:si &) (shim 0 (dec (bex (min (dec n-bits) 6)))))
       ::  single byte: negative
       ::
       %+  cook
@@ -128,7 +128,7 @@
         =,  si
         (sum (dif n --128) (pro --128 m))
       ;~  plug
-        (cook |=(n=@ (new:si & n)) (shim 128 255))
+        (cook (cury new:si &) (shim 128 255))
         this(n-bits (sub n-bits 7))
       ==
     ==
@@ -212,7 +212,7 @@
       (star instr)
       ;~  pose
         (cold ~ end)
-        ;~(pfix else ;~(sfix (star instr) end))
+        (ifix [else end] (star instr))
       ==
     ==
   ::
@@ -226,24 +226,74 @@
   ++  loop-op    (just '\03')
   ++  if-op      (just '\04')
   ::
+  ++  form-ranges
+    |=  l=(list @)
+    ^-  (list ?(@ [@ @]))
+    ?~  l  ~
+    =+  a=i.l
+    =+  b=i.l
+    |-  ^-  (list ?(@ [@ @]))
+    ?~  t.l
+      :_  ~
+      ?:  =(a b)  a
+      [a b]
+    ?:  =(i.t.l +(b))
+      $(b i.t.l, t.l t.t.l)
+    :-  ?:  =(a b)  a
+        [a b]
+    $(a i.t.l, b i.t.l, t.l t.t.l)
+  ::
   ++  instr
-    ;~  pose
-      ;~(pfix (just '\fc') fc)  ::  0xfc and 0xfd prefixes
-      ;~(pfix (just '\fd') fd)
-      select-vec
-      instr-zero
-      instr-one
-      instr-two
-      br-table
-      block
-      loop
-      if
+    %-  stew  ^.  stet
+    ;:  welp
+      ^.  limo
+      :~
+        ['\fc' ;~(pfix next fc)]
+        ['\fc' ;~(pfix next fd)]
+        ['\1c' select-vec]
+        ['\0e' br-table]
+        ['\02' block]
+        ['\03' loop]
+        ['\04' if]
+        ['\d0' ;~(pfix next (stag %ref-null ref-type))]
+        ['\d2' ;~(pfix next (stag %ref-func u32))]
+      ==
+    ::
+      %-  turn  :_  (late instr-zero)
+      %-  form-ranges
+      %+  skim  (gulf 0 255)
+      |=(n=@ ?=(^ (op-map n)))
+    ::
+      %+  turn
+        %-  form-ranges
+        %+  skim  (gulf 0 255)
+        |=(n=@ ?=(^ (handle-one-arg-i32 n 0)))
+      %-  late
+      %+  sear  handle-one-arg-i32
+      ;~(plug next u32)
+    ::
+      ^.  limo
+      :~
+        ['\41' (cook handle-const-i32 ;~(pfix next (s-n 32)))]
+        ['\42' (cook handle-const-i64 ;~(pfix next (s-n 64)))]
+        ['\43' (cook handle-const-f32 ;~(pfix next f32))]
+        ['\44' (cook handle-const-f64 ;~(pfix next f64))]
+      ==
+    ::
+      %+  turn
+        %-  form-ranges
+        %+  skim  (gulf 0 255)
+        |=(n=@ ?=(^ (handle-two-args-i32 n 0 0)))
+      %-  late
+      %+  sear  handle-two-args-i32
+      ;~(plug next u32 u32)
+    ::
     ==
   ::
   ++  select-vec
     %+  cook  instruction:sur
     ;~  pfix
-      (just '\1c')
+      next
       %+  stag  %select
       %+  stag  %~
       (vec valtype)
@@ -251,55 +301,22 @@
   ::
   ++  br-table
     %+  cook  handle-br-table
-    ;~(plug (just '\0e') vec-u32 u32)
+    ;~(pfix next ;~(plug vec-u32 u32))
   ::
   ++  instr-zero  (sear op-map next)
-  ++  instr-one
-    %+  cook  instruction:sur
-    ;~  pose
-      %+  sear  handle-one-arg-i32
-      ;~(plug next u32)
-    ::
-      %+  cook  handle-const-i32
-      ;~(plug const-i32 (s-n 32))
-    ::
-      %+  cook  handle-const-i64
-      ;~(plug const-i64 (s-n 64))
-    ::
-      %+  cook  handle-const-f32
-      ;~(plug const-f32 f32)
-    ::
-      %+  cook  handle-const-f64
-      ;~(plug const-f64 f64)
-    ::
-      ;~  pfix
-        (just '\d0')
-        (stag %ref-null ref-type)
-      ==
-    ::
-      ;~  pfix
-        (just '\d2')
-        (stag %ref-func u32)
-      ==
-    ::
-    ==
-  ::
-  ++  instr-two
-    %+  sear  handle-two-args-i32
-    ;~(plug next u32 u32)
   ::
   ++  block
     %+  cook  handle-block
-    ;~(pfix block-op ;~(plug block-type expr))
+    ;~(pfix next ;~(plug block-type expr))
   ::
   ++  loop
     %+  cook  handle-loop
-    ;~(pfix loop-op ;~(plug block-type expr))
+    ;~(pfix next ;~(plug block-type expr))
   ::
   ++  if
     %+  cook  handle-if
     ;~  pfix
-      if-op
+      next
       ;~(plug block-type expr-pair)
     ==
   ::
@@ -412,9 +429,8 @@
     ==
   ::
   ++  handle-br-table
-    |=  [op=char vec=(list @) i=@]
+    |=  [vec=(list @) i=@]
     ^-  instruction:sur
-    ?>  ?=(%0xe op)
     [%br-table vec i]
   ::
   ++  handle-block
@@ -445,17 +461,17 @@
     [%if type body-true body-false]
   ::
   ++  handle-const-f64
-    |=  [op=char i=@rd]
+    |=  i=@rd
     ^-  instruction:sur
     [%const %f64 i]
   ::
   ++  handle-const-f32
-    |=  [op=char i=@rs]
+    |=  i=@rs
     ^-  instruction:sur
     [%const %f32 i]
   ::
   ++  handle-const-i32
-    |=  [op=char i=@s]
+    |=  i=@s
     ^-  instruction:sur
     =;  i-unsigned=@
       [%const %i32 i-unsigned]
@@ -465,7 +481,7 @@
     (sub (bex 32) +:(old i))
   ::
   ++  handle-const-i64
-    |=  [op=char i=@s]
+    |=  i=@s
     ^-  instruction:sur
     =;  i-unsigned=@
       [%const %i64 i-unsigned]
