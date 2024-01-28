@@ -1376,10 +1376,10 @@
       ::
           *
         ?:  =(w 0)  ~
-        :-  ~
         ?-  mode
-          %u  (^div v w)
-          %s  %+  en-si  size
+          %u  `(^div v w)
+          %s  =-  ?:(=((bex (dec size)) -) ~ `-)
+              %+  en-si  size
               %+  fra:si
                 (to-si size v)
               (to-si size w)
