@@ -1366,23 +1366,29 @@
     ++  div
       |=  i=instruction
       ?>  ?=(%div -.i)
-      =/  size=@  (lane-size type.i)
-      =/  mode=?(%u %s)  (fall mode.i %u)
-      |=  [v=@ w=@]
-      ^-  (unit @)
       ?-    type.i
-          %f32  `(div:rs v w)
-          %f64  `(div:rd v w)
+          %f32  (mayb div:rs)
+          %f64  (mayb div:rd)
       ::
           *
-        ?:  =(w 0)  ~
-        ?-  mode
-          %u  `(^div v w)
-          %s  %-  biff  :_  (mayb (cury en-si size))
-              =-  ?:(=((new:si & (bex (dec size))) -) ~ `-)
-              %+  fra:si
-                (to-si size v)
-              (to-si size w)
+        =/  mode=?(%u %s)  (fall mode.i %u)
+        ?-    mode
+            %u
+          |=  [v=@ w=@]
+          ^-  (unit @)
+          ?:  =(0 w)  ~
+          `(^div v w)
+        ::
+            %s
+          =/  size=@  (lane-size type.i)
+          =/  ill=@s  (new:si & (bex (dec size)))  ::  unrepresentable
+          |=  [v=@ w=@]
+          ^-  (unit @)
+          %-  bind  :_  (cury en-si size)
+          %-  (flit |=(=@s !=(s ill)))
+          %+  fra:si
+            (to-si size v)
+          (to-si size w)
         ==
       ::
       ==
