@@ -135,7 +135,7 @@
     ::  Imported globals. We assume here that %global-get
     ::  would not affect module store
     ::
-    ?:  ?=(^ shop.st)
+    ?^  shop.st
       %=  $
         global-section.m  t.global-section.m
         globals.st  [-.p.i.shop.st globals.st]

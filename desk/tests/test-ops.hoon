@@ -3,6 +3,17 @@
 /+  op-def=runner-op-def
 ::
 |%
+++  test-int
+  ;:  weld
+    %+  expect-eq  ::  -2^(N-1) / -1 = {}
+      !>  ~
+      =,  op-def
+      !>  %+  (bina:fetch:op-def [%div %i32 ~ %s])
+            (en-si 32 (new:si | (bex 31)))
+          (en-si 32 -1)
+  ::
+  ==
+::
 ++  test-float
   ;:  weld
     %+  expect-eq

@@ -92,7 +92,7 @@
 ++  chap
   |=  [l=local-state instr=$-(local-state local-state)]
   ^-  local-state
-  ?:  ?=(^ br.stack.l)  l
+  ?^  br.stack.l  l
   (instr l)
 ::
 ++  page-size  ^~((bex 16))
@@ -246,7 +246,7 @@
     ^-  (each function [[mod=cord name=cord] type-id=@])
     =,  import-section.module.st
     =+  imp=(snug id funcs)
-    ?:  ?=(^ imp)  [%| u.imp]
+    ?^  imp  [%| u.imp]
     :-  %&
     (snag (sub id (lent funcs)) function-section.module.st)
   ::
@@ -256,7 +256,7 @@
         [[mod=cord name=cord] t=^table]
     =,  import-section.module.st
     =+  imp=(snug id tables)
-    ?:  ?=(^ imp)  [%| u.imp]
+    ?^  imp  [%| u.imp]
     :-  %&
     =+  idx=(sub id (lent tables))
     :-  idx
@@ -268,7 +268,7 @@
         [[mod=cord name=cord] l=limits]
     =,  import-section.module.st
     =+  imp=(snug id memos)
-    ?:  ?=(^ imp)  [%| u.imp]
+    ?^  imp  [%| u.imp]
     [%& (need mem.st)]
   ::
   ++  glob
@@ -277,7 +277,7 @@
         [[mod=cord name=cord] v=valtype m=?(%con %var)]
     =,  import-section.module.st
     =+  imp=(snug id globs)
-    ?:  ?=(^ imp)  [%| u.imp]
+    ?^  imp  [%| u.imp]
     :-  %&
     =+  idx=(sub id (lent globs))
     :-  idx
@@ -722,7 +722,7 @@
       =.  l
         %-  (table-set [%table-set tab-id.i])
         l(va.stack [ref d rest])
-      ?:  ?=(^ br.stack.l)  l
+      ?^  br.stack.l  l
       ?.  ?&  (lth +(d) ^~((bex 32)))
               (lth +(s) ^~((bex 32)))
           ==
@@ -781,7 +781,7 @@
               (table-set [%table-set tab-id-x.i])
             ==
         l(va.stack [s d va.stack.l])
-      ?:  ?=(^ br.stack.l)  l
+      ?^  br.stack.l  l
       $(va.stack.l [(dec n) va.stack.l])
     ::
     ++  table-grow
@@ -1378,8 +1378,8 @@
         ?:  =(w 0)  ~
         ?-  mode
           %u  `(^div v w)
-          %s  =-  ?:(=((bex (dec size)) -) ~ `-)
-              %+  en-si  size
+          %s  %-  biff  :_  (mayb (cury en-si size))
+              =-  ?:(=((new:si & (bex (dec size))) -) ~ `-)
               %+  fra:si
                 (to-si size v)
               (to-si size w)
