@@ -109,24 +109,21 @@
     =+  r=(invoke 'succ' ~ st)
     ?-  -.r
       %0  +.r
-      %1  $(st (resolve st +.r))
+      %1  $(shop.st [(resolve +.r) shop.st])
       %2  !!
     ==
     ::
     ++  resolve
-      |=  $:  st=store
-              [[mod=cord name=cord] =request]        
+      |=  $:  [[mod=cord name=cord] =request]        
               mem=(unit [buffer=@ n-pages=@])        
               tables=(list (list $>(%ref coin-wasm)))
               globals=(list coin-wasm)
           ==
-      ^-  store
+      ^-  item
       ?>  =(['./import_test_bg.js' '__wbg_getn_e182583a43d51902'] [mod name])
       ?>  ?=(%func -.request)
       ?>  ?=(~ args.request)
-      =/  =item
-        [[%i32 42]~ [mem tables globals]]
-      st(shop [item shop.st], mem mem, tables tables, globals globals)
+      [[%i32 42]~ [mem tables globals]]
     ::
     --
 ::
@@ -141,24 +138,21 @@
     =+  r=(invoke 'add' ~ st)
     ?-  -.r
       %0  +.r
-      %1  $(st (resolve st +.r))
+      %1  $(shop.st [(resolve +.r) shop.st])
       %2  !!
     ==
     ::
     ++  resolve
-      |=  $:  st=store
-              [[mod=cord name=cord] =request]        
+      |=  $:  [[mod=cord name=cord] =request]        
               mem=(unit [buffer=@ n-pages=@])        
               tables=(list (list $>(%ref coin-wasm)))
               globals=(list coin-wasm)
           ==
-      ^-  store
+      ^-  item
       ?>  =(['./import_test_bg.js' '__wbg_getn_e182583a43d51902'] [mod name])
       ?>  ?=(%func -.request)
       ?>  ?=(~ args.request)
-      =/  =item
-        [[%i32 42]~ [mem tables globals]]
-      st(shop [item shop.st], mem mem, tables tables, globals globals)
+      [[%i32 42]~ [mem tables globals]]
     ::
     --
 --
