@@ -208,21 +208,28 @@
   ::
   ++  init-data
     |=  [st=store m=^module]
-    ^-  result
+    =+  id=`@`0
+    |-  ^-  result
     ?~  data-section.m  [%0 ~ st]
     =*  data  i.data-section.m
     ?.  ?=(%acti -.data)
-      $(data-section.m t.data-section.m)
+      $(data-section.m t.data-section.m, id +(id))
     ::  Assert: const i32 value as offset
     ::  (it theoretically can be a %global-get of import, revisit later?)
     ::
     ?>  ?=([%const %i32 n=@] off.data)
+    =/  l=local-state
+      [[~ ~[-.b.data 0 n.p.off.data]] ~ st]
+    =.  l  ((fetch-gate [%memory-init id %0]) l)
+    ?^  br.stack.l
+      ?+  br.stack.l  !!
+        [%bloq p=*]  [%1 p.br.stack.l] 
+        [%trap ~]    [%2 ~]
+      ==
     %=    $
+        id  +(id)
         data-section.m  t.data-section.m
-        mem.st
-      :-  ~
-      :_  n-pages:(need mem.st)  ::  assert: data is instantiated only locally, revisit later?
-      (sew bloq=3 [n.p.off.data b.data] buffer:(need mem.st))
+        st  store.l
     ==
   ::
   ++  start

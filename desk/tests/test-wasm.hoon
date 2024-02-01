@@ -10,6 +10,7 @@
 /*  two-func   %wasm  /tests/two-functions/wasm
 /*  flopper    %wasm  /tests/flopper/wasm
 /*  import     %wasm  /tests/import/wasm
+/*  printf     %wasm  /tests/printf/wasm
 ::
 |%
 ++  test-table
@@ -153,6 +154,39 @@
       ?>  ?=(%func -.request)
       ?>  ?=(~ args.request)
       [[%i32 42]~ [mem tables globals]]
+    ::
+    --
+::
+++  test-hi
+  %+  expect-eq
+    !>  `(list coin-wasm)`~
+    !>
+    |^
+    =+  st=+:(wasm-need (prep (main:parser printf) ~))
+    =<  -
+    |-  ^-  (quip coin-wasm store)
+    =+  r=(invoke 'writeHi' ~ st)
+    ?-  -.r
+      %0  +.r
+      %1  $(shop.st [(resolve +.r) shop.st])
+      %2  !!
+    ==
+    ::
+    ++  resolve
+      |=  $:  [[mod=cord name=cord] =request]        
+              mem=(unit [buffer=@ n-pages=@])        
+              tables=(list (list $>(%ref coin-wasm)))
+              globals=(list coin-wasm)
+          ==
+      ^-  item
+      ?>  =(['console' 'log'] [mod name])
+      ?>  ?=(%func -.request)
+      =/  args-pole=(pole coin-wasm)  args.request
+      ?>  ?=([[%i32 off=@] [%i32 len=@] ~] args-pole)
+      ?>  ?=(^ mem)
+      =,  args-pole
+      ~&  >>  `cord`(cut 3 [off len] buffer.u.mem)
+      [~ [mem tables globals]]
     ::
     --
 --
