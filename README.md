@@ -9,7 +9,7 @@ or try running your own Wasm modules.
 
 State of the project:
 
-- [X] Complete Wasm interpreter specification in Hoon (not fully tested)
+- [X] Complete Wasm interpreter specification in Hoon
 - [X] Parsing of both binary and text Wasm file formats (the latter is done via Wasm calls, so it's slow without jets)
 
 Next:
