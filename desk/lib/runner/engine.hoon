@@ -69,7 +69,6 @@
   |^
   =|  st=store
   =.  shop.st  sh
-  :: =.  s  s(module m)  fill $module while treating imports
   =.  module.st
     =,  m
     :*
@@ -269,7 +268,7 @@
   ::
   =,  module.st
   =/  =func-type
-  ::  May only invoke local functions (to reconsider)
+  ::  May only invoke local functions (to reconsider?)
   ::
     (snag type-id:(snag id-local function-section) type-section)
   ?>  =(params.func-type (get-types in))
@@ -286,7 +285,7 @@
     [%bloq p=*]  [%1 p.br.stack-out] 
     [%trap ~]    [%2 ~]
   ==
-::  +call: call function by id, inside caller. TODO add imports
+::  +call: call function by id, inside caller
 ::
 ++  call
   |=  [id=@ l=local-state]
