@@ -1135,8 +1135,8 @@
         ?>  ?=(?(%f32 %f64) type.i)
         =+  ^=  r
             ?-  type.i
-              %f32  rs
-              %f64  rd
+              %f32  ~(. rs %z)
+              %f64  ~(. rd %z)
             ==
         =/  one=@       ?-(type.i %f32 .1, %f64 .~1)
         =/  neg-zero=@  ?-(type.i %f32 .-0, %f64 .~-0)
@@ -1157,8 +1157,8 @@
       ?>  ?=(^ source-type.i)
       =+  ^=  r
           ?-  u.source-type.i
-            %f32  rs
-            %f64  rd
+            %f32  ~(. rs %z)
+            %f64  ~(. rd %z)
           ==
       =/  one=@       ?-(u.source-type.i %f32 .1, %f64 .~1)
       =/  neg-zero=@  ?-(u.source-type.i %f32 .-0, %f64 .~-0)

@@ -9,6 +9,7 @@
 /*  fac-if     %wasm  /tests/fac/wasm
 /*  two-func   %wasm  /tests/two-functions/wasm
 /*  flopper    %wasm  /tests/flopper/wasm
+/*  import     %wasm  /tests/import/wasm
 ::
 |%
 ++  test-table
@@ -97,4 +98,67 @@
       (cut 3 [r0 r1] buffer.u.mem.st)
     string-out
   ::
-  --
+++  test-import
+  %+  expect-eq
+    !>  `(list coin-wasm)`~[[type=%i32 n=43]]
+    !>
+    |^
+    =+  st=+:(wasm-need (prep (main:parser import) ~))
+    =<  -
+    |-  ^-  (quip coin-wasm store)
+    =+  r=(invoke 'succ' ~ st)
+    ?-  -.r
+      %0  +.r
+      %1  $(st (resolve st +.r))
+      %2  !!
+    ==
+    ::
+    ++  resolve
+      |=  $:  st=store
+              [[mod=cord name=cord] =request]        
+              mem=(unit [buffer=@ n-pages=@])        
+              tables=(list (list $>(%ref coin-wasm)))
+              globals=(list coin-wasm)
+          ==
+      ^-  store
+      ?>  =(['./import_test_bg.js' '__wbg_getn_e182583a43d51902'] [mod name])
+      ?>  ?=(%func -.request)
+      ?>  ?=(~ args.request)
+      =/  =item
+        [[%i32 42]~ [mem tables globals]]
+      st(shop [item shop.st], mem mem, tables tables, globals globals)
+    ::
+    --
+::
+++  test-import-2
+  %+  expect-eq
+    !>  `(list coin-wasm)`~[[type=%i32 n=84]]
+    !>
+    |^
+    =+  st=+:(wasm-need (prep (main:parser import) ~))
+    =<  -
+    |-  ^-  (quip coin-wasm store)
+    =+  r=(invoke 'add' ~ st)
+    ?-  -.r
+      %0  +.r
+      %1  $(st (resolve st +.r))
+      %2  !!
+    ==
+    ::
+    ++  resolve
+      |=  $:  st=store
+              [[mod=cord name=cord] =request]        
+              mem=(unit [buffer=@ n-pages=@])        
+              tables=(list (list $>(%ref coin-wasm)))
+              globals=(list coin-wasm)
+          ==
+      ^-  store
+      ?>  =(['./import_test_bg.js' '__wbg_getn_e182583a43d51902'] [mod name])
+      ?>  ?=(%func -.request)
+      ?>  ?=(~ args.request)
+      =/  =item
+        [[%i32 42]~ [mem tables globals]]
+      st(shop [item shop.st], mem mem, tables tables, globals globals)
+    ::
+    --
+--

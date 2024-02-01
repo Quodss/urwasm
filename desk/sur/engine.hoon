@@ -91,6 +91,7 @@
     $:  %tabl
         args=(list coin-wasm)
         $=  instr
+        $~  [%table-size `@`0]
         $>
           $?  %call-indirect  %table-get
               %table-set      %table-init
@@ -103,6 +104,7 @@
     $:  %memo
         args=(list coin-wasm)
         $=  instr
+        $~  [%memory-size %0]
         $?  $>  $?  %load         %store
                     %memory-size  %memory-grow
                     %memory-init  %memory-copy
@@ -119,14 +121,16 @@
   ::
     $:  %glob
         args=(list coin-wasm)
-        instr=$>(?(%global-get %global-set) instruction)
+        $=  instr
+        $~  [%global-get `@`0]
+        $>(?(%global-get %global-set) instruction)
     ==
   ==
 ::  $shop: list of resolved requests: values to be pushed on
 ::  the stack and values from the module store
 ::
-+$  shop
-  %-  list
++$  shop  (list item)
++$  item
   %+  pair  (list coin-wasm)
   $:  mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
       tables=(list (list $>(%ref coin-wasm)))  ::  tables

@@ -256,11 +256,15 @@
   |=  [name=cord in=(list coin-wasm) st=store]
   ^-  result
   =/  id=@  (find-func-id name module.st)
+  =/  id-local=@
+    (sub id (lent funcs.import-section.module.st))
   ::  Type check for the input values
   ::
   =,  module.st
   =/  =func-type
-    (snag type-id:(snag id function-section) type-section)
+  ::  May only invoke local functions (to reconsider)
+  ::
+    (snag type-id:(snag id-local function-section) type-section)
   ?>  =(params.func-type (get-types in))
   =/  [stack-out=stack * st-out=store]
     %+  call  id
