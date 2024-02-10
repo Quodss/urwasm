@@ -22,11 +22,12 @@
 ::  $coin-wasm: type-annotated value
 ::
 +$  coin-wasm
-  $~  [%i32 *@]
-  $%  [?(%i32 %i64) @]
+  $~  [%i32 *@F]
+  $%  [%i32 @F]
+      [%i64 @G]
       [%f32 @rs]
       [%f64 @rd]
-      [vec-type @]
+      [vec-type @H]
       $:  %ref                  ::  function reference, null or not
           $%  [%func (unit @)]  ::  local
               $:  %extn         ::  external
