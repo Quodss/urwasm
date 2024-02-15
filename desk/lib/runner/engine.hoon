@@ -1,10 +1,8 @@
 ::  Web Assembly AST interpreter
 ::
-::::  /hoon/ast-interpreter/lib
-  ::
 /-  *engine
 /+  *runner-op-def
-/+  parser-lib
+::
 |%
 ::  +get-types: turn a (list coin-wasm) into a list of types of coins
 ::

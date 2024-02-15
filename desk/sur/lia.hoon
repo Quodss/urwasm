@@ -49,6 +49,7 @@
 ::    numeric values onto themselves, but the blocks may contain other values such
 ::    as octs. Variable space of external functions' execution environment is separate
 ::    from the main Lia environment.
+::
 ::    Reads from the linear memory produce octs. Arithmetic operations specify type,
 ::    and may accept octs as an input. In that case Lia will attempt to convert octs
 ::    to an operand with a proper size, trapping on overflow.
@@ -62,7 +63,7 @@
       [%octs octs]
   ==
 ::
-+$  action  (list op)
++$  action  (list op)  ::  block of operations with type void -> any
 +$  op
   $%
     [%get =idx]
@@ -71,10 +72,11 @@
     [%add type=num-type]
     [%sub type=num-type]
     [%cut offset=@ len=@]
-    [%read ptr=@ len=@]
-    [%writ ptr=@ len=@]
-    [%if true=(list op) false=(list op)]
-    [%for i=idx from=@s to=@s step=@s body=(list op)]
+    [%read ~]
+    [%writ ~]
+    [%if true=action false=action]
+    [%for i=idx from=@s to=@s step=@s body=action]
+    [%const p=value]
   ==
 ::
 +$  ext-func
@@ -83,4 +85,15 @@
       code=(list op)
   ==
 ::
++$  state
+  $:
+    space=(list value)  ::  storage of values
+    stack=(pole value)  ::  operational stack
+    store=store         ::  Wasm store
+  ==
+::
++$  result
+  $%  [%0 out=(list value)]
+      [%2 ~]
+  ==
 --
