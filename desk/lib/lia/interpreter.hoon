@@ -186,5 +186,10 @@
     :-  [%0 ~]
     s(stack [p.op stack.s])
   ::
+      %len
+    ?>  ?=([o=[%octs octs] rest=*] stack.s)
+    =,  stack.s
+    :-  [%0 ~]
+    s(stack [[%i32 p.o] rest])
   ==
 --
