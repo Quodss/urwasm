@@ -76,8 +76,9 @@
     [%writ ~]
     [%if true=action false=action]
     [%for i=idx from=@s to=@s step=@s body=action]
-    [%const p=value]
+    [%lit p=value]
     [%len ~]
+    [%nop ~]
   ==
 ::
 +$  ext-func

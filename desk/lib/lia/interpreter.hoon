@@ -4,6 +4,13 @@
 /+  runner=runner-engine
 ::
 |%
+++  cram
+  |=  [a=(list value) b=@ c=value]
+  ^-  (list value)
+  =?  a  (gte b (lent a))
+    (weld a `(list value)`(reap +((sub b (lent a))) [%i32 `@F`0]))
+  (snap a b c)
+    
 ++  check-in
   |=  l=(list value)
   ^-  (list coin-wasm)
@@ -27,14 +34,13 @@
   ?:  ?=(%2 -.inst)  [%2 ~]
   ?>  ?=(%0 -.inst)
   =+  st=st.inst
-  =/  lia-state=state  [[~] [~] st]
   ?~  actions  [%0 ~]
+  =/  lia-state=state  [[~] [~] st]
   |-  ^-  result
   ?~  t.actions  -:(act lia-state i.actions)
   =+  acted=(act lia-state i.actions)
   ?.  ?=(%0 -<.acted)  -.acted
-  =.  lia-state  +.acted
-  $(actions t.actions)
+  $(lia-state +.acted, actions t.actions)
 ::
 ++  act
   |=  [s=state a=action]
@@ -56,7 +62,7 @@
       %set
     ?>  ?=(^ stack.s)
     :-  [%0 ~]
-    s(stack +.stack.s, space (snap space.s idx.op -.stack.s))
+    s(stack +.stack.s, space (cram space.s idx.op -.stack.s))
   ::
       %run
     =/  id=@  (find-func-id:runner name.op module.store.s)
@@ -165,7 +171,7 @@
         !=(-1 (cmp from to))
     =.  space.s
       =/  v=value  [%i32 (en-si:runner 32 from)]
-      (snap space.s i v)
+      (cram space.s i v)
     |-  ^-  [result state]
     ?:  .=  (cmp from to)
         ?:  (syn step)
@@ -179,10 +185,10 @@
         from.op  (sum from step)
         space.s
       =/  v=value  [%i32 (en-si:runner 32 (sum from step))]
-      (snap space.s i v)
+      (cram space.s i v)
     ==
   ::
-      %const
+      %lit
     :-  [%0 ~]
     s(stack [p.op stack.s])
   ::
@@ -191,5 +197,8 @@
     =,  stack.s
     :-  [%0 ~]
     s(stack [[%i32 p.o] rest])
+  ::
+    %nop  [[%0 ~] s]
+  ::
   ==
 --
