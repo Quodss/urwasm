@@ -1,5 +1,6 @@
 /-  sur=lia
 /+  parser=parser-lib
+=*  types  tree:sur
 ::
 |%
 ++  calm
@@ -8,34 +9,13 @@
   ?~  a  ~
   u.a
 ::
-++  types
-  |%
-  +$  block  (list phrase)
-  +$  phrase  [names=(list name) =op]
-  +$  name  @tas
-  +$  op
-    $@  name
-    $%
-      [%run p=cord q=(list op)]
-      [%cut octs=op offset=op len=op]
-      [%read offset=op len=op]
-      [%writ octs=op offset=op]
-      [%lit p=value:sur]
-      [%len octs=op]
-      [%octs dat=op len=op]
-      [%add p=op q=op]
-      [%sub p=op q=op]
-      :: [%nop ~]
-    ==
-  --
-::
 ++  main
   |=  txt=@t
   ^-  block:types
   (rash txt (ifix [(star gah) (star gah)] block))
 ::
 ++  nl  ;~(plug (star ace) (just '\0a') (star gah))
-++  block  (cook ,block:types (more nl phrase))
+++  block  (cook ,block:types ;~(plug (star phrase) return))
 ++  solid
   |*  sef=rule
   (ifix [(star ace) (star ace)] sef)
@@ -50,6 +30,7 @@
 ::
 ++  phrase
   %+  cook  ,phrase:types
+  %-  gain  :_  nl
   ;~  plug
     %+  cook  calm
     %-  punt
@@ -60,6 +41,10 @@
   ::
     op
   ==
+::
+++  return
+  %+  lose  ;~(plug (jest 'return') (star ace))
+  (more (solid com) op)
 ::
 ++  func-name
   %+  cook  crip

@@ -54,48 +54,89 @@
 ::    and may accept octs as an input. In that case Lia will attempt to convert octs
 ::    to an operand with a proper size, trapping on overflow.
 ::
-/-  *engine
-::
+/-  sur=engine
 |%
-+$  idx  @F
-+$  value
-  $%  $<(%ref coin-wasm)
-      [%octs octs]
-  ==
+::  Noun code definition for Lia stack machine
 ::
-+$  action  (list op)  ::  block of operations with type void -> any
-+$  op
-  $%
-    [%get =idx]
-    [%set =idx]
-    [%run name=cord]
-    [%add type=num-type]
-    [%sub type=num-type]
-    [%cut offset=@ len=@]
-    [%read ~]
-    [%writ ~]
-    [%if true=action false=action]
-    [%for i=idx from=@s to=@s step=@s body=action]
-    [%lit p=value]
-    [%len ~]
-    [%nop ~]
-  ==
+++  line
+  |%
+  +$  value-type  ?(num-type:sur vec-type:sur %octs)
+  +$  block-type  (pair (list value-type) (list value-type))
+  +$  idx  @F
+  +$  value
+    $%  $<(%ref coin-wasm:sur)
+        [%octs octs]
+    ==
+  ::
+  +$  action  (list op)  ::  block of operations with type void -> any
+  +$  op
+    $%
+      [%get =idx]
+      [%set =idx]
+      [%run name=cord]
+      [%add type=num-type:sur]
+      [%sub type=num-type:sur]
+      [%cut ~]  
+      [%read ~]
+      [%writ ~]
+      [%block type=block-type body=(list op)]
+      [%if type=block-type true=(list op) false=(list op)]
+      [%loop type=block-type body=(list op)]
+      [%br label=@]
+      [%br-if label=@]
+      [%lit p=value]
+      [%len ~]
+      [%nop ~]
+      [%drop ~]
+      [%yeet ~]
+      [%octs ~]
+    ==
+  ::
+  +$  ext-func
+    $:  params=(list ?(num-type:sur vec-type:sur))
+        results=(list ?(num-type:sur vec-type:sur))
+        code=(list op)
+    ==
+  ::
+  +$  state
+    $:
+      space=(list value)  ::  storage of values
+      stack=(pole value)  ::  operational stack
+      store=store:sur     ::  Wasm store
+    ==
+  ::
+  +$  result
+    $%  [%0 out=(list value)]
+        [%2 ~]
+    ==
+  ::
+  --
+::  AST definition
 ::
-+$  ext-func
-  $:  params=(list ?(num-type vec-type))
-      results=(list ?(num-type vec-type))
-      code=(list op)
-  ==
-::
-+$  state
-  $:
-    space=(list value)  ::  storage of values
-    stack=(pole value)  ::  operational stack
-    store=store         ::  Wasm store
-  ==
-::
-+$  result
-  $%  [%0 out=(list value)]
-      [%2 ~]
-  ==
+++  tree
+  |%
+  +$  value-type  ?(num-type:sur vec-type:sur %octs)
+  +$  block-type  (pair (list value-type) (list value-type))
+  +$  block  [type=block-type body=(list phrase) =return]
+  +$  phrase  [names=(list name) =op]
+  +$  return  (list op)
+  +$  name  @tas
+  +$  op
+    $@  name
+    $%
+      [%let p=(list name)]
+      [%run p=cord q=(list op)]
+      [%cut octs=op offset=op len=op]
+      [%read offset=op len=op]
+      [%writ octs=op offset=op]
+      [%lit p=value:line]
+      [%len octs=op]
+      [%octs dat=op len=op]
+      [%add type=num-type:sur p=op q=op]
+      [%sub type=num-type:sur p=op q=op]
+      [%if cond=op true=block false=block]
+      [%while p=op body=block]
+      [%break ~]
+    ==
+  --
 --
