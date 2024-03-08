@@ -67,14 +67,8 @@
       =/  idx-fore  (~(get by fore.g) name)
       ?^  idx-fore
         [u.idx-fore g]
-      ?~  free.g
-        :-  huge.g
-        g(huge +(huge.g), fore (~(put by fore.g) name huge.g))
-      :-  n.free.g
-      %=  g
-        fore  (~(put by fore.g) name n.free.g)
-        free  (~(del in `^free`free.g) n.free.g)
-      ==
+      :-  huge.g
+      g(huge +(huge.g), fore (~(put by fore.g) name huge.g))
     =.  dest  [%idx slots]
     =.  gen  (op-gen op.phrase t.body.b)
     $(body.b t.body.b, last |)

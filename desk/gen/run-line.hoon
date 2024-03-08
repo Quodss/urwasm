@@ -4,7 +4,8 @@
 %-  main:gen
 :+  ~  [~ ~]
 :~
-  `[%let %flag ~]
+  `[%let %flag %a ~]
+  [~[%a] [%lit %i32 33]]
   [~[%flag] [%lit %i32 5]]
   :-  ~
   :+  %while  %flag
@@ -15,5 +16,5 @@
     [~[%flag] [%lit %i32 42]]
   ==
 ::
-  `[%yield %flag ~]
+  `[%yield %a ~]
 ==
