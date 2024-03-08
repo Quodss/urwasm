@@ -115,11 +115,11 @@
 ::
 ++  tree
   |%
+  +$  script  [input=(list name) code=block]
   +$  value-type  ?(num-type:sur vec-type:sur %octs)
   +$  block-type  (pair (list value-type) (list value-type))
-  +$  block  [type=block-type body=(list phrase) =return]
+  +$  block  [type=block-type body=(list phrase)]
   +$  phrase  [names=(list name) =op]
-  +$  return  (list op)
   +$  name  @tas
   +$  op
     $@  name
@@ -134,9 +134,10 @@
       [%octs dat=op len=op]
       [%add type=num-type:sur p=op q=op]
       [%sub type=num-type:sur p=op q=op]
-      [%if cond=op true=block false=block]
-      [%while p=op body=block]
+      [%if test=op true=block false=block]
+      [%while test=op body=block]
       [%break ~]
+      [%yield p=(list op)]
     ==
   --
 --
