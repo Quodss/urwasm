@@ -107,12 +107,7 @@
           gen(vars (~(put by vars) op noob), free (~(del in free) noob))
         =/  slot-fore  (~(get by fore) op)
         ?^  slot-fore  [u.slot-fore gen]
-        ?~  free
-          [huge gen(fore (~(put by fore) op huge), huge +(huge))]
-        =/  noob  n.free
-        =>  .(free `^free`free)
-        :-  noob
-        gen(fore (~(put by fore) op noob), free (~(del in free) noob))
+        [huge gen(fore (~(put by fore) op huge), huge +(huge))]
       =.  code.gen  (set-one dest.gen code.gen)
       gen(code [[%get addr] code.gen])
     ::

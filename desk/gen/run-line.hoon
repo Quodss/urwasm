@@ -14,6 +14,11 @@
     [~[%flag] [%sub %i32 %flag [%lit %i32 1]]]
     `[%let %flag ~]
     [~[%flag] [%lit %i32 42]]
+    :-  ~
+    :^  %if  %a
+      :-  [~ ~]
+      ~[`[%break ~]]
+    [[~ ~] ~]
   ==
 ::
   `[%yield %a ~]
