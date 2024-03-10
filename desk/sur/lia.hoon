@@ -71,14 +71,19 @@
   +$  action  (list op)  ::  block of operations with type void -> any
   +$  op
     $%
-      [%get =idx]
-      [%set =idx]
+      [%get type=?(num-type:sur vec-type:sur) =idx]
+      [%set type=?(num-type:sur vec-type:sur) =idx]
       [%run name=cord]
       [%add type=num-type:sur]
       [%sub type=num-type:sur]
       [%cut ~]  
-      [%read ~]
-      [%writ ~]
+      [%read p=idx]  ::  consumes ptr and len
+                     ::  compiles to
+                     ::    [call 'alloc']  ::  consumes length, pushes king-ptr
+                     ::    [call 'read']   ::  consumes king-ptr, ptr, len!
+                     ::    {concatenate king-ptr and len to i64}
+                     ::    {store at idx*8}
+      [%writ p=idx]  ::  consumes offset and len
       [%block type=block-type body=(list op)]
       [%if type=block-type true=(list op) false=(list op)]
       [%loop type=block-type body=(list op)]
@@ -89,7 +94,8 @@
       [%nop ~]
       [%drop ~]
       [%yeet ~]
-      [%octs ~]
+      [%octs p=idx]  ::  data and len
+      [%read-local p=idx type=num-type:sur]
     ==
   ::
   +$  ext-func

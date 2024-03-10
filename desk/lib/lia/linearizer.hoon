@@ -20,11 +20,11 @@
   `+(u.a)
 ::
 ++  main
+  |=  =script:tree
+  ^-  action:line
+  ?>  =((lent input:script) (lent p.type.code.script))
   =|  gen
   =*  gen  -
-  |=  =script:tree
-  ^-  (list op:line)
-  ?>  =((lent input:script) (lent p.type.code.script))
   =.  gen  %+  roll  input:script
            |:  [name=*name:tree gen=gen]
            gen(huge +(huge.gen), fore (~(put by fore.gen) name huge.gen))
