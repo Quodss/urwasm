@@ -254,7 +254,9 @@
               [%add %i32]
               [%local-get 1]
               [%global-get 0]
-              [%sub %i32]  ::  (copy_edge - edge = edge after copy back)
+              [%sub %i32]
+              [%const %i32 offset]
+              [%add %i32]  ::  (copy_edge - edge + offset = edge after copy back)
               [%const %i32 ^~((bex 31))]
               [%add %i32]
               [%store %i32 [0 0] ~]
@@ -316,6 +318,18 @@
         ==
       ==
     ::
+      [%const %i32 offset]  ::  copy to offset
+      [%global-get 0]       ::  from edge
+      [%local-get 1]
+      [%global-get 0]
+      [%sub %i32]           ::  edge_copy - edge bytes
+      [%memory-copy %0 %0]
+    ::
+      [%local-get 1]
+      [%global-get 0]
+      [%sub %i32]
+      [%const %i32 offset]
+      [%global-set 0]  ::  edge = edge_copy - edge + offset
     ==
   ::  space read/write
   ::
