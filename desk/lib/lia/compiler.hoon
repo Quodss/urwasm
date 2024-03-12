@@ -9,6 +9,7 @@
 ++  page-size  `@`65.536                            ::  page size in bytes
 ++  heap-pages  `@`128                              ::  addressable heap limit in pages; need ~2x of this memory for gc
 ++  heap-lim  ^~((mul page-size heap-pages))        ::  addressable heap limit in bytes
+++  len-size  `@`4                                  ::  size of length prefix
 ++  offset  `@`0  :: v                              ::  space offset
 ::  #################|+++++++++++++++++++++++++++++++++++++|...
 ::  ^static data       ^space with numeric values/pointers   ^heap
@@ -213,9 +214,9 @@
       :+  %loop  [~ ~]
       :~
         [%local-get 2]
-        [%const %i32 ^~((mul 8 space-number))]
+        [%const %i32 space-size]
         [%ge %i32 `%u]
-        :^    %if  ::  if space ptr address >= 8*space-number: end loop
+        :^    %if  ::  if space ptr address >= space-size: end loop
             [~ ~]
           ~
         :~  ::  else continue loop
@@ -256,8 +257,8 @@
               [%global-get 0]
               [%sub %i32]
               [%const %i32 offset]
-              [%add %i32]  ::  (copy_edge - edge + offset = edge after copy back)
-              [%const %i32 ^~((bex 31))]
+              [%add %i32]                 ::  (copy_edge - edge + offset = edge after copy back)
+              [%const %i32 ^~((bex 31))]  ::  leading 1
               [%add %i32]
               [%store %i32 [0 0] ~]
               [%local-get 3]
@@ -265,11 +266,11 @@
               [%local-tee 4]
               [%local-get 1]
               [%add %i32]
-              [%const %i32 4]
+              [%const %i32 len-size]
               [%add %i32]
               [%local-get 0]
               [%ge %i32 `%u]
-              :^  %if  [~ ~]  ::  if copy_edge+datum_size+4 >= memsize: attempt to grow
+              :^  %if  [~ ~]  ::  if copy_edge+datum_size+len_size >= memsize: attempt to grow
                 :~
                   [%local-get 4]
                   [%local-get 1]
@@ -298,11 +299,11 @@
               [%local-get 1]  ::  copy to edge_copy
               [%local-get 3]  ::  from ptr
               [%local-get 4]
-              [%const %i32 4]
+              [%const %i32 len-size]
               [%add %i32]     ::  n+4 bytes
               [%memory-copy %0 %0]
               [%local-get 4]
-              [%const %i32 4]
+              [%const %i32 len-size]
               [%add %i32]
               [%local-get 1]
               [%add %i32]
@@ -311,7 +312,7 @@
           ==
         ::
           [%local-get 2]
-          [%const %i32 8]
+          [%const %i32 space-width]
           [%add %i32]
           [%local-set 2]
           [%br 1]  ::  jump to loop
