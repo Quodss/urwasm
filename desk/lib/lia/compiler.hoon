@@ -56,11 +56,7 @@
   ::  of calling memory.copy)
   ::
   =^  type-memio-idx=@  type-section.king
-    =/  type=func-type:wasm  [~[%i32 %i32 %i32] ~]
-    =/  maybe  (find ~[type] type-section.king)
-    ?^  maybe  [u.maybe type-section.king]
-    :-  (lent type-section.king)
-    (snoc type-section.king type)
+    (type-idx [~[%i32 %i32 %i32] ~] type-section.king)
   =.  import-section.king
     %+  weld  import-section.king
     :~
@@ -81,14 +77,13 @@
   =/  get-f32-idx=@    +(get-i64-idx)
   =/  get-f64-idx=@    +(get-f32-idx)
   =/  get-vec-idx=@    +(get-f64-idx)
+  ::
+  =/  set-octs=@  +(get-vec-idx)
+  =/  get-octs=@  +(set-octs)
   ::  allocator
   ::
   =^  type-alloc-idx=@  type-section.king
-    =/  type=func-type:wasm  [~[%i32] ~[%i32]]
-    =/  maybe  (find ~[type] type-section.king)
-    ?^  maybe  [u.maybe type-section.king]
-    :-  (lent type-section.king)
-    (snoc type-section.king type)
+    (type-idx [~[%i32] ~[%i32]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-alloc-idx)
   =.  code-section.king
@@ -158,11 +153,7 @@
   ::  gc
   ::
   =^  type-gc-idx=@  type-section.king
-    =/  type=func-type:wasm  ~
-    =/  maybe  (find ~[type] type-section.king)
-    ?^  maybe  [u.maybe type-section.king]
-    :-  (lent type-section.king)
-    (snoc type-section.king type)
+    (type-idx [~ ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-gc-idx)
   =.  code-section.king
@@ -332,9 +323,408 @@
       [%const %i32 offset]
       [%global-set 0]  ::  edge = edge_copy - edge + offset
     ==
-  ::  space read/write
+  ::  set-i32-idx: space idx and value
   ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32 %i32] ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  allocated ptr
+    ^-  expression:wasm
+    :~
+      [%local-get 1]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^    %if
+          [~ ~]
+        :~
+          [%local-get 0]
+          [%const %i32 space-width]
+          [%mul %i32]
+          [%local-get 1]
+          [%store %i32 [0 offset] ~]
+        ==
+      :~  
+        [%const %i32 ^~((add len-size 4))]
+        [%call alloc-idx]
+        [%local-tee 2]
+        [%const %i32 4]
+        [%store %i32 [0 0] ~]
+        [%local-get 2]
+        [%local-get 1]
+        [%store %i32 [0 len-size] ~]
+        [%local-get 0]
+        [%const %i32 space-width]
+        [%mul %i32]
+        [%local-get 2]
+        [%const %i32 ^~((bex 31))]
+        [%add %i32]
+        [%store %i32 [0 offset] ~]
+      ==
+    ==
+  ::  set-i64-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32 %i64] ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  allocated ptr
+    ^-  expression:wasm
+    :~
+      [%const %i32 ^~((add len-size 8))]
+      [%call alloc-idx]
+      [%local-tee 2]
+      [%const %i32 8]
+      [%store %i32 [0 0] ~]
+      [%local-get 2]
+      [%local-get 1]
+      [%store %i64 [0 len-size] ~]
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%local-get 2]
+      [%const %i32 ^~((bex 31))]
+      [%add %i32]
+      [%store %i32 [0 offset] ~]
+    ==
+  ::  set-f32-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32 %f32] ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  allocated ptr
+    ^-  expression:wasm
+    :~
+      [%local-get 1]
+      [%reinterpret %i32 %f32]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^    %if
+          [~ ~]
+        :~
+          [%local-get 0]
+          [%const %i32 space-width]
+          [%mul %i32]
+          [%local-get 1]
+          [%store %f32 [0 offset] ~]
+        ==
+      :~  
+        [%const %i32 ^~((add len-size 4))]
+        [%call alloc-idx]
+        [%local-tee 2]
+        [%const %i32 4]
+        [%store %i32 [0 0] ~]
+        [%local-get 2]
+        [%local-get 1]
+        [%store %f32 [0 len-size] ~]
+        [%local-get 0]
+        [%const %i32 space-width]
+        [%mul %i32]
+        [%local-get 2]
+        [%const %i32 ^~((bex 31))]
+        [%add %i32]
+        [%store %i32 [0 offset] ~]
+      ==
+    ==
+  ::  set-f64-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32 %f64] ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  allocated ptr
+    ^-  expression:wasm
+    :~
+      [%const %i32 ^~((add len-size 8))]
+      [%call alloc-idx]
+      [%local-tee 2]
+      [%const %i32 8]
+      [%store %i32 [0 0] ~]
+      [%local-get 2]
+      [%local-get 1]
+      [%store %f64 [0 len-size] ~]
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%local-get 2]
+      [%const %i32 ^~((bex 31))]
+      [%add %i32]
+      [%store %i32 [0 offset] ~]
+    ==
+  ::  set-vec-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32 %v128] ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  allocated ptr
+    ^-  expression:wasm
+    :~
+      [%const %i32 ^~((add len-size 16))]
+      [%call alloc-idx]
+      [%local-tee 2]
+      [%const %i32 16]
+      [%store %i32 [0 0] ~]
+      [%local-get 2]
+      [%local-get 1]
+      [%vec %store [0 len-size]]
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%local-get 2]
+      [%const %i32 ^~((bex 31))]
+      [%add %i32]
+      [%store %i32 [0 offset] ~]
+    ==
+  ::  get-i32-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32] ~[%i32]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  loaded value
+    ^-  expression:wasm
+    :~
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%load %i32 [0 offset] ~ ~]
+      [%local-tee 1]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^    %if
+          [~ ~[%i32]]
+        ~[[%local-get 1]]
+      :~
+        [%local-get 1]
+        [%const %i32 ^~((bex 31))]
+        [%sub %i32]
+        [%local-tee 1]
+        [%eqz %i32]
+        :^    %if
+            [~ ~]
+          ~[[%unreachable ~]]
+        ~
+      ::
+        [%local-get 1]
+        [%load %i32 [0 0] ~ ~]
+        [%const %i32 4]
+        [%ne %i32]
+        :^    %if
+            [~ ~]
+          ~[[%unreachable ~]]
+        ~
+      ::
+        [%local-get 1]
+        [%load %i32 [0 len-size] ~ ~]
+      ==
+    ==
+  ::  get-i64-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32] ~[%i64]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  loaded value
+    ^-  expression:wasm
+    :~
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%load %i32 [0 offset] ~ ~]
+      [%local-tee 1]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%const %i32 ^~((bex 31))]
+      [%sub %i32]
+      [%local-tee 1]
+      [%eqz %i32]
+      :^    %if
+          [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%load %i32 [0 0] ~ ~]
+      [%const %i32 8]
+      [%ne %i32]
+      :^    %if
+          [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%load %i64 [0 len-size] ~ ~]
+    ==
+  ::  get-f32-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32] ~[%f32]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  loaded value
+    ^-  expression:wasm
+    :~
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%load %i32 [0 offset] ~ ~]
+      [%local-tee 1]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^    %if
+          [~ ~[%i32]]
+        ~[[%local-get 1]]
+        [%reinterpret %f32 %i32]
+      :~
+        [%local-get 1]
+        [%const %i32 ^~((bex 31))]
+        [%sub %i32]
+        [%local-tee 1]
+        [%eqz %i32]
+        :^    %if
+            [~ ~]
+          ~[[%unreachable ~]]
+        ~
+      ::
+        [%local-get 1]
+        [%load %i32 [0 0] ~ ~]
+        [%const %i32 4]
+        [%ne %i32]
+        :^    %if
+            [~ ~]
+          ~[[%unreachable ~]]
+        ~
+      ::
+        [%local-get 1]
+        [%load %f32 [0 len-size] ~ ~]
+      ==
+    ==
+  ::  get-f64-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32] ~[%f64]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  loaded value
+    ^-  expression:wasm
+    :~
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%load %i32 [0 offset] ~ ~]
+      [%local-tee 1]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%const %i32 ^~((bex 31))]
+      [%sub %i32]
+      [%local-tee 1]
+      [%eqz %i32]
+      :^    %if
+          [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%load %i32 [0 0] ~ ~]
+      [%const %i32 8]
+      [%ne %i32]
+      :^    %if
+          [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%load %f64 [0 len-size] ~ ~]
+    ==
+  ::  get-vec-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (type-idx [~[%i32] ~[%v128]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]  ::  loaded value
+    ^-  expression:wasm
+    :~
+      [%local-get 0]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%load %i32 [0 offset] ~ ~]
+      [%local-tee 1]
+      [%const %i32 ^~((bex 31))]
+      [%lt %i32 `%u]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%const %i32 ^~((bex 31))]
+      [%sub %i32]
+      [%local-tee 1]
+      [%eqz %i32]
+      :^    %if
+          [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%load %i32 [0 0] ~ ~]
+      [%const %i32 16]
+      [%ne %i32]
+      :^    %if
+          [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get 1]
+      [%vec %load [0 len-size] ~]
+    ==
+  ::  set-octs
+  ::
+
+  ::  get-octs
+  ::
+
   ::  compile and add main
   ::
-  
+::
+++  type-idx
+  |=  [t=func-type.wasm s=type-section.wasm]
+  ^-  [@ type-section.wasm]
+  =/  maybe  (find ~[t] s)
+  ?^  maybe  [u.maybe s]
+  :-  (lent s)
+  (snoc s t)
+::
 --
