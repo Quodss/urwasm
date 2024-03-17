@@ -54,6 +54,7 @@
 ::    and may accept octs as an input. In that case Lia will attempt to convert octs
 ::    to an operand with a proper size, trapping on overflow.
 ::
+
 /-  sur=engine
 |%
 ::  Noun code definition for Lia stack machine
@@ -62,18 +63,23 @@
   |%
   +$  value-type  ?(num-type:sur vec-type:sur %octs)
   +$  block-type  (pair (list value-type) (list value-type))
+  +$  ext-func-type  %+  pair
+                       (list ?(num-type:sur vec-type:sur))
+                       (list ?(num-type:sur vec-type:sur))
   +$  idx  @F
   +$  value
     $%  $<(%ref coin-wasm:sur)
         [%octs octs]
     ==
   ::
-  +$  action  (list op)  ::  block of operations with type void -> any
+  +$  action  [type=block-type body=(list op)]
   +$  op
     $%
       [%get type=?(num-type:sur vec-type:sur) =idx]
       [%set type=?(num-type:sur vec-type:sur) =idx]
+      [%let type=?(num-type:sur vec-type:sur)]
       [%run name=cord]
+      [%run-ext name=term]
       [%add type=num-type:sur]
       [%sub type=num-type:sur]
       [%cut ~]  
@@ -95,20 +101,25 @@
       [%drop ~]
       [%yeet ~]
       [%octs p=idx]  ::  data and len
-      [%read-local p=idx type=num-type:sur]
+      [%read-octs p=idx type=num-type:sur]  ::  reinterpret octs
     ==
   ::
-  +$  ext-func
-    $:  params=(list ?(num-type:sur vec-type:sur))
-        results=(list ?(num-type:sur vec-type:sur))
-        code=(list op)
-    ==
+  +$  ext-func  [type=ext-func-type body=(list op)]
   ::
   +$  state
     $:
       space=(list value)  ::  storage of values
       stack=(pole value)  ::  operational stack
       store=store:sur     ::  Wasm store
+    ==
+  ::
+  +$  input
+    $:  =^module:sur
+        code=(list action)
+        shop=(list (list value))
+        ext=(map (pair cord cord) ext-func)
+        import=(map term block-type)
+        diff=(each (list action) (list value))
     ==
   ::
   +$  result
@@ -121,7 +132,12 @@
 ::
 ++  tree
   |%
-  +$  script  [input=(list name) code=block]
+  +$  script
+    $:  input=(list name)
+        code=block
+        return=(list op)
+    ==
+  ::
   +$  value-type  ?(num-type:sur vec-type:sur %octs)
   +$  block-type  (pair (list value-type) (list value-type))
   +$  block  [type=block-type body=(list phrase)]
@@ -132,6 +148,7 @@
     $%
       [%let p=(list name)]
       [%run p=cord q=(list op)]
+      [%run-ext p=term q=(list op)]
       [%cut octs=op offset=op len=op]
       [%read offset=op len=op]
       [%writ octs=op offset=op]
@@ -143,7 +160,7 @@
       [%if test=op true=block false=block]
       [%while test=op body=block]
       [%break ~]
-      [%yield p=(list op)]
+      :: [%yield p=(list op)]
     ==
   --
 --
