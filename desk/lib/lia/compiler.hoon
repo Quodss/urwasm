@@ -63,7 +63,7 @@
   ::  of calling memory.copy)
   ::
   =^  type-memio-idx=@  type-section.king
-    (type-idx [~[%i32 %i32 %i32] ~] type-section.king)  ::  from, to, len
+    (get-type-idx [~[%i32 %i32 %i32] ~] type-section.king)  ::  from, to, len
   =.  import-section.king
     %+  weld  import-section.king
     :~
@@ -80,7 +80,7 @@
     |^
     ^-  module:wasm
     =^  type-idx=@  type-section.king
-      %+  type-idx
+      %+  get-type-idx
         [(turn -.type convert) (turn +.type convert)]
       type-section.king
     %=    king
@@ -116,7 +116,7 @@
   ::  allocator
   ::
   =^  type-alloc-idx=@  type-section.king
-    (type-idx [~[%i32] ~[%i32]] type-section.king)
+    (get-type-idx [~[%i32] ~[%i32]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-alloc-idx)
   =.  code-section.king
@@ -191,7 +191,7 @@
   ::  gc
   ::
   =^  type-gc-idx=@  type-section.king
-    (type-idx [~ ~] type-section.king)
+    (get-type-idx [~ ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-gc-idx)
   =.  code-section.king
@@ -373,7 +373,7 @@
   ::  set-i32-idx: space idx and value
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %i32] ~] type-section.king)
+    (get-type-idx [~[%i32 %i32] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -424,7 +424,7 @@
   ::  set-i64-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %i64] ~] type-section.king)
+    (get-type-idx [~[%i32 %i64] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -461,7 +461,7 @@
   ::  set-f32-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %f32] ~] type-section.king)
+    (get-type-idx [~[%i32 %f32] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -513,7 +513,7 @@
   ::  set-f64-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %f64] ~] type-section.king)
+    (get-type-idx [~[%i32 %f64] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -550,7 +550,7 @@
   ::  set-vec-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %v128] ~] type-section.king)
+    (get-type-idx [~[%i32 %v128] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -587,7 +587,7 @@
   ::  get-i32-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32] ~[%i32]] type-section.king)
+    (get-type-idx [~[%i32] ~[%i32]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -641,7 +641,7 @@
   ::  get-i64-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32] ~[%i64]] type-section.king)
+    (get-type-idx [~[%i32] ~[%i64]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -694,7 +694,7 @@
   ::  get-f32-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32] ~[%f32]] type-section.king)
+    (get-type-idx [~[%i32] ~[%f32]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -749,7 +749,7 @@
   ::  get-f64-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32] ~[%f64]] type-section.king)
+    (get-type-idx [~[%i32] ~[%f64]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -802,7 +802,7 @@
   ::  get-vec-idx
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32] ~[%v128]] type-section.king)
+    (get-type-idx [~[%i32] ~[%v128]] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -855,7 +855,7 @@
   ::  set-octs
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %i32 %i32] ~] type-section.king)
+    (get-type-idx [~[%i32 %i32 %i32] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -899,7 +899,7 @@
   ::  get-octs
   ::
   =^  type-idx=@  type-section.king
-    (type-idx [~[%i32 %i32] ~] type-section.king)
+    (get-type-idx [~[%i32 %i32] ~] type-section.king)
   =.  function-section.king
     (snoc function-section.king type-idx)
   =.  code-section.king
@@ -946,7 +946,7 @@
   ::  compile and export main, ext
   ::
 ::
-++  type-idx
+++  get-type-idx
   |=  [t=func-type.wasm s=type-section.wasm]
   ^-  [@ type-section.wasm]
   =/  maybe  (find ~[t] s)
