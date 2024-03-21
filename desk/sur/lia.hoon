@@ -54,7 +54,6 @@
 ::    and may accept octs as an input. In that case Lia will attempt to convert octs
 ::    to an operand with a proper size, trapping on overflow.
 ::
-
 /-  sur=engine
 |%
 ::  Noun code definition for Lia stack machine
@@ -82,26 +81,22 @@
       [%run-ext name=term]
       [%add type=num-type:sur]
       [%sub type=num-type:sur]
-      [%cut ~]  
+      :: [%cut ~]  
       [%read p=idx]  ::  consumes ptr and len
-                     ::  compiles to
-                     ::    [call 'alloc']  ::  consumes length, pushes king-ptr
-                     ::    [call 'read']   ::  consumes king-ptr, ptr, len!
-                     ::    {concatenate king-ptr and len to i64}
-                     ::    {store at idx*8}
-      [%writ p=idx]  ::  consumes offset and len
+      [%writ p=idx]  ::  consumes ptr, offset and len
       [%block type=block-type body=(list op)]
       [%if type=block-type true=(list op) false=(list op)]
       [%loop type=block-type body=(list op)]
       [%br label=@]
       [%br-if label=@]
-      [%lit p=value]
-      [%len ~]
+      :: [%lit p=value]
+      [%const p=$<(%ref coin-wasm:sur)]
+      [%len =idx]
       [%nop ~]
       [%drop ~]
-      [%yeet ~]
-      [%octs p=idx]  ::  data and len
-      [%read-octs p=idx type=num-type:sur]  ::  reinterpret octs
+      :: [%yeet ~]
+      :: [%octs p=idx]  ::  data and len
+      [%read-octs p=idx type=num-type:sur]  ::  offset, len -> reinterpret octs
     ==
   ::
   +$  ext-func  [type=ext-func-type body=(list op)]
