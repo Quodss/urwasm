@@ -96,7 +96,8 @@
       [%drop ~]
       :: [%yeet ~]
       :: [%octs p=idx]  ::  data and len
-      [%read-octs p=idx type=num-type:sur]  ::  offset, len -> reinterpret octs
+      [%read-octs-i p=idx type=?(%i32 %i64)]  ::  offset, len -> octs to int
+      [%read-octs-f p=idx type=?(%f32 %f64)]  ::  offset      -> octs to float
     ==
   ::
   +$  ext-func  [type=ext-func-type body=(list op)]
