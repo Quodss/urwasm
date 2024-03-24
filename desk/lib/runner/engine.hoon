@@ -260,6 +260,12 @@
   |=  [name=cord in=(list coin-wasm) st=store]
   ^-  result
   =/  id=@  (find-func-id name module.st)
+  (invoke-id id in st)
+::  ++invoke-id: call function by id, to call from the outside
+::
+++  invoke-id
+  |=  [id=@ in=(list coin-wasm) st=store]
+  ^-  result
   =/  id-local=@
     (sub id (lent funcs.import-section.module.st))
   ::  Type check for the input values

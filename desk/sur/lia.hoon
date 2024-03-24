@@ -65,6 +65,7 @@
   +$  ext-func-type  %+  pair
                        (list ?(num-type:sur vec-type:sur))
                        (list ?(num-type:sur vec-type:sur))
+  +$  ext-func  [type=ext-func-type body=(list op)]
   +$  idx  @F
   +$  value
     $%  $<(%ref coin-wasm:sur)
@@ -74,9 +75,9 @@
   +$  action  [type=block-type body=(list op)]
   +$  op
     $%
-      [%get type=?(num-type:sur vec-type:sur) =idx]
+      [%get type=value-type =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
       [%set type=?(num-type:sur vec-type:sur) =idx]
-      [%let type=?(num-type:sur vec-type:sur)]
+      [%let type=value-type]  ::  set type of space index; compiler: noop
       [%run name=cord]
       [%run-ext name=term]
       [%add type=num-type:sur]
@@ -100,7 +101,6 @@
       [%read-octs-f p=idx type=?(%f32 %f64)]  ::  offset      -> octs to float
     ==
   ::
-  +$  ext-func  [type=ext-func-type body=(list op)]
   ::
   +$  state
     $:

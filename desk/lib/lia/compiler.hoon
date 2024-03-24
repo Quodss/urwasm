@@ -91,7 +91,7 @@
     ^-  [(map cord @) @ module:wasm]
     =^  type-idx=@  type-section.k.acc
       %+  get-type-idx
-        [(turn p.type convert) (turn q.type convert)]
+        [(murn p.type input-convert) (turn q.type convert)]
       type-section.k.acc
     %=    acc
         i  +(i.acc)
@@ -103,26 +103,28 @@
     ==
   ::  local funcs
   ::
-  =/  alloc-idx=@      (lent import-section.king)
-  =/  gc-idx=@         +(alloc-idx)
-  =/  set-i32-idx=@    +(gc-idx)
-  =/  set-i64-idx=@    +(set-i32-idx)
-  =/  set-f32-idx=@    +(set-i64-idx)
-  =/  set-f64-idx=@    +(set-f32-idx)
-  =/  set-vec-idx=@    +(set-f64-idx)
-  =/  get-i32-idx=@    +(set-vec-idx)
-  =/  get-i64-idx=@    +(get-i32-idx)
-  =/  get-f32-idx=@    +(get-i64-idx)
-  =/  get-f64-idx=@    +(get-f32-idx)
-  =/  get-vec-idx=@    +(get-f64-idx)
-  ::
-  =/  set-octs-idx=@  +(get-vec-idx)
-  =/  get-octs-idx=@  +(set-octs-idx)
-  =/  len-idx=@       +(get-octs-idx)
+  =/  alloc-idx=@          (lent import-section.king)
+  =/  gc-idx=@             +(alloc-idx)
+  =/  set-i32-idx=@        +(gc-idx)
+  =/  set-i64-idx=@        +(set-i32-idx)
+  =/  set-f32-idx=@        +(set-i64-idx)
+  =/  set-f64-idx=@        +(set-f32-idx)
+  =/  set-vec-idx=@        +(set-f64-idx)
+  =/  get-i32-idx=@        +(set-vec-idx)
+  =/  get-i64-idx=@        +(get-i32-idx)
+  =/  get-f32-idx=@        +(get-i64-idx)
+  =/  get-f64-idx=@        +(get-f32-idx)
+  =/  get-vec-idx=@        +(get-f64-idx)
+  =/  set-octs-idx=@       +(get-vec-idx)
+  =/  get-octs-idx=@       +(set-octs-idx)
+  =/  len-idx=@            +(get-octs-idx)
   =/  read-octs-i32-idx=@  +(len-idx)
   =/  read-octs-i64-idx=@  +(read-octs-i32-idx)
   =/  read-octs-f32-idx=@  +(read-octs-i64-idx)
   =/  read-octs-f64-idx=@  +(read-octs-f32-idx)
+  =/  set-octs-ext-idx=@   +(read-octs-f64-idx)
+  =/  get-space-ptr-idx=@  +(set-octs-ext-idx)
+  =/  clear-space-idx=@    +(get-space-ptr-idx)
   ::  allocator
   ::
   =^  type-alloc-idx=@  type-section.king
@@ -331,7 +333,9 @@
                   [%local-get datum-size]
                   [%local-get edge-copy]
                   [%add %i32]
-                  [%local-get 0]
+                  [%const %i32 len-size]
+                  [%add %i32]
+                  [%local-get memsize]
                   [%sub %i32]
                   [%const %i32 page-size]
                   [%div %i32 `%u]
@@ -1322,6 +1326,89 @@
       [%add %i32]
       [%load %f64 [0 len-size] ~ ~]
     ==
+  ::  set-octs-ext
+  ::
+  =^  type-idx=@  type-section.king
+    (get-type-idx [~[%i32 %i32] ~[%i32]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]
+    =/  len=@  0
+    =/  idx=@  1
+    =/  king-ptr=@  2
+    ^-  expression:wasm
+    :~
+      [%const %i32 len-size]
+      [%local-get len]
+      [%add %i32]
+      [%call alloc-idx]
+      [%local-tee king-ptr]
+      [%local-get len]
+      [%store %i32 [0 0] ~]
+    ::
+      [%local-get idx]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%local-get king-ptr]
+      [%store %i32 [0 offset] ~]
+    ::
+      [%local-get king-ptr]
+      [%const %i32 len-size]
+      [%add %i32]
+    ==
+  ::  get-space-ptr
+  ::
+  =^  type-idx=@  type-section.king
+    (get-type-idx [~[%i32] ~[%i32]] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]
+    =/  idx=@  0
+    =/  king-ptr=@  1
+    ^-  expression:wasm
+    :~
+      [%local-get idx]
+      [%const %i32 space-number]
+      [%ge %i32 `%u]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get idx]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%load %i32 [0 offset] ~ ~]
+      [%local-tee king-ptr]
+      [%const %i32 null-ptr]
+      [%le %i32 `%u]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get king-ptr]
+      [%const %i32 null-ptr]
+      [%sub %i32]
+    ==
+  ::  clear-space
+  ::
+  =^  type-idx=@  type-section.king
+    (get-type-idx [~ ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~
+    ^-  expression:wasm
+    :~
+      [%const %i32 offset]
+      [%const %i32 0]
+      [%const %i32 space-size]
+      [%memory-init 0 %0]
+    ==
   ::  Function imports of serf are defined in ext field of the sample.
   ::  Imports of other parts of the store are not treated by king, and
   ::  an attempt to access them leads to serf blocking which immediately
@@ -1332,32 +1419,22 @@
   ::  two Lia instances is some extremely cursed business wrt jetting
   ::  (i might be wrong)
   ::
-  ::  compile and export main, ext
+  ::  compile and export actions, ext
   ::
   |^
   =/  act-func-first-idx=@
     (add (lent import-section.king) (lent function-section.king))
-  ::  (type of main function of king and list of function
-  ::  indices and number of inputs, last to first)
   ::
-  =^  [main-type=func-type:wasm idxs-nvars=(list (pair @ @))]  king
-    =|  main-in=(list valtype:wasm)
-    =|  main-out=(list valtype:wasm)
-    =|  idxs-nvars=(list (pair @ @))
-    =/  f-idx=@  act-func-first-idx
-    |-  ^-  [[func-type:wasm (list (pair @ @))] module:wasm]
-    ?~  code  [[[main-in main-out] idxs-nvars] king]
+  =.  king
+    |-  ^-  module:wasm
+    ?~  code  king
     =*  act  i.code
     =/  type=func-type:wasm
-      [(turn p.type.act convert) (turn q.type.act convert)]
+      [(murn p.type.act input-convert) (turn q.type.act convert)]
     =^  type-idx=@  type-section.king
       (get-type-idx type type-section.king)
     %=    $
-        code        t.code
-        f-idx       +(f-idx)
-        main-in     (weld main-in params.type)
-        main-out    results.type
-        idxs-nvars  [[f-idx (lent params.type)] idxs-nvars]
+        code  t.code
     ::
         function-section.king
       (snoc function-section.king type-idx)
@@ -1365,47 +1442,36 @@
         code-section.king
       %+  snoc  code-section.king
       :-  ~
+      %+  weld
+        (to-space p.type.act)
       ^-  expression:wasm
       (zing (turn body.act translate))
     ==
-  =/  act-func-last-idx=@
-    (dec (add (lent import-section.king) (lent function-section.king)))
-  ?>  (gte act-func-last-idx act-func-first-idx)
-  =/  main-idx=@  +(act-func-last-idx)
-  =^  type-idx=@  type-section.king
-    (get-type-idx main-type type-section.king)
-  =.  function-section.king
-    (snoc function-section.king type-idx)
-  =.  code-section.king
-    %+  snoc  code-section.king
-    :-  ~
-    ^-  expression:wasm
-    %-  zing  %-  flop
-    :-  `(list instruction:wasm)`[%return ~]~
-    %+  spun  idxs-nvars
-    |=  [[f-idx=@ n-vars=@] local-offset=@off]
-    ^-  [(list instruction:wasm) @off]
-    :_  `@off`(add local-offset n-vars)
-    =/  local-idxs=(list @)
-      ?:  =(0 n-vars)  ~
-      (gulf local-offset (add local-offset (dec n-vars)))
-    %+  snoc
-      ^-  (list instruction:wasm)
-      (turn local-idxs (lead %local-get))
-    `instruction:wasm`[%call f-idx]
+  =/  n-funcs=@  (lent code)
+  =.  global-section.king
+    %+  weld  global-section.king
+    ^-  global-section:wasm
+    :~  [%i32 %con %const %i32 act-func-first-idx]
+        [%i32 %con %const %i32 n-funcs]
+    ==
   =.  export-section.king
-    (snoc export-section.king ['main' %func main-idx])
+    %+  weld  export-section.king
+    ^-  export-section:wasm
+    =/  len-glob=@  (lent global-section.king)
+    :~  ['act-0-func-idx' %glob (sub len-glob 2)]
+        ['n-funcs' %glob (sub len-glob 1)]
+        ['clear-space' %func clear-space-idx]
+    ==
   ::
   =.  king
     =<  +  %-  ~(rep by ext)
     |:  :*  [name=['' ''] ext-func=*ext-func:line:lia]
-            f-idx=+(main-idx)
+            f-idx=(add act-func-first-idx n-funcs)
             king=king
         ==
     ^-  [@ module:wasm]
     =/  type=func-type:wasm
-      :-  (turn p.type.ext-func convert)
-          (turn q.type.ext-func convert)
+      type.ext-func
     =^  type-idx=@  type-section.king
       (get-type-idx type type-section.king)
     :-  +(f-idx)
@@ -1437,27 +1503,36 @@
     :_  ~
     :+  %acti  [%const %i32 offset]
     [space-size (fil 5 space-number null-ptr)]
+  ::  Done!
+  ::
   king
   ::
   ++  translate
     |=  =op:line:lia
     ^-  (list instruction:wasm)
     ?-    -.op
+        %let      ~
+        %run      [%call (~(got by serf-diary) name.op)]~
+        %run-ext  [%call (~(got by king-diary) name.op)]~
+    ::
         ?(%add %sub %br %br-if %nop %drop)  ~[op]
     ::
         %get
       ?>  (lth idx.op space-number)
       :~
         [%const %i32 idx.op]
+      ::
+        ?:  ?=(%octs type.op)
+          [%const %i32 idx.op]
         :-  %call
-        ~!  type.op
         ?-  type.op
-          %i32  get-i32-idx
-          %i64  get-i64-idx
-          %f32  get-f32-idx
-          %f64  get-f64-idx
+          %i32   get-i32-idx
+          %i64   get-i64-idx
+          %f32   get-f32-idx
+          %f64   get-f64-idx
           %v128  get-vec-idx
         ==
+      ::
       ==
     ::
         %set
@@ -1466,17 +1541,14 @@
         [%const %i32 idx.op]
         :-  %call
         ?-  type.op
-          %i32  set-i32-idx
-          %i64  set-i64-idx
-          %f32  set-f32-idx
-          %f64  set-f64-idx
+          %i32   set-i32-idx
+          %i64   set-i64-idx
+          %f32   set-f32-idx
+          %f64   set-f64-idx
           %v128  set-vec-idx
         ==
       ==
     ::
-        %let  ~
-        %run  [%call (~(got by serf-diary) name.op)]~
-        %run-ext  [%call (~(got by king-diary) name.op)]~
         %read
       ?>  (lth p.op space-number)
       :~
@@ -1550,6 +1622,35 @@
       ==
     ::
     ==
+  ::
+  ++  to-space
+    |=  l=(list value-type:line:lia)
+    =|  out=(list expression:wasm)
+    =/  idx=@  0
+    |-  ^-  expression:wasm
+    ?~  l  (zing (flop out))
+    ?:  ?=(%octs i.l)
+      $(l t.l, idx +(idx))
+    %=    $
+        l    t.l
+        idx  +(idx)
+    ::
+        out
+      :_  out
+      ^-  expression:wasm
+      :~
+        [%local-get idx]
+        [%const %i32 idx]
+        :-  %call
+        ?-  i.l
+          %i32   set-i32-idx
+          %i64   set-i64-idx
+          %f32   set-f32-idx
+          %f64   set-f64-idx
+          %v128  set-vec-idx
+        ==
+      ==
+    ==
   --  ::  ++main
 ::
 ++  get-type-idx
@@ -1565,5 +1666,11 @@
   ^-  valtype:wasm
   ?:  ?=(%octs v)  %i32  ::  space idx
   v
+::
+++  input-convert
+  |=  v=value-type:line:lia
+  ^-  (unit valtype:wasm)
+  ?:  ?=(%octs v)  ~  ::  set from outside
+  `v
 ::
 --
