@@ -19,10 +19,11 @@ Next:
     - [X]  Hoon code compiles
     - [X] Wasm implementation of GC and alloc typechecked
     - [ ] Test the allocator
+  - [ ] Wasm binary encoder
   - [ ] Lia end-to-end interpeting function (jet target)
 - [ ] Jet of Lia interpreter:
   - [ ] Lia jet
-  - [ ] Ensure determenism of the Wasm runtime in C 
+  - [ ] Ensure determinism of the Wasm runtime in C 
   - [ ] Wasm validation in Hoon, Lia validation in Hoon and C
 - [ ] Operationalization:
   - [ ] Caching of Lia state

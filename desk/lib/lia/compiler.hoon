@@ -116,8 +116,8 @@
   =/  get-f64-idx=@        +(get-f32-idx)
   =/  get-vec-idx=@        +(get-f64-idx)
   =/  set-octs-idx=@       +(get-vec-idx)
-  =/  get-octs-idx=@       +(set-octs-idx)
-  =/  len-idx=@            +(get-octs-idx)
+  =/  give-octs-idx=@       +(set-octs-idx)
+  =/  len-idx=@            +(give-octs-idx)
   =/  read-octs-i32-idx=@  +(len-idx)
   =/  read-octs-i64-idx=@  +(read-octs-i32-idx)
   =/  read-octs-f32-idx=@  +(read-octs-i64-idx)
@@ -918,7 +918,7 @@
       [%add %i32]
       [%store %i32 [0 offset] ~]
     ==
-  ::  get-octs
+  ::  give-octs
   ::
   =^  type-idx=@  type-section.king
     (get-type-idx [~[%i32 %i32 %i32 %i32] ~] type-section.king)
@@ -1560,7 +1560,7 @@
       ?>  (lth p.op space-number)
       :~
         [%const %i32 p.op]
-        [%call get-octs-idx]
+        [%call give-octs-idx]
       ==
     ::
         %block
