@@ -222,7 +222,7 @@
   ^-  local-state
   ?~  shop.store.l
     =,  store.l
-    l(br.stack [%bloq req mem tables globals])
+    l(br.stack [%bloq req module mem tables globals])
   %=    l
       va.stack
     %+  weld  
@@ -232,7 +232,7 @@
   ::
       store
     =,  store.l
-    [t.shop module q.i.shop]
+    [t.shop q.i.shop]
   ==
 ::
 ::  |grab: import-related utils. Gates return either a local

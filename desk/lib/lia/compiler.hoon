@@ -1448,6 +1448,7 @@
       (zing (turn body.act translate))
     ==
   =/  n-funcs=@  (lent code)
+  ?<  =(0 n-funcs)
   =.  global-section.king
     %+  weld  global-section.king
     ^-  global-section:wasm

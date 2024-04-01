@@ -14,7 +14,7 @@
     =memory-section   
     =global-section   
     =export-section
-    :: =start-section    ::  Removed
+    =start-section
     =elem-section
     :: =datacnt-section  ::  Removed
     :: =code-section     ::  Code moved to function section
@@ -62,6 +62,7 @@
   ::
       $:  %bloq    ::  blocked on import request
           [[mod=cord name=cord] =request]
+          =module
           mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
           tables=(list (list $>(%ref coin-wasm)))  ::  tables
           globals=(list coin-wasm)
@@ -76,6 +77,7 @@
   ::
     $:  %1                                         ::  block
         [[mod=cord name=cord] =request]          ::  /module/name, request
+        =module
         mem=(unit [buffer=@ n-pages=@])         
         tables=(list (list $>(%ref coin-wasm))) 
         globals=(list coin-wasm)
@@ -132,7 +134,8 @@
 +$  shop  (list item)
 +$  item
   %+  pair  (list coin-wasm)
-  $:  mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
+  $:  =module
+      mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
       tables=(list (list $>(%ref coin-wasm)))  ::  tables
       globals=(list coin-wasm)
   ==
