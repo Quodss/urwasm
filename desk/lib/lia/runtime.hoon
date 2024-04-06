@@ -27,8 +27,14 @@
   ?>  ?=([%const %i32 @] i.glob)
   +.p.i.glob
 ::
-+$  lord-result
++$  them-result
   $%  [%0 out=(list coin-wasm:wasm)]
+      [%1 [[cord cord] =request:engine]]
+      [%2 ~]
+  ==
+::
++$  lord-result
+  $%  [%0 out=(list coin-wasm:wasm) king=store:engine]
       [%1 [[cord cord] =request:engine]]
       [%2 ~]
   ==
@@ -43,8 +49,8 @@
       :-  +:(wasm-need:run (prep:run king-mod ~))  ::  king store initialized, should not block
           (conv:run serf-mod ~)                ::  serf store, uninitialized
   |^
-  =^  res=lord-result  them  serf-init
-  ?.  ?=(%0 -.res)  res
+  =^  res=them-result  them  serf-init
+  ?.  ?=(%0 -.res)  `lord-result`res
   =/  act-func-idx=@
     (get-export-global-i32 module.king.them 'act-0-func-idx')
   =/  n-funcs=@
@@ -53,8 +59,10 @@
   =/  idx-last  (dec (add act-func-idx n-funcs))
   |-  ^-  lord-result
   ?:  =(act-func-idx idx-last)
-    -:(king-invoke-act act-func-idx)
-  =^   res=lord-result  them  (king-invoke-act act-func-idx)
+    =^   res=them-result  them  (king-invoke-act act-func-idx)
+    ?.  ?=(%0 -.res)  res
+    [%0 out.res king.them]
+  =^   res=them-result  them  (king-invoke-act act-func-idx)
   ?.  ?=(%0 -.res)  res
   %=  $
     them          king-invoke-clear
@@ -63,7 +71,7 @@
   ::
   ++  serf-init
     =|  serf-shop=shop:engine
-    |-  ^-  [lord-result _them]
+    |-  ^-  [them-result _them]
     =*  serf-loop  $
     =/  serf-engine-res=result:engine
       (instantiate:run serf.them(shop serf-shop))
@@ -80,7 +88,7 @@
     =/  name-chained=cord  (chain-name +<-.serf-engine-res)
     =/  serf-b4-block  serf.them
     =.  serf.them  [~ +>.serf-engine-res]
-    =^  king-res=lord-result  them
+    =^  king-res=them-result  them
       (king-invoke-name name-chained args.request.serf-engine-res)
     ?.  ?=(%0 -.king-res)  [king-res them]  ::  them will be discarded
     %=  serf-loop
@@ -90,7 +98,7 @@
   ::
   ++  king-invoke-idx
     |=  [idx=@ in=(list coin-wasm:wasm)]
-    ^-  [lord-result _them]
+    ^-  [them-result _them]
     =/  king-engine-res=result:engine
       (invoke-id:run idx in king.them)
     ?:  ?=(%0 -.king-engine-res)
@@ -148,7 +156,7 @@
         %serf
       =/  king-b4-block  king.them
       =.  king.them  [~ +>.king-engine-res]
-      =^  serf-res=lord-result  them
+      =^  serf-res=them-result  them
         =,  king-engine-res
         (serf-invoke-name name args.request)
       ?.  ?=(%0 -.serf-res)  [serf-res them]  ::  them will be discarded
@@ -163,13 +171,13 @@
   ::
   ++  king-invoke-name
     |=  [name=cord in=(list coin-wasm:wasm)]
-    ^-  [lord-result _them]
+    ^-  [them-result _them]
     =/  idx=@  (find-func-id:run name module.king.them)
     (king-invoke-idx idx in)
   ::
   ++  king-invoke-act
     |=  i=@
-    ^-  [lord-result _them]
+    ^-  [them-result _them]
     (king-invoke-idx i ~)
   ::
   ++  king-invoke-clear
@@ -180,13 +188,13 @@
   ::
   ++  serf-invoke-name
     |=  [name=cord in=(list coin-wasm:wasm)]
-    ^-  [lord-result _them]
+    ^-  [them-result _them]
     =/  idx=@  (find-func-id:run name module.serf.them)
     (serf-invoke-idx idx in)
   ::
   ++  serf-invoke-idx
     |=  [idx=@ in=(list coin-wasm:wasm)]
-    ^-  [lord-result _them]
+    ^-  [them-result _them]
     =/  serf-engine-res=result:engine
       (invoke-id:run idx in serf.them)
     ?:  ?=(%0 -.serf-engine-res)
@@ -204,7 +212,7 @@
     =/  name-chained=cord  (chain-name +<-.serf-engine-res)
     =/  serf-b4-block  serf.them
     =.  serf.them  [~ +>.serf-engine-res]
-    =^  king-res=lord-result  them
+    =^  king-res=them-result  them
       (king-invoke-name name-chained args.request.serf-engine-res)
     ?.  ?=(%0 -.king-res)  [king-res them]  ::  them will be discarded
     %=    $

@@ -29,26 +29,6 @@
 =/  rs  ~(. rs %n)
 =/  rd  ~(. rd %n)
 |%
-::  stdlib functional hacks' fixes, won't compile otherwise.
-::  to remove with hoon.hoon %138
-::
-++  corl
-  |*  [a=$-(* *) b=$-(* *)]
-  =<  +:|.((a (b)))
-  |*  c=_,.+<.b
-  (a (b c))
-::
-++  cork  |*([a=$-(* *) b=$-(* *)] (corl b a))
-++  curr
-  |*  [a=$-(^ *) c=*]
-  |*  b=_,.+<-.a
-  (a b c)
-::
-++  cury
-  |*  [a=$-(^ *) b=*]
-  |*  c=_,.+<+.a
-  (a b c)
-::
 ::  ++mayb: turn output of gat into a unit
 ::
 ++  mayb

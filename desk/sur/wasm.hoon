@@ -78,7 +78,7 @@
     [%br-table label-vec=(list @) label-default=@]
     [%return ~]
     [%call func-id=@]
-    [%call-indirect type-id=@ table-id=%0x0]
+    [%call-indirect type-id=@ table-id=@]
   ::  Reference instructions
   ::
     [%ref-null t=ref-type]
@@ -253,6 +253,11 @@
   ==  ::  $instr-vec
 ::
 +$  expression  (list instruction)
++$  const-instr
+  $~  [%const %i32 `@`0]
+  $?  [%vec $>(%const instr-vec)]
+      $>(?(%const %global-get) instruction)
+  ==
 ::
 ::  Modules
 ::
@@ -326,10 +331,8 @@
 +$  global
   $:  v=valtype
       m=?(%con %var)
-      $=  i
-      $?  [%vec $>(%const instr-vec)]
-          $>(?(%const %global-get) instruction)
-  ==  ==
+      i=const-instr
+  ==
 ::
 ::  Export section
 ::
