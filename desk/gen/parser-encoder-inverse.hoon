@@ -1,4 +1,4 @@
-::  Test to check whether parser . encoder == id
+::  Test to check whether parser . encoder == id for u-n, s-n
 ::
 /+  e=encoder
 /+  p=parser-lib

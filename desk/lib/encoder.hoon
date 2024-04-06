@@ -797,7 +797,16 @@
 ++  ref-func
   |=  [%ref-func func-id=@]
   ^-  octs
-  (weld-octs [1 '\d0'] (u-n func-id))
+  (weld-octs [1 '\d2'] (u-n func-id))
+::
+++  to-si
+  |=  [base=@ n=@]
+  ^-  @s
+  =.  n  (mod n (bex base))
+  =/  sign=?  (lth n (bex (dec base)))
+  %+  new:si  sign
+  ?:  sign  n
+  (sub (bex base) n)
 ::
 ++  const
   |=  [%const p=$<(?(%v128 %ref) coin-wasm:sur)]
@@ -811,8 +820,8 @@
     ==
   %+  weld-octs  [1 op]
   ?-  -.p
-    %i32  (s-n +.p)
-    %i64  (s-n +.p)
+    %i32  (s-n (to-si 32 +.p))
+    %i64  (s-n (to-si 64 +.p))
     %f32  (f32 +.p)
     %f64  (f64 +.p)
   ==

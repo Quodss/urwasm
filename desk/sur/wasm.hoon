@@ -363,6 +363,7 @@
 ::  they yield a single value
 ::
 +$  elem
+  $~  [*ref-type ~ %pass ~]
   $:  t=ref-type
       i=(list $>(?(%ref-func %ref-null) instruction))
       $=  m
