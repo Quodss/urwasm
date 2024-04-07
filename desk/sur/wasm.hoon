@@ -57,7 +57,66 @@
 ::
 +$  lane-type  ?(%i8 %i16 num-type)
 +$  instruction
-  $%([%vec instr-vec] instr-short)
+  $%([%vec instr-vec] instr-short instr-num)
+::
++$  instr-num  ?(instr-num-zero instr-num-one instr-num-two)
++$  instr-num-zero
+  $%
+    [%const p=$<(?(%v128 %ref) coin-wasm)]
+  ==
+::
++$  instr-num-one
+  $%
+    [%eqz type=?(%i32 %i64)]
+    [%clz type=?(%i32 %i64)]
+    [%ctz type=?(%i32 %i64)]
+    [%popcnt type=?(%i8 %i32 %i64)]
+    [%abs type=lane-type]
+    [%neg type=lane-type]
+    [%ceil type=?(%f32 %f64)]
+    [%floor type=?(%f32 %f64)]
+    ::
+    $:  %trunc
+        type=num-type
+        source-type=(unit ?(%f32 %f64))
+        mode=(unit ?(%s %u))
+        sat=?
+    ==
+    ::
+    [%nearest type=?(%f32 %f64)]
+    [%sqrt type=?(%f32 %f64)]
+    [%wrap ~]
+    [%extend type=?(%i32 %i64) source=?(%8 %16 %32) mode=?(%s %u)]
+    [%convert type=?(%f32 %f64) source-type=?(%i32 %i64) mode=?(%s %u)]
+    [%demote ~]
+    [%promote ~]
+    [%reinterpret type=num-type source-type=num-type]
+  ==
+::
++$  instr-num-two
+  $%
+    [%eq type=lane-type]
+    [%ne type=lane-type]
+    [%lt type=lane-type mode=(unit ?(%s %u))]
+    [%gt type=lane-type mode=(unit ?(%s %u))]
+    [%le type=lane-type mode=(unit ?(%s %u))]
+    [%ge type=lane-type mode=(unit ?(%s %u))]
+    [%add type=lane-type]
+    [%sub type=lane-type]
+    [%mul type=lane-type]
+    [%div type=lane-type mode=(unit ?(%s %u))]
+    [%rem type=?(%i32 %i64) mode=?(%s %u)]
+    [%and type=?(%i32 %i64)]
+    [%or type=?(%i32 %i64)]
+    [%xor type=?(%i32 %i64)]
+    [%shl type=?(%i8 %i16 %i32 %i64)]
+    [%shr type=?(%i8 %i16 %i32 %i64) mode=?(%s %u)]
+    [%rotl type=?(%i32 %i64)]
+    [%rotr type=?(%i32 %i64)]
+    [%min type=?(%f32 %f64)]
+    [%max type=?(%f32 %f64)]
+    [%copysign type=?(%f32 %f64)]
+  ==
 ::
 +$  instr-short
   $%
@@ -126,58 +185,6 @@
     [%data-drop x=@]
     [%memory-copy mem-1=%0 mem-2=%0]
     [%memory-fill mem-id=%0]
-    ::  Numeric instructions
-    ::
-    [%const p=$<(?(%v128 %ref) coin-wasm)]
-    ::::  comparison:
-    ::::
-    [%eqz type=?(%i32 %i64)]
-    [%eq type=lane-type]
-    [%ne type=lane-type]
-    [%lt type=lane-type mode=(unit ?(%s %u))]
-    [%gt type=lane-type mode=(unit ?(%s %u))]
-    [%le type=lane-type mode=(unit ?(%s %u))]
-    [%ge type=lane-type mode=(unit ?(%s %u))]
-    ::::  arithmetics, some instructions are extended to accomodate simd:
-    ::::
-    [%clz type=?(%i32 %i64)]
-    [%ctz type=?(%i32 %i64)]
-    [%popcnt type=?(%i8 %i32 %i64)]
-    [%add type=lane-type]
-    [%sub type=lane-type]
-    [%mul type=lane-type]
-    [%div type=lane-type mode=(unit ?(%s %u))]
-    [%rem type=?(%i32 %i64) mode=?(%s %u)]
-    [%and type=?(%i32 %i64)]
-    [%or type=?(%i32 %i64)]
-    [%xor type=?(%i32 %i64)]
-    [%shl type=?(%i8 %i16 %i32 %i64)]
-    [%shr type=?(%i8 %i16 %i32 %i64) mode=?(%s %u)]
-    [%rotl type=?(%i32 %i64)]
-    [%rotr type=?(%i32 %i64)]
-    [%abs type=lane-type]
-    [%neg type=lane-type]
-    [%ceil type=?(%f32 %f64)]
-    [%floor type=?(%f32 %f64)]
-    ::
-    $:  %trunc
-        type=num-type
-        source-type=(unit ?(%f32 %f64))
-        mode=(unit ?(%s %u))
-        sat=?
-    ==
-    ::
-    [%nearest type=?(%f32 %f64)]
-    [%sqrt type=?(%f32 %f64)]
-    [%min type=?(%f32 %f64)]
-    [%max type=?(%f32 %f64)]
-    [%copysign type=?(%f32 %f64)]
-    [%wrap ~]
-    [%extend type=?(%i32 %i64) source=?(%8 %16 %32) mode=?(%s %u)]
-    [%convert type=?(%f32 %f64) source-type=?(%i32 %i64) mode=?(%s %u)]
-    [%demote ~]
-    [%promote ~]
-    [%reinterpret type=num-type source-type=num-type]
   ==  ::  $instr-short
 ::
 ::  0xFD prefixed instructions

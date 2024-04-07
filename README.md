@@ -19,7 +19,7 @@ Next:
     - [X]  Hoon code compiles
     - [X] Wasm implementation of GC and alloc typechecked
     - [ ] Test the allocator
-  - [ ] Wasm binary encoder
+  - [X] Wasm binary encoder
   - [ ] Lia end-to-end interpeting function (jet target)
 - [ ] Jet of Lia interpreter:
   - [ ] Lia jet

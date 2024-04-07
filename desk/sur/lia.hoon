@@ -87,31 +87,28 @@
   ::
   +$  action  [type=block-type body=(list op)]
   +$  op
+    $~  [%nop ~]
     $%
-      [%get type=value-type =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
-      [%set type=?(num-type:sur vec-type:sur) =idx]
-      [%let type=value-type]  ::  set type of space index; compiler: noop
+      [%get =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
+      [%set =idx]
+      [%let type=value-type =idx]  ::  set type of space index; compiler: set default value
       [%run name=cord]
       [%run-ext name=term]
-      [%add type=num-type:sur]
-      [%sub type=num-type:sur]
-      :: [%cut ~]  
       [%read p=idx]  ::  consumes ptr and len
       [%writ p=idx]  ::  consumes ptr, offset and len
+      [%cut from=idx to=idx]  ::  consumes offset and len
+      [%octs to=idx]  ::  consumes data and len
       [%block type=block-type body=(list op)]
       [%if type=block-type true=(list op) false=(list op)]
       [%loop type=block-type body=(list op)]
       [%br label=@]
       [%br-if label=@]
-      :: [%lit p=value]
-      [%const p=$<(%ref coin-wasm:sur)]
       [%len =idx]
       [%nop ~]
       [%drop ~]
-      :: [%yeet ~]
-      :: [%octs p=idx]  ::  data and len
       [%read-octs-i p=idx type=?(%i32 %i64)]  ::  offset, len -> octs to int
       [%read-octs-f p=idx type=?(%f32 %f64)]  ::  offset      -> octs to float
+      instr-num:sur
     ==
   ::
   ::
@@ -144,32 +141,37 @@
   +$  script
     $:  input=(list name)
         code=block
-        return=(list op)
+        return=(list name)
     ==
   ::
   +$  value-type  ?(num-type:sur vec-type:sur %octs)
   +$  block-type  (pair (list value-type) (list value-type))
   +$  block  [type=block-type body=(list phrase)]
-  +$  phrase  [names=(list name) =op]
+  +$  phrase
+    $%
+      [%op names=(list (pair name value-type)) =op]
+      [%let p=name q=value-type]
+      [%if test=op true=block false=block]
+      [%while test=op body=block]
+      [%break ~]
+      [%read to=name offset=op len=op]
+      [%writ from=name offset=op len=op]
+      [%octs to=name dat=op len=op]
+      [%cut from=name to=name offset=op len=op]
+    ==
   +$  name  @tas
   +$  op
     $@  name
     $%
-      [%let p=(list name)]
+      [%name p=name q=value-type]
       [%run p=cord q=(list op)]
       [%run-ext p=term q=(list op)]
-      [%cut octs=op offset=op len=op]
-      [%read offset=op len=op]
-      [%writ octs=op offset=op]
-      [%lit p=value:line]
-      [%len octs=op]
-      [%octs dat=op len=op]
-      [%add type=num-type:sur p=op q=op]
-      [%sub type=num-type:sur p=op q=op]
-      [%if test=op true=block false=block]
-      [%while test=op body=block]
-      [%break ~]
-      :: [%yield p=(list op)]
+      [%len from=name]
+      [%zero p=instr-num-zero:sur]
+      [%one p=instr-num-one:sur q=op]
+      [%two p=instr-num-two:sur q=op r=op]
+      [%read-octs-i from=name type=?(%i32 %i64) off=op len=op]
+      [%read-octs-f from=name type=?(%f32 %f64) off=op]
     ==
   --
 --

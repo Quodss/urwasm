@@ -100,7 +100,7 @@
               %table-copy     %table-grow
               %table-size     %table-fill
           ==
-        instruction
+        instr-short
     ==
   ::
     $:  %memo
@@ -125,7 +125,7 @@
         args=(list coin-wasm)
         $=  instr
         $~  [%global-get `@`0]
-        $>(?(%global-get %global-set) instruction)
+        $>(?(%global-get %global-set) instr-short)
     ==
   ==
 ::  $shop: list of resolved requests: values to be pushed on
