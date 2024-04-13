@@ -6,14 +6,14 @@
     +$  code  (list op:line)
     +$  free  (set idx:line)
     +$  huge  idx:line
-    +$  dest  $@(%stack [%idx p=(list idx:line)])
+    +$  dest  $@(%stack [%idx p=(list typed-idx)])
     +$  depf  (unit @)  ::  break depth
     +$  fore  (map name:tree typed-idx)  ::  var-address binding for outside scope
-    +$  last  ?
-    +$  gen   [=vars =code =free =huge =dest =depf =fore =last]
+    +$  gen   [=vars =code =free =huge =dest =depf =fore]
     --
 ::
 |%
+++  flip  |*(^ [+<+ +<-])
 ++  try-inc
   |=  a=depf
   ^-  depf
@@ -24,24 +24,38 @@
   |=  behind=(list phrase:tree)
   |=  [[=name:tree type=value-type:line] =gen]
   ^-  [idx:line ^gen]
-  =/  slot-vars  (~(get by vars) name)
+  =/  slot-vars  (~(get by vars.gen) name)
   ?^  slot-vars
     ?>  =(q.u.slot-vars type)
     [p.u.slot-vars gen]
-  ?:  %+  lien  behind
-      |=  p=phrase:tree
-      &(?=(%let -.p) =(name p.p))
-    ?~  free
-      [huge gen(vars (~(put by vars) name huge type), huge +(huge))]
-    =/  noob  n.free
-    =>  .(free `^free`free)
+  =/  is-behind=?
+    =>  [name=name behind=behind ..tree]  ~+
+    %+  lien  behind
+    |=  p=phrase:tree
+    &(?=(%let -.p) =(name p.p))
+  ?:  is-behind
+    ?~  free.gen
+      :-  huge.gen
+      %=  gen
+        huge  +(huge.gen)
+        vars  (~(put by vars.gen) name [huge.gen type])
+      ==
+    =/  noob  n.free.gen
+    =>  .(free.gen `free`free.gen)
     :-  noob
-    gen(vars (~(put by vars) name noob type), free (~(del in free) noob))
-  =/  slot-fore  (~(get by fore) op)
+    %=  gen
+      free  (~(del in free.gen) noob)
+      vars  (~(put by vars.gen) name [noob type])
+    ==
+  =/  slot-fore  (~(get by fore.gen) name)
   ?^  slot-fore
     ?>  =(q.u.slot-fore type)
-    [u.slot-fore gen]
-  [huge gen(fore (~(put by fore) name huge type), huge +(huge))]
+    [p.u.slot-fore gen]
+  :-  huge.gen
+  %=  gen
+    huge  +(huge.gen)
+    fore  (~(put by fore.gen) name [huge.gen type])
+  ==
 ::
 ++  fuse
   |*  [a=(list) b=(list)]
@@ -52,28 +66,62 @@
   $(a t.a, b t.b)
 ::
 ++  main
+  |=  =input:tree
+  ^-  input:line
+  =/  diff-line=(each action:line (list value:line))
+    ?:  ?=(%| -.diff.input)
+      diff.input
+    [%& (script-gen p.diff.input)]
+  :*
+    module.input
+    (turn code.input script-gen)
+    shop.input
+    `(map (pair cord cord) ext-func:line)`(~(run by ext.input) ext-gen)
+    import.input
+    diff-line
+  ==
+::
+++  ext-gen
+  |=  =ext-func:tree
+  ^-  ext-func:line
+  [type.ext-func +:(script-gen ext-func)]
+::
+++  script-gen
   |=  =script:tree
   ^-  action:line
-  ?>  =((lent input:script) (lent p.type.code.script))
   =|  gen
   =*  gen  -
-  =.  gen  %+  roll  (fuse input:script p.type.code.script)
-           |:  [[name=*name:tree type=*value-type:tree] gen=gen]
-           gen(huge +(huge.gen), fore (~(put by fore.gen) name huge.gen type))
+  =.  gen
+    %+  roll  (fuse input:script p.type.script)
+    |:  [[name=*name:tree type=*value-type:tree] gen=gen]
+    gen(huge +(huge.gen), fore (~(put by fore.gen) name [huge.gen type]))
   =/  fore-init  fore
   |^
-  =.  gen  (block-gen code.script)
+  =.  gen  (return-gen (fuse return.script q.type.script) code.script)
+  =.  gen  (code-gen code.script)
   ?>  =(fore-init fore)
   ?>  =(~ vars)
-  [type.code.script code]
+  [type.script code]
   ::
-  ++  block-gen
-    |=  b=block:tree
+  ++  return-gen
+    |=  $:  return=(list (pair name:tree value-type:tree))
+            behind=(list phrase:tree)
+        ==
     ^-  ^gen
-    =.  body.b  (flop body.b)
+    %+  reel  return
+    |:  [[n=*name:tree t=*value-type:tree] g=gen]
+    ^-  ^gen
+    =^  =idx:line  g  ((give-idx behind) [n t] g)
+    =.  code.g  [[%get t idx] code.g]
+    g
+  ::
+  ++  code-gen
+    |=  c=code:tree
+    ^-  ^gen
+    =.  c  (flop c)
     |-  ^+  gen
-    ?~  body.b  gen
-    $(gen (phrase-gen i.body.b t.body.b), body.b t.body.b, last |)
+    ?~  c  gen
+    $(gen (phrase-gen i.c t.c), c t.c)
   ::
   ++  phrase-gen
     |=  [=phrase:tree behind=(list phrase:tree)]
@@ -82,7 +130,7 @@
     ?:  ?=(%op -.phrase)
       =^  slots=(list idx:line)  gen
         (spin names.phrase gen (give-idx behind))
-      =.  dest  [%idx slots]
+      =.  dest  [%idx (fuse slots (turn names.phrase tail))]
       (op-gen op.phrase behind)
     ?-    -.phrase
         %let
@@ -95,16 +143,14 @@
       gen(code [[%let q.phrase p.u.slot] code])
     ::
         %if
-      ?>  &(?=([~ ~] type.true.phrase) ?=([~ ~] type.false.phrase))
       =/  true-gen
-        =<  (block-gen true.phrase)
+        =<  (code-gen true.phrase)
         %=  .
           dest  %stack
           code  ~
           fore  vars
           vars  ~
           depf  (try-inc depf)
-          last  &
         ==
       ?>  =(~ vars.true-gen)  ::  should be redundant
       =.  free  free.true-gen
@@ -112,22 +158,21 @@
       =.  gen
         =/  vars-dif  (~(dif by fore.true-gen) vars)
         %+  roll  ~(tap by vars-dif)
-        |:  [[name=*name:tree idx=*idx:line] g=gen]
+        |:  [[name=*name:tree idx=*typed-idx] g=gen]
         ^-  ^gen
         ?:  %+  lien  behind
             |=  p=phrase:tree
-            &(?=([%let *] op.p) ?=(^ (find ~[name] p.op.p)))
+            &(?=(%let -.p) =(name p.p))
           g(vars (~(put by vars.g) name idx))
         g(fore (~(put by fore.g) name idx))
       =/  false-gen
-        =<  (block-gen false.phrase)
+        =<  (code-gen false.phrase)
         %=  .
           dest  %stack
           code  ~
           fore  vars
           vars  ~
           depf  (try-inc depf)
-          last  &
         ==
       ?>  =(~ vars.false-gen)  ::  should be redundant
       =.  free  free.true-gen
@@ -135,30 +180,29 @@
       =.  gen
         =/  vars-dif  (~(dif by fore.false-gen) vars)
         %+  roll  ~(tap by vars-dif)
-        |:  [[name=*name:tree idx=*idx:line] g=gen]
+        |:  [[name=*name:tree idx=*typed-idx] g=gen]
         ^-  ^gen
         ?:  %+  lien  behind
             |=  p=phrase:tree
-            &(?=([%let *] op.p) ?=(^ (find ~[name] p.op.p)))
+            &(?=(%let -.p) =(name p.p))
           g(vars (~(put by vars.g) name idx))
         g(fore (~(put by fore.g) name idx))
       =.  code
         ^-  ^code
         :_  code
-        `op:line`[%if type.true.phrase code.true-gen code.false-gen]
-      this-op-gen(op test.phrase, dest %stack)  XX  replace with proper op-gen
+        `op:line`[%if [~ ~] code.true-gen code.false-gen]
+      =.  dest  %stack
+      (op-gen test.phrase behind)
     ::
         %while
-      ?>  ?=([~ ~] type.body.phrase)
       =/  body-gen
-        =<  (block-gen body.phrase)
+        =<  (code-gen body.phrase)
         %=  .
           dest  %stack
           code  ~[[%br 1]]
           fore  vars
           vars  ~
           depf  `0
-          last  &
         ==
       ?>  =(~ vars.body-gen)  ::  should be redundant
       =.  free  free.body-gen
@@ -166,15 +210,17 @@
       =.  gen
         =/  vars-dif  (~(dif by fore.body-gen) vars)
         %+  roll  ~(tap by vars-dif)
-        |:  [[name=*name:tree idx=*idx:line] g=gen]
+        |:  [[name=*name:tree idx=*typed-idx] g=gen]
         ^-  ^gen
         ?:  %+  lien  behind
             |=  p=phrase:tree
-            &(?=([%let *] op.p) ?=(^ (find ~[name] p.op.p)))
+            &(?=(%let -.p) =(name p.p))
           g(vars (~(put by vars.g) name idx))
         g(fore (~(put by fore.g) name idx))
       =/  test-gen
-        this-op-gen(op test.op, dest %stack, code ~)
+        =.  dest  %stack
+        =.  code  ~
+        (op-gen test.phrase behind)
       =.  code
         ^-  ^code
         :_  code
@@ -193,24 +239,24 @@
       =^  slot=idx:line  gen
         ((give-idx behind) [to.phrase %octs] gen)
       =.  code  [[%read slot] code]
-      =.  gen  this-op-gen(op len.op, dest %stack)
-      =.  gen  this-op-gen(op offset.op, dest %stack)
+      =.  gen  (op-gen len.phrase behind):.(dest %stack)
+      =.  gen  (op-gen offset.phrase behind):.(dest %stack)
       gen
     ::
         %writ
       =^  slot=idx:line  gen
         ((give-idx behind) [from.phrase %octs] gen)
       =.  code  [[%writ slot] code]
-      =.  gen  this-op-gen(op len.op, dest %stack)
-      =.  gen  this-op-gen(op offset.op, dest %stack)
+      =.  gen  (op-gen len.phrase behind):.(dest %stack)
+      =.  gen  (op-gen offset.phrase behind):.(dest %stack)
       gen
     ::
         %octs
       =^  slot=idx:line  gen
         ((give-idx behind) [to.phrase %octs] gen)
-      =.  code  [[%octs to] code]
-      =.  gen  this-op-gen(op len.op, dest %stack)
-      =.  gen  this-op-gen(op dat.op, dest %stack)
+      =.  code  [[%octs slot] code]
+      =.  gen  (op-gen len.phrase behind):.(dest %stack)
+      =.  gen  (op-gen dat.phrase behind):.(dest %stack)
       gen
     ::
         %cut
@@ -219,8 +265,8 @@
       =^  slot-to=idx:line  gen
         ((give-idx behind) [to.phrase %octs] gen)
       =.  code  [[%cut slot-from slot-to] code]
-      =.  gen  this-op-gen(op len.op, dest %stack)
-      =.  gen  this-op-gen(op offset.op, dest %stack)
+      =.  gen  (op-gen len.phrase behind):.(dest %stack)
+      =.  gen  (op-gen offset.phrase behind):.(dest %stack)
       gen
     ::
     ==
@@ -230,15 +276,15 @@
     ^-  ^code
     ?@  d  c
     ?>  ?=([* ~] p.d)
-    [[%set i.p.d] c]
+    [[%set (flip i.p.d)] c]
   ::
   ++  set-n
     |=  [d=^dest c=^code]
     ^-  ^code
     ?@  d  c
     %+  roll  p.d
-    |:  [i=*idx:line c=c]
-    [[%set i] c]
+    |:  [i=*typed-idx c=c]
+    [[%set (flip i)] c]
   ::
   ++  op-gen
     |=  [=op:tree behind=(list phrase:tree)]
@@ -249,7 +295,7 @@
       =^  addr=idx:line  gen
         ((give-idx behind) [p.op q.op] gen)
        =.  code  (set-one dest code)
-      =.  code  [[%get addr] code]
+      =.  code  [[%get q.op addr] code]
       gen
     ::
         %run

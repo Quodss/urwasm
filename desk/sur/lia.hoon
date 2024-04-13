@@ -75,9 +75,9 @@
   |%
   +$  value-type  ?(num-type:sur vec-type:sur %octs)
   +$  block-type  (pair (list value-type) (list value-type))
-  +$  ext-func-type  %+  pair
-                       (list ?(num-type:sur vec-type:sur))
-                       (list ?(num-type:sur vec-type:sur))
+  +$  numtype  ?(num-type:sur vec-type:sur)
+  +$  ext-func-type  (pair (list numtype) (list numtype))
+  ::
   +$  ext-func  [type=ext-func-type body=(list op)]
   +$  idx  @F
   +$  value
@@ -89,8 +89,8 @@
   +$  op
     $~  [%nop ~]
     $%
-      [%get =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
-      [%set =idx]
+      [%get type=value-type =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
+      [%set type=value-type =idx]
       [%let type=value-type =idx]  ::  set type of space index; compiler: set default value
       [%run name=cord]
       [%run-ext name=term]
@@ -125,11 +125,18 @@
         shop=(list (list value))
         ext=(map (pair cord cord) ext-func)
         import=(map term block-type)
-        diff=(each (list action) (list value))
+        diff=(each action (list value))
     ==
   ::
   +$  result
     $%  [%0 out=(list value)]
+    ::
+        $:  %1
+            $%
+              [%king name=term in=(list value)]
+              [%serf req=request:sur]
+        ==  ==
+    ::
         [%2 ~]
     ==
   ::
@@ -140,19 +147,37 @@
   |%
   +$  script
     $:  input=(list name)
-        code=block
+        type=script-type
+        =code
+        return=(list name)
+    ==
+  ::
+  +$  input
+    $:  =^module:sur
+        code=(list script)
+        shop=(list (list value:line))
+        ext=(map (pair cord cord) ext-func)
+        import=(map term script-type)
+        diff=(each script (list value:line))
+    ==
+  ::
+  +$  ext-func
+    $:  input=(list name)
+        type=ext-type
+        =code
         return=(list name)
     ==
   ::
   +$  value-type  ?(num-type:sur vec-type:sur %octs)
-  +$  block-type  (pair (list value-type) (list value-type))
-  +$  block  [type=block-type body=(list phrase)]
+  +$  script-type  (pair (list value-type) (list value-type))
+  +$  ext-type  ext-func-type:line
+  +$  code  (list phrase)
   +$  phrase
     $%
       [%op names=(list (pair name value-type)) =op]
       [%let p=name q=value-type]
-      [%if test=op true=block false=block]
-      [%while test=op body=block]
+      [%if test=op true=code false=code]
+      [%while test=op body=code]
       [%break ~]
       [%read to=name offset=op len=op]
       [%writ from=name offset=op len=op]
@@ -161,7 +186,7 @@
     ==
   +$  name  @tas
   +$  op
-    $@  name
+    $~  [%zero %const %i32 0]
     $%
       [%name p=name q=value-type]
       [%run p=cord q=(list op)]
