@@ -269,10 +269,10 @@
       =.  gen  (op-gen offset.phrase behind):.(dest %stack)
       gen
     ::
-        %run-ext
+        %run-lia
       =^  slots=(list idx:line)  gen
         (spin r.phrase gen (give-idx behind))
-      =.  code  [[%run-ext p.phrase slots] code]
+      =.  code  [[%run-lia p.phrase slots] code]
       %+  reel  q.phrase
       |:  [o=*op:tree g=gen]
       (op-gen o behind):.(gen g(dest %stack))

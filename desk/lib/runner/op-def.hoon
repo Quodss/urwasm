@@ -1658,8 +1658,7 @@
       =/  lanes=(list @)
         (rope bloq (div 64 p.u.kind.i) u.get)
       :-  ~
-      %+  can  +(bloq)
-      %-  turn  :_  (lead 1)
+      %+  rep  +(bloq)
       ?:  ?=(%u p.q.u.kind.i)
         lanes
       %+  turn  lanes
@@ -1774,8 +1773,7 @@
     %=    l
         va.stack
       :_  rest
-      %+  can  3
-      %-  turn  :_  (lead 1)
+      %+  rep  3
       %+  turn  lane-ids.i
       (curr snag seq)
     ==
@@ -1843,7 +1841,7 @@
         l(va.stack [u.val rest])
       ;<  =(list @)  _biff
         (torn (rope (xeb (dec size)) (div 128 size) vec) op)
-      `(can (xeb (dec size)) (turn list (lead 1)))
+      `(rep (xeb (dec size)) list)
     ::
         lane-wise-binary:kind
       =/  op=$-([@ @] (unit @))  (get-op-bina i)
@@ -1859,7 +1857,7 @@
         %-  torn  :_  op
         %+  fuse  (rope (xeb (dec size)) (div 128 size) vec1)
         (rope (xeb (dec size)) (div 128 size) vec2)
-      `(can (xeb (dec size)) (turn list (lead 1)))
+      `(rep (xeb (dec size)) list)
     ::
         %bitselect
       |=  l=local-state
@@ -1939,8 +1937,7 @@
         =+  bloq=(xeb (dec size))
         =+  n=(div 128 size)
         |=  a=@
-        %+  can  0
-        %-  turn  :_  (lead 1)
+        %+  rep  0
         %-  weld  :_  (reap (sub 32 n) `@`0)
         %+  turn
           (turn (rope bloq n a) (cury to-si size))
@@ -1961,8 +1958,7 @@
           %+  turn  lanes
           %+  cork  (cury to-si half-size)
           (cury en-si (mul 2 half-size))
-        %+  can  +(half-bloq)
-        %-  turn  :_  (lead 1)
+        %+  rep  +(half-bloq)
         %-  turn  :_  ~(sum fo (bex (mul 2 half-size)))
         %+  fuse  (scag (div n 2) lanes-extend)
         (slag (div n 2) lanes-extend)
@@ -1972,18 +1968,17 @@
         =+  half-bloq=(xeb (dec half-size))
         =+  n=(div 128 half-size)
         |=  a=@
-        =/  lanes-extend=(list @)
-          =+  lanes=(rope half-bloq n a)
-          =.  lanes
-            ?:  =(%low half.i)
-              (scag (div n 2) lanes)
-            (slag (div n 2) lanes)
-          ?:  =(%u mode.i)  lanes
-          %+  turn  lanes
-          %+  cork  (cury to-si half-size)
-          (cury en-si (mul 2 half-size))
-        %+  can  +(half-bloq)
-        (turn lanes-extend (lead 1))
+        =;  lanes-extend=(list @)
+          (rep +(half-bloq) lanes-extend)
+        =+  lanes=(rope half-bloq n a)
+        =.  lanes
+          ?:  =(%low half.i)
+            (scag (div n 2) lanes)
+          (slag (div n 2) lanes)
+        ?:  =(%u mode.i)  lanes
+        %+  turn  lanes
+        %+  cork  (cury to-si half-size)
+        (cury en-si (mul 2 half-size))
       ::
           %convert
         =+  size=(lane-size p.i)
@@ -1996,8 +1991,7 @@
         |=  a=@
         =+  lanes=(rope 5 4 a)
         =?  lanes  =(%f64 p.i)  (scag 2 lanes)
-        %+  can  bloq
-        %-  turn  :_  (lead 1)
+        %+  rep  bloq
         %+  turn  lanes
         ?:  ?=(%u mode.i)  sun:r
         (cork san:r (cury to-si size))
@@ -2005,16 +1999,14 @@
           %demote
         |=  a=@
         =+  lanes=(rope 6 2 a)
-        %+  can  5
-        %-  turn  :_  (lead 1)
+        %+  rep  5
         %-  weld  :_  (reap 2 `@`0)
         (turn lanes (corl bit:rs sea:rd))
       ::
           %promote
         |=  a=@
         =+  half-lanes=(rope 5 2 a)
-        %+  can  5
-        %-  turn  :_  (lead 1)
+        %+  rep  5
         (turn half-lanes (corl bit:rd sea:rs))
       ::
       ==
@@ -2026,8 +2018,7 @@
           %swizzle
         |=  [a=@ b=@]
         ^-  @
-        %+  can  3
-        %-  turn  :_  (lead 1)
+        %+  rep  3
         %+  turn  (rope 3 16 b)
         %+  corl  (curr fall 0)
         (curr snug (rope 3 16 a))
@@ -2052,8 +2043,7 @@
         =+  n=(div 128 double-size)
         |=  [a=@ b=@]
         ^-  @
-        %+  can  (dec double-bloq)
-        %-  turn  :_  (lead 1)
+        %+  rep  (dec double-bloq)
         %+  turn
           %+  weld  (rope double-bloq n a)
           (rope double-bloq n b)
@@ -2067,8 +2057,7 @@
         =+  shl=(sure (bina:fetch [%shl p.i]))
         |=  [vec=@ j=@]
         ^-  @
-        %+  can  bloq
-        %-  turn  :_  (lead 1)
+        %+  rep  bloq
         %+  turn
           (rope bloq n vec)
         (curr shl j)
@@ -2080,8 +2069,7 @@
         =+  shr=(sure (bina:fetch [%shr p.i mode.i]))
         |=  [vec=@ j=@]
         ^-  @
-        %+  can  bloq
-        %-  turn  :_  (lead 1)
+        %+  rep  bloq
         %+  turn
           (rope bloq n vec)
         (curr shr j)
@@ -2108,8 +2096,7 @@
           %.  [(div n 2) (rope half-bloq n b)]
           ?:  =(%low half.i)  scag
           slag
-        %+  can  +(half-bloq)
-        %-  turn  :_  (lead 1)
+        %+  rep  +(half-bloq)
         %+  turn
           (fuse half-lanes-a half-lanes-b)
         ~(pro fo (mul 2 half-size))
@@ -2126,8 +2113,7 @@
           (cury en-si 32)
         =/  i1-i2=(list @)
           (turn (fuse lanes-a lanes-b) ~(pro fo 32))
-        %+  can  5
-        %-  turn  :_  (lead 1)
+        %+  rep  5
         %+  turn
           (fuse (scag 4 i1-i2) (slag 4 i1-i2))
         ~(sum fo ^~((bex 32)))

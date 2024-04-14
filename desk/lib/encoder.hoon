@@ -265,7 +265,7 @@
   |=  a=[%shuffle lane-ids=(list @)]
   ^-  octs
   %+  weld-octs  (u-n 13)
-  [16 (can 3 (turn lane-ids.a (lead 1)))]
+  [16 (rep 3 lane-ids.a)]
 ::
 ++  const-vec
   |=  a=[%const p=$>(%v128 coin-wasm:sur)]

@@ -141,18 +141,16 @@
   =.  mem.store.l  `[0 1]
   ;:  weld
     %+  expect-eq
-      !>  (can 6 (turn ~[7.241.902.928.051.372.565 241.972.029.883.607] (lead 1)))
+      !>  (rep 6 ~[7.241.902.928.051.372.565 241.972.029.883.607])
       !>
       =;  [v1=@ v2=@]
         =<  -:va.stack
         %-  (plain:simd:op-def [%avgr %i16 %u])
         l(va.stack [v2 v1 va.stack.l])
       :-
-         %+  can  4
-         %-  turn  :_  (lead 1)
+         %+  rep  4
          ~[334 999 30.000 27.999 42 42.424 59.999 0]
-      %+  can  4
-      %-  turn  :_  (lead 1)
+      %+  rep  4
       ~[732 1.234 23.423 23.456 2.435 23.566 52.677 0]
   ::
     %+  expect-eq
@@ -212,7 +210,7 @@
       l(va.stack [v2 v1 va.stack.l])
   ::
     %+  expect-eq
-      !>  (can 3 (turn ~[233 0 161 0 137 0 252 0 6 0 92 0 247 0 95 0] (lead 1)))
+      !>  (rep 3 ~[233 0 161 0 137 0 252 0 6 0 92 0 247 0 95 0])
       !>  =<  -  %-  need  =<  mem.store
           %-  (fetch-gate:op-def [%vec %store [0 0]])
           %-  (fetch-gate:op-def [%vec %load [0 0] `[%8 %extend %u]])
@@ -224,7 +222,7 @@
           l
   ::
     %+  expect-eq
-      !>  (can 3 (turn ~[233 161 137 252 6 92 247 95 233 161 137 252 6 92 247 95] (lead 1)))
+      !>  (rep 3 ~[233 161 137 252 6 92 247 95 233 161 137 252 6 92 247 95])
       !>  =<  -  %-  need  =<  mem.store
           %-  (fetch-gate:op-def [%vec %store [0 0]])
           %-  (fetch-gate:op-def [%vec %load [0 0] `[%64 %splat]])
@@ -236,7 +234,7 @@
           l
   ::
     %+  expect-eq
-      !>  (can 3 (turn (reap 5 13) (lead 1)))
+      !>  (rep 3 (reap 5 13))
       !>  =<  -  %-  need  =<  mem.store
         %-  (fetch-gate:op-def [%memory-fill %0])
         %-  (fetch-gate:op-def [%const %i32 5])

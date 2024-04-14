@@ -139,16 +139,14 @@
     %+  cook
       |=  =(list @)
       ;;  @rs
-      %+  can  3
-      (turn list (lead 1))
+      (rep 3 list)
     (stun [4 4] next)
   ::
   ++  f64
     %+  cook
       |=  =(list @)
       ;;  @rd
-      %+  can  3
-      (turn list (lead 1))
+      (rep 3 list)
     (stun [8 8] next)
   ::  ++vec: parse .wasm vector of rule
   ::
@@ -612,7 +610,7 @@
       |=  =(list @)
       ^-  instruction:sur
       :^  %vec  %const  %v128
-      (can 3 (turn list (lead 1)))
+      (rep 3 list)
     ::
     ++  shuffle
       |=  =(list @)
@@ -963,8 +961,7 @@
     |=  =tape
     ^-  octs
     :-  (lent tape)
-    %+  can  3
-    (turn tape (lead 1))
+    (rep 3 tape)
   ::
   ++  handle-data
     |=  $=  p

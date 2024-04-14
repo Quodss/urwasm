@@ -61,7 +61,7 @@
   |=  =tape
   ^-  octs
   :-  (lent tape)
-  (can 3 (turn tape (lead 1)))
+  (rep 3 tape)
 ::
 ++  of-octs
   |=  =octs
