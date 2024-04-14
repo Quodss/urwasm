@@ -16,8 +16,9 @@ Next:
 - [X] Language for Invocation of Assembly (Lia) specification
 - [ ] Lia interpreter in Hoon:
   - [ ] Lia-to-Wasm compiler
-    - [X]  Hoon code compiles
+    - [X] Hoon code compiles
     - [X] Wasm implementation of GC and alloc typechecked
+    - [X] Compiler runs and outputs valid Wasm
     - [ ] Test the allocator
   - [X] Wasm binary encoder
   - [ ] Lia end-to-end interpeting function (jet target)
