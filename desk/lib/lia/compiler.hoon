@@ -663,7 +663,7 @@
       [%local-tee val]
       [%const %i64 null-ptr]
       [%lt %i64 `%u]
-      :^  %if  [~ ~]
+      :^  %if  [~ ~[%i64]]
         ~[[%local-get val]]
       :~
         [%local-get val]
@@ -742,7 +742,7 @@
       [%local-tee val]
       [%const %i64 null-ptr]
       [%lt %i64 `%u]
-      :^  %if  [~ ~]
+      :^  %if  [~ ~[%f64]]
         :~
           [%local-get val]
           [%reinterpret %f64 %i64]
@@ -960,7 +960,7 @@
     (snoc function-section.king type-idx)
   =.  code-section.king
     %+  snoc  code-section.king
-    :-  ~[%i64]
+    :-  ~[%i64 %i32]
     =/  idx=@  0
     =/  king-val=@  1
     =/  ptr=@  2
@@ -986,7 +986,7 @@
     ::
       [%local-get king-val]
       [%const %i64 null-ptr]
-      [%sub %i32]
+      [%sub %i64]
       [%wrap ~]
       [%local-tee ptr]
       [%const %i32 empty-octs]
@@ -1145,8 +1145,8 @@
     ::
       [%local-get len]
       [%eqz %i32]
-      :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 0]]
+      :^  %if  [~ ~[%i64]]
+          ~[[%const %i64 0]]
       :~
         [%local-get len]
         [%const %i32 8]
@@ -1205,6 +1205,7 @@
             [%add %i32]
             [%load %i64 [0 len-size] `%8 `%u]
             [%local-get pow]
+            [%extend %i64 %32 %u]
             [%shl %i64]
             [%local-get res]
             [%add %i64]
