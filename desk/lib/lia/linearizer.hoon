@@ -269,6 +269,14 @@
       =.  gen  (op-gen offset.phrase behind):.(dest %stack)
       gen
     ::
+        %run-ext
+      =^  slots=(list idx:line)  gen
+        (spin r.phrase gen (give-idx behind))
+      =.  code  [[%run-ext p.phrase slots] code]
+      %+  reel  q.phrase
+      |:  [o=*op:tree g=gen]
+      (op-gen o behind):.(gen g(dest %stack))
+    ::
     ==
   ::
   ++  set-one
@@ -301,13 +309,6 @@
         %run
       =.  code  (set-n dest code)
       =.  code  [[%run p.op] code]
-      %+  reel  q.op
-      |:  [o=*op:tree g=gen]
-      this-op-gen(op o, gen g(dest %stack))
-    ::
-        %run-ext
-      =.  code  (set-n dest code)
-      =.  code  [[%run-ext p.op] code]
       %+  reel  q.op
       |:  [o=*op:tree g=gen]
       this-op-gen(op o, gen g(dest %stack))

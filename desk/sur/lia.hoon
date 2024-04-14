@@ -93,7 +93,7 @@
       [%set type=value-type =idx]
       [%let type=value-type =idx]  ::  set type of space index; compiler: set default value
       [%run name=cord]
-      [%run-ext name=term]
+      [%run-ext name=term target=(list idx)]  ::  execute Lia import and write results to target
       [%read p=idx]  ::  consumes ptr and len
       [%writ p=idx]  ::  consumes ptr, offset and len
       [%cut from=idx to=idx]  ::  consumes offset and len
@@ -183,6 +183,7 @@
       [%writ from=name offset=op len=op]
       [%octs to=name dat=op len=op]
       [%cut from=name to=name offset=op len=op]
+      [%run-ext p=term q=(list op) r=(list (pair name value-type))]
     ==
   +$  name  @tas
   +$  op
@@ -190,7 +191,6 @@
     $%
       [%name p=name q=value-type]
       [%run p=cord q=(list op)]
-      [%run-ext p=term q=(list op)]
       [%len from=name]
       [%zero p=instr-num-zero:sur]
       [%one p=instr-num-one:sur q=op]
