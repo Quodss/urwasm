@@ -40,7 +40,7 @@
   =^  serf-diary=(map cord @)  king
     =|  d=(map cord @)
     =/  i=@  0
-    =<  [d.acc k.acc]
+    =<  [d k]
     %+  roll  exports-serf
     |:  [[name=*cord idx=*@] acc=[d=d i=i k=king]]
     ^-  [(map cord @) @ module:wasm]
@@ -64,9 +64,11 @@
     :~
       [%i32 %var %const %i32 (add offset space-size)]  ::  heap edge
       [%i32 %var %const %i32 0]                        ::  max space element idx used
+      [%i32 %var %const %i32 0]                        ::  data elem with target
     ==
   =/  heap-edge=@  0
   =/  space-edge=@  1
+  =/  space-clue=@  2
   ::  add memory read and write (Wasm modules support
   ::  up to one memory for now, so we'll have to resort
   ::  to import functions to copy stuff around instead
@@ -827,7 +829,6 @@
     ==
   ::  set-octs
   ::
-  XX  handle empty octs
   =^  type-idx=@  type-section.king
     (get-type-idx [~[%i32 %i32 %i32] ~] type-section.king)
   =.  function-section.king
@@ -848,28 +849,39 @@
         ~[[%unreachable ~]]
       ~
     ::
-      [%const %i32 len-size]
       [%local-get len]
-      [%add %i32]
-      [%call alloc-idx]
-      [%local-tee ptr-king]
-      [%local-get len]
-      [%store %i32 [0 0] ~]
-      [%local-get ptr-serf]
-      [%local-get ptr-king]
-      [%const %i32 len-size]
-      [%add %i32]
-      [%local-get len]
-      [%call mem-read-idx]
-    ::
-      [%local-get idx]
-      [%const %i32 space-width]
-      [%mul %i32]
-      [%local-get ptr-king]
-      [%extend %i64 %32 %u]
-      [%const %i64 null-ptr]
-      [%add %i64]
-      [%store %i64 [0 offset] ~]
+      :^  %if  [~ ~]
+        :~
+          [%local-get idx]
+          [%const %i32 space-width]
+          [%mul %i32]
+          [%const %i64 minus-one-64]
+          [%store %i64 [0 offset] ~]
+        ==
+      :~
+        [%const %i32 len-size]
+        [%local-get len]
+        [%add %i32]
+        [%call alloc-idx]
+        [%local-tee ptr-king]
+        [%local-get len]
+        [%store %i32 [0 0] ~]
+        [%local-get ptr-serf]
+        [%local-get ptr-king]
+        [%const %i32 len-size]
+        [%add %i32]
+        [%local-get len]
+        [%call mem-read-idx]
+      ::
+        [%local-get idx]
+        [%const %i32 space-width]
+        [%mul %i32]
+        [%local-get ptr-king]
+        [%extend %i64 %32 %u]
+        [%const %i64 null-ptr]
+        [%add %i64]
+        [%store %i64 [0 offset] ~]
+      ==
     ==
   ::  give-octs
   ::
@@ -912,6 +924,13 @@
       [%sub %i64]
       [%wrap ~]
       [%local-tee ptr-king]
+      [%const %i32 empty-octs]
+      [%eq %i32]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get ptr-king]
       [%load %i32 [0 0] ~ ~]
       [%local-set len-all]
     ::
@@ -944,6 +963,7 @@
     :-  ~[%i64]
     =/  idx=@  0
     =/  king-val=@  1
+    =/  ptr=@  2
     ^-  expression:wasm
     :~
       [%local-get idx]
@@ -968,7 +988,15 @@
       [%const %i64 null-ptr]
       [%sub %i32]
       [%wrap ~]
-      [%load %i32 [0 0] ~ ~]
+      [%local-tee ptr]
+      [%const %i32 empty-octs]
+      [%eq %i32]
+      :^  %if  [~ ~[%i32]]
+        ~[[%const %i32 0]]
+      :~
+        [%local-get ptr]
+        [%load %i32 [0 0] ~ ~]
+      ==
     ==
   ::  read-octs-i32
   ::
@@ -1022,6 +1050,12 @@
         [%sub %i64]
         [%wrap ~]
         [%local-tee ptr-king]
+        [%const %i32 empty-octs]
+        [%eq %i32]
+        :^  %if  [~ ~]
+          ~[[%unreachable ~]]
+        ~
+        [%local-get ptr-king]
         [%load %i32 [0 0] ~ ~]
         [%local-set len-all]
       ::
@@ -1137,6 +1171,13 @@
         [%sub %i64]
         [%wrap ~]
         [%local-tee ptr-king]
+        [%const %i32 empty-octs]
+        [%eq %i32]
+        :^  %if  [~ ~]
+          ~[[%unreachable ~]]
+        ~
+      ::
+        [%local-get ptr-king]
         [%load %i32 [0 0] ~ ~]
         [%local-set len-all]
       ::
@@ -1216,6 +1257,13 @@
       [%sub %i64]
       [%wrap ~]
       [%local-tee ptr-king]
+      [%const %i32 empty-octs]
+      [%eq %i32]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get ptr-king]
       [%load %i32 [0 0] ~ ~]
       [%local-set len-all]
     ::
@@ -1272,6 +1320,13 @@
       [%sub %i64]
       [%wrap ~]
       [%local-tee ptr-king]
+      [%const %i32 empty-octs]
+      [%eq %i32]
+      :^  %if  [~ ~]
+        ~[[%unreachable ~]]
+      ~
+    ::
+      [%local-get ptr-king]
       [%load %i32 [0 0] ~ ~]
       [%local-set len-all]
     ::
@@ -1303,26 +1358,38 @@
     =/  king-ptr=@  2
     ^-  expression:wasm
     :~
-      [%const %i32 len-size]
       [%local-get len]
-      [%add %i32]
-      [%call alloc-idx]
-      [%local-tee king-ptr]
-      [%local-get len]
-      [%store %i32 [0 0] ~]
-    ::
-      [%local-get idx]
-      [%const %i32 space-width]
-      [%mul %i32]
-      [%local-get king-ptr]
-      [%extend %i64 %32 %u]
-      [%const %i64 null-ptr]
-      [%add %i64]
-      [%store %i64 [0 offset] ~]
-    ::
-      [%local-get king-ptr]
-      [%const %i32 len-size]
-      [%add %i32]
+      :^  %if  [~ ~[%i32]]
+        :~
+          [%const %i32 len-size]
+          [%local-get len]
+          [%add %i32]
+          [%call alloc-idx]
+          [%local-tee king-ptr]
+          [%local-get len]
+          [%store %i32 [0 0] ~]
+        ::
+          [%local-get idx]
+          [%const %i32 space-width]
+          [%mul %i32]
+          [%local-get king-ptr]
+          [%extend %i64 %32 %u]
+          [%const %i64 null-ptr]
+          [%add %i64]
+          [%store %i64 [0 offset] ~]
+        ::
+          [%local-get king-ptr]
+          [%const %i32 len-size]
+          [%add %i32]
+        ==
+      :~
+        [%local-get idx]
+        [%const %i32 space-width]
+        [%mul %i32]
+        [%const %i64 minus-one-64]
+        [%store %i64 [0 offset] ~]
+        [%const %i32 0]
+      ==
     ==
   ::  get-space-ptr
   ::
@@ -1377,6 +1444,8 @@
       [%memory-init 0 %0]
       [%const %i32 ^~((add offset space-size))]
       [%global-set heap-edge]
+      [%const %i32 0]
+      [%global-set space-edge]
     ==
   ::  Function imports of serf are defined in ext field of the sample.
   ::  Imports of other parts of the store are not treated by king, and
@@ -1483,9 +1552,8 @@
       (rep 3 target)
     :_  (snoc d [%pass data])
     :~
-      [%global-get heap-edge]
       [%const %i32 data-idx]
-      [%store %i32 [0 0] ~]
+      [%global-set space-clue]
       [%call (~(got by king-diary) name)]
     ==
   ::
@@ -1493,11 +1561,85 @@
     |=  [=op:line:lia d=data-section:wasm]
     ^-  [(list instruction:wasm) data-section:wasm]
     ?:  ?=(%run-lia -.op)  (translate-lia op d)
+    ?:  ?=(?(%if %loop) -.op)
+      ?-    -.op
+          %if
+        =^  result-true=(list (list instruction:wasm))  d
+          (spin true.op d translate)
+        =^  result-false=(list (list instruction:wasm))  d
+          (spin false.op d translate)
+        :_  d
+        :_  ~
+        :^    %if
+            [(turn p.type.op convert) (turn q.type.op convert)]
+          ^-  expression:wasm
+          (zing result-true)
+        ^-  expression:wasm
+        (zing result-false)
+      ::
+          %loop
+        =^  result=(list (list instruction:wasm))  d
+          (spin body.op d translate)
+        :_  d
+        :_  ~
+        :+  %loop
+          [(turn p.type.op convert) (turn q.type.op convert)]
+        ^-  expression:wasm
+        (zing result)
+      ::
+      ==
     :_  d
     ?:  ?=(instr-num:wasm op)  ~[op]
+    ?:  ?=(%br -.op)  ~[op]
     ?-    -.op
-        %let      ~
-        %run      [%call (~(got by serf-diary) name.op)]~
+        %let
+      ?>  (lth idx.op space-number)
+      ?-    type.op
+          %i32
+        :~
+          [%const %i32 0]
+          [%const %i32 idx.op]
+          [%call set-i32-idx]
+        ==
+      ::
+          %i64
+        :~
+          [%const %i64 0]
+          [%const %i32 idx.op]
+          [%call set-i64-idx]
+        ==
+      ::
+          %f32
+        :~
+          [%const %f32 `@rs`0]
+          [%const %i32 idx.op]
+          [%call set-f32-idx]
+        ==
+      ::
+          %f64
+        :~
+          [%const %f64 `@rd`0]
+          [%const %i32 idx.op]
+          [%call set-f64-idx]
+        ==
+      ::
+          %v128
+        :~
+          [%vec %const %v128 0]
+          [%const %i32 idx.op]
+          [%call set-vec-idx]
+        ==
+      ::
+          %octs
+        :~
+          [%const %i64 minus-one-64]
+          [%const %i32 idx.op]
+          [%call set-i64-idx]
+        ==
+      ==
+    ::
+        %run  [%call (~(got by serf-diary) name.op)]~
+        %nop  ~
     ::
         %get
       ?>  (lth idx.op space-number)
@@ -1543,22 +1685,6 @@
         [%const %i32 p.op]
         [%call give-octs-idx]
       ==
-    ::
-        %if
-      :_  ~
-      :^    %if
-          [(turn p.type.op convert) (turn q.type.op convert)]
-        ^-  expression:wasm
-        (zing (turn true.op translate))
-      ^-  expression:wasm
-      (zing (turn false.op translate))
-    ::
-        %loop
-      :_  ~
-      :+  %loop
-        [(turn p.type.op convert) (turn q.type.op convert)]
-      ^-  expression:wasm
-      (zing (turn body.op translate))
     ::
         %len
       ?>  (lth idx.op space-number)
