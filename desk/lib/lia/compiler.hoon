@@ -1460,7 +1460,6 @@
   ::
   ::  initialize data
   ::
-  =.  datacnt-section.king  `1
   =.  data-section.king
     :_  ~
     :+  %acti  [%const %i32 offset]
@@ -1553,6 +1552,7 @@
       ==
     ::
     ==
+  =.  datacnt-section.king  `(lent data-section.king)
   ::  Done!
   ::
   king
