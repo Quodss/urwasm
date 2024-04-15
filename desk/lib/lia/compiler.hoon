@@ -1518,7 +1518,7 @@
     =^  type-idx=@  type-section.king
       (get-type-idx type type-section.king)
     =^  result=(list (list instruction:wasm))  data-section.king
-      (spin body.ext-func data-section.king translate)
+      (spin body.ext-func data-section.king ext-translate)
     :-  +(f-idx)
     %=    king
         function-section
@@ -1526,7 +1526,21 @@
     ::
         code-section
       %+  snoc  code-section.king
-      [~ `expression:wasm`(zing result)]
+      :-  ~[%i32 %i32]  ::  0: old space-edge, 1: new space-edge cache
+      ^-  expression:wasm
+      ;:  weld
+        :~
+          [%global-get space-edge]
+          [%local-set 0]
+        ==
+      ::
+        (zing result)
+      ::
+        :~
+          [%local-get 0]
+          [%global-set space-edge]
+        ==
+      ==
     ::
         export-section
       %+  snoc  export-section.king
@@ -1542,6 +1556,81 @@
   ::  Done!
   ::
   king
+  ::
+  ++  ext-translate
+    |=  [=op:line:lia d=data-section:wasm]
+    ^-  [(list instruction:wasm) data-section:wasm]
+    ?.  ?=(?(%set %get) -.op)  (translate op d)
+    :_  d
+    ?-    -.op
+        %get
+      ?>  (lth idx.op space-number)
+      ?:  ?=(%octs type.op)
+        :~  
+          [%const %i32 idx.op]
+          [%local-get 0]
+          [%add %i32]
+          [%local-tee 1]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get 1]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%local-get 1]
+        ==
+      =;  call=instruction:wasm
+        :~
+          [%const %i32 idx.op]
+          [%local-get 0]
+          [%add %i32]
+          [%local-tee 1]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get 1]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%local-get 1]
+          call
+        ==
+      :-  %call
+      ?-  type.op
+        %i32   get-i32-idx
+        %i64   get-i64-idx
+        %f32   get-f32-idx
+        %f64   get-f64-idx
+        %v128  get-vec-idx
+      ==
+    ::
+        %set
+      ?>  (lth idx.op space-number)
+      :~
+        [%const %i32 idx.op]
+        [%local-get 0]
+        [%add %i32]
+        [%local-tee 1]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%local-get 1]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
+        [%local-get 1]
+        :-  %call
+        ?-  type.op  
+          %i32   set-i32-idx
+          %i64   set-i64-idx
+          %f32   set-f32-idx
+          %f64   set-f64-idx
+          %v128  set-vec-idx
+          %octs  ~|(%set-octs !!)
+        ==
+      ==
+    ==
   ::
   ++  translate-lia
     |=  [[%run-lia name=term target=(list idx:line:lia)] d=data-section:wasm]
@@ -1600,12 +1689,28 @@
         :~
           [%const %i32 0]
           [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%const %i32 idx.op]
           [%call set-i32-idx]
         ==
       ::
           %i64
         :~
           [%const %i64 0]
+          [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
           [%const %i32 idx.op]
           [%call set-i64-idx]
         ==
@@ -1614,12 +1719,28 @@
         :~
           [%const %f32 `@rs`0]
           [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%const %i32 idx.op]
           [%call set-f32-idx]
         ==
       ::
           %f64
         :~
           [%const %f64 `@rd`0]
+          [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
           [%const %i32 idx.op]
           [%call set-f64-idx]
         ==
@@ -1628,12 +1749,28 @@
         :~
           [%vec %const %v128 0]
           [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%const %i32 idx.op]
           [%call set-vec-idx]
         ==
       ::
           %octs
         :~
           [%const %i64 minus-one-64]
+          [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
           [%const %i32 idx.op]
           [%call set-i64-idx]
         ==
@@ -1645,9 +1782,30 @@
         %get
       ?>  (lth idx.op space-number)
       ?:  ?=(%octs type.op)
-        ~[[%const %i32 idx.op]]
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%const %i32 idx.op]
+        ==
       =;  call=instruction:wasm
-        ~[[%const %i32 idx.op] call]
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-edge]
+          [%gt %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%const %i32 idx.op]]
+          ~[[%global-get space-edge]]
+        ::
+          [%global-set space-edge]
+          [%const %i32 idx.op]
+          call
+        ==
       :-  %call
       ?-  type.op
         %i32   get-i32-idx
@@ -1656,11 +1814,18 @@
         %f64   get-f64-idx
         %v128  get-vec-idx
       ==
-      ::
     ::
         %set
       ?>  (lth idx.op space-number)
       :~
+        [%const %i32 idx.op]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%const %i32 idx.op]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
         [%const %i32 idx.op]
         :-  %call
         ?-  type.op  
@@ -1676,6 +1841,14 @@
         %read
       ?>  (lth p.op space-number)
       :~
+        [%const %i32 idx.op]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%const %i32 idx.op]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
         [%const %i32 p.op]
         [%call set-octs-idx]
       ==
@@ -1683,6 +1856,14 @@
         %writ
       ?>  (lth p.op space-number)
       :~
+        [%const %i32 idx.op]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%const %i32 idx.op]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
         [%const %i32 p.op]
         [%call give-octs-idx]
       ==
@@ -1691,12 +1872,28 @@
       ?>  (lth idx.op space-number)
       :~
         [%const %i32 idx.op]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%const %i32 idx.op]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
+        [%const %i32 idx.op]
         [%call len-idx]
       ==
     ::
         %read-octs-i
       ?>  (lth p.op space-number)
       :~
+        [%const %i32 idx.op]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%const %i32 idx.op]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
         [%const %i32 p.op]
         :-  %call
         ?-  type.op
@@ -1708,6 +1905,14 @@
         %read-octs-f
       ?>  (lth p.op space-number)
       :~
+        [%const %i32 idx.op]
+        [%global-get space-edge]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~[%i32]]
+          ~[[%const %i32 idx.op]]
+        ~[[%global-get space-edge]]
+      ::
+        [%global-set space-edge]
         [%const %i32 p.op]
         :-  %call
         ?-  type.op
