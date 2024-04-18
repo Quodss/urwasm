@@ -2,3 +2,4 @@ desk/*.wasm
 zod/
 zod.new/
 urbit
+.vscode
