@@ -76,7 +76,7 @@
     module.input
     (turn code.input script-gen)
     shop.input
-    `(map (pair cord cord) ext-func:line)`(~(run by ext.input) ext-gen)
+    (~(run by ext.input) ext-gen)
     import.input
     diff-line
   ==
@@ -247,24 +247,6 @@
       =^  slot=idx:line  gen
         ((give-idx behind) [from.phrase %octs] gen)
       =.  code  [[%writ slot] code]
-      =.  gen  (op-gen len.phrase behind):.(dest %stack)
-      =.  gen  (op-gen offset.phrase behind):.(dest %stack)
-      gen
-    ::
-        %octs
-      =^  slot=idx:line  gen
-        ((give-idx behind) [to.phrase %octs] gen)
-      =.  code  [[%octs slot] code]
-      =.  gen  (op-gen len.phrase behind):.(dest %stack)
-      =.  gen  (op-gen dat.phrase behind):.(dest %stack)
-      gen
-    ::
-        %cut
-      =^  slot-from=idx:line  gen
-        ((give-idx behind) [from.phrase %octs] gen)
-      =^  slot-to=idx:line  gen
-        ((give-idx behind) [to.phrase %octs] gen)
-      =.  code  [[%cut slot-from slot-to] code]
       =.  gen  (op-gen len.phrase behind):.(dest %stack)
       =.  gen  (op-gen offset.phrase behind):.(dest %stack)
       gen

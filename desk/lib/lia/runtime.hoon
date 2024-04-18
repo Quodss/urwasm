@@ -2,6 +2,8 @@
 /-  lia
 /-  engine
 /+  run=runner-engine
+/+  comp=lia-compiler
+/+  line=lia-linearizer
 ::
 |%
 ++  chain-name
@@ -39,34 +41,50 @@
       [%2 ~]
   ==
 ::
+++  lia-main
+  |=  [=input:tree:lia vals=(list (list value:line))]
+  ^-  result:line:lia
+  =/  input-line  (main:line input)
+  =/  king  (main:comp [module code ext import]:input-line)
+  =/  =lord-result
+    %:  lord
+      module.input-line
+      king vals
+      shop.input-line
+    ==
+  XX  extract values from %0, %1 for lia import
+::
 ++  lord
   |=  $:  serf-mod=module:wasm
           king-mod=module:wasm
-          lia-shop=(list (list coin-wasm:wasm))
+          input=(list (list value:line:lia))
+          lia-shop=(list (list value:line:lia))
       ==
   ^-  lord-result
   =/  them=[king=store:engine serf=store:engine]
       :-  +:(wasm-need:run (prep:run king-mod ~))  ::  king store initialized, should not block
-          (conv:run serf-mod ~)                ::  serf store, uninitialized
+          (conv:run serf-mod ~)                    ::  serf store, uninitialized
   |^
   =^  res=them-result  them  serf-init
-  ?.  ?=(%0 -.res)  `lord-result`res
+  ?.  ?=(%0 -.res)  res
   =/  act-func-idx=@
     (get-export-global-i32 module.king.them 'act-0-func-idx')
   =/  n-funcs=@
     (get-export-global-i32 module.king.them 'n-funcs')
   ?<  =(0 n-funcs)
+  ?>  =(n-funcs (lent input))
   =/  idx-last  (dec (add act-func-idx n-funcs))
   |-  ^-  lord-result
   ?:  =(act-func-idx idx-last)
-    =^   res=them-result  them  (king-invoke-act act-func-idx)
+    =^   res=them-result  them  (king-invoke-act act-func-idx -.input)
     ?.  ?=(%0 -.res)  res
     [%0 out.res king.them]
-  =^   res=them-result  them  (king-invoke-act act-func-idx)
+  =^   res=them-result  them  (king-invoke-act act-func-idx -.input)
   ?.  ?=(%0 -.res)  res
   %=  $
-    them          king-invoke-clear
+    input  +.input
     act-func-idx  +(act-func-idx)
+    them  king-invoke-clear
   ==
   ::
   ++  serf-init
@@ -111,9 +129,60 @@
     ?+    mod.king-engine-res  ~|(%weird-mod !!)
         %lia
       ?~  lia-shop  [[%1 +<.king-engine-res] them]
-      %=  $
-        lia-shop  t.lia-shop
-        shop.king.them  (snoc shop.king.them [i.lia-shop +>.king-engine-res])
+      %=    $
+          lia-shop  t.lia-shop
+          shop.king.them
+        %+  snoc  shop.king.them
+        :-  ~
+        =*  pause  +>.king-engine-res
+        =/  off=@  (get-export-global-i32 module.pause 'space-start')
+        =/  data-idx=@  (get-export-global-i32 module.pause 'space-clue')
+        =/  target-data  (snag data-idx data-section.module.pause)
+        ?>  ?=(%pass)  -.target-data
+        =/  targets=(list @)
+          %-  turn  :_  (curr add off)
+          (rope:run 3 p.target-data q.target-data)
+        ?>  ?=(^ mem.pause)
+        |-  ^+  pause
+        ?:  &(?=(@ targets) ?=(@ i.lia-shop))
+          pause
+        ?>  &(?=(^ targets) ?=(^ i.lia-shop))
+        ?.  ?=(?(%octs %v128) -.i.i.lia-shop)
+          =/  ptr=@  (mul i.targets 8)
+          =*  buf  buffer.u.mem.pause
+          %=  $
+            targets  t.targets
+            i.lia-shop  t.i.lia-shop
+            buf  (sew 6 [ptr 1 +.i.i.lia-shop] buf)
+          ==
+        =/  =octs
+          ?-  -.i.i.lia-shop
+            %octs  +.i.i.lia-shop
+            %v128  [16 +.i.i.lia-shop]
+          ==
+        =/  [out=(list coin-wasm:wasm) king-pause-new=store:engine]
+          =.  king.them  [~ pause]
+          %-  wasm-need:run
+          (king-invoke-name 'set-octs-ext' ~[[%i32 p.octs] [%i32 i.targets]])
+        ?>  ?=([[%i32 ptr=@] ~] out)
+        ?:  =(minus-one-32:comp ptr.out)
+          ?>  =([0 0] octs)
+          %=  $
+            targets  t.targets
+            i.lia-shop  t.i.lia-shop
+            pause  +.king-pause-new
+          ==
+        ?>  ?=(^ mem.king-pause-new)
+        %=    $
+            targets  t.targets
+            i.lia-shop  t.i.lia-shop
+            pause
+          %=    +.king-pause-new
+              buffer.u.mem
+            %^  sew  3  [ptr.out p.octs q.octs]
+            buffer.u.mem.king-pause-new
+          ==
+        ==
       ==
     ::
         %memio
@@ -176,9 +245,46 @@
     (king-invoke-idx idx in)
   ::
   ++  king-invoke-act
-    |=  i=@
-    ^-  [them-result _them]
-    (king-invoke-idx i ~)
+    |=  [i=@ in=(list value:line:lia)]
+    =/  target=@  0
+    ?>  ?=(^ mem.king.them)
+    |-  ^-  [them-result _them]
+    ?~  in  (king-invoke-idx i ~)
+    ?.  ?=(?(%octs %v128) -.i.in)
+      =/  ptr=@  (mul target 8)
+      =*  buf  buffer.u.mem.king.them
+      %=  $
+        target  +(target)
+        in  t.in
+        buf  (sew 6 [ptr 1 +.i.i.lia-shop] buf)
+      ==
+    =/  =octs
+      ?-  -.i.in
+        %octs  +.i.in
+        %v128  [16 +.i.in]
+      ==
+    =/  [out=(list coin-wasm:wasm) king-temp-new=store:engine]
+      %-  wasm-need:run
+      (king-invoke-name 'set-octs-ext' ~[[%i32 p.octs] [%i32 target]])
+    ?>  ?=([[%i32 ptr=@] ~] out)
+    ?:  =(minus-one-32:comp ptr.out)
+      ?>  =([0 0] octs)
+      %=  $
+        target  +(target)
+        in  t.in
+        king.them  king-temp-new
+      ==
+    ?>  ?=(^ mem.king-pause-new)
+    %=    $
+        target  +(target)
+        in  t.in
+        king.them
+      %=    king-temp-new
+          buffer.u.mem
+        %^  sew  3  [ptr.out p.octs q.octs]
+        buffer.u.mem.king-temp-new
+      ==
+    ==
   ::
   ++  king-invoke-clear
     ^+  them
@@ -209,7 +315,7 @@
         lia-shop   t.lia-shop
         shop.serf.them  (snoc shop.serf.them [i.lia-shop +>.serf-engine-res])
       ==
-    =/  name-chained=cord  (chain-name +<-.serf-engine-res)
+    =/  name-chained=cord  (chain-name [mod name]:serf-engine-res)
     =/  serf-b4-block  serf.them
     =.  serf.them  [~ +>.serf-engine-res]
     =^  king-res=them-result  them

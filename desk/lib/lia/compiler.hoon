@@ -1391,7 +1391,7 @@
         [%mul %i32]
         [%const %i64 minus-one-64]
         [%store %i64 [0 offset] ~]
-        [%const %i32 0]
+        [%const %i32 minus-one-32]
       ==
     ==
   ::  get-space-ptr
@@ -1506,6 +1506,8 @@
         ['space-start' %glob space-start]
         ['space-clue' %glob space-start]
         ['clear-space' %func clear-space-idx]
+        ['set-octs-ext' %func set-octs-ext-idx]
+        ['get-space-ptr' %func get-space-ptr-idx]
     ==
   ::
   =.  king
