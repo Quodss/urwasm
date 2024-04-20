@@ -6,6 +6,15 @@
 /+  line=lia-linearizer
 ::
 |%
+++  demote
+  |=  l=(list value:line:lia)
+  ^-  (list coin-wasm:wasm)
+  %+  turn  l
+  |=  v=value:line:lia
+  ^-  coin-wasm:wasm
+  ?<  ?=(%octs -.v)
+  v
+::
 ++  chain-name
   |=  [a=cord b=cord]
   ^-  cord
@@ -31,34 +40,89 @@
 ::
 +$  them-result
   $%  [%0 out=(list coin-wasm:wasm)]
-      [%1 [[cord cord] =request:engine]]
+  ::
+      $:  %1
+          [[mod=cord name=cord] =request:engine]
+          $=  king-paused  %-  unit
+          $:
+            =module:engine
+            mem=(unit [buffer=@ n-pages=@])         
+            tables=(list (list $>(%ref coin-wasm:wasm))) 
+            globals=(list coin-wasm:wasm)
+      ==  ==
+  ::
       [%2 ~]
   ==
 ::
 +$  lord-result
-  $%  [%0 out=(list coin-wasm:wasm) king=store:engine]
-      [%1 [[cord cord] =request:engine]]
-      [%2 ~]
+  $%
+    $<(%0 them-result)
+    [%0 out=(list coin-wasm:wasm) king=store:engine]
   ==
 ::
 ++  lia-main
-  |=  [=input:tree:lia vals=(list (list value:line))]
+  |=  [=input:tree:lia vals=(list (list value:line:lia))]
   ^-  result:line:lia
   =/  input-line  (main:line input)
   =/  king  (main:comp [module code ext import]:input-line)
   =/  =lord-result
-    %:  lord
-      module.input-line
-      king vals
-      shop.input-line
-    ==
-  XX  extract values from %0, %1 for lia import
+    (lord module.input-line king vals shop.input-line import.input-line)
+  ?-    -.lord-result
+      %2  lord-result
+  ::
+      %1
+    :-  %1
+    ?~  king-paused.lord-result
+      [%serf +<.lord-result]
+    ?>  ?=(%lia mod.lord-result)
+    ?>  ?=(%func -.request.lord-result)
+    ?>  ((sane %tas) name.lord-result)
+    =/  types  p:(~(got by import.input-line) name.lord-result)
+    =,  lord-result
+    :+  %king  name
+    (extract types args.request u.king-paused)
+  ::
+      %0
+    :-  %0
+    =,  lord-result
+    (extract q.type:(rear code.input-line) out +.king)
+  ::
+  ==
+::
+++  extract
+  |=  $:  types=(list value-type:line:lia)
+          coins=(list coin-wasm:wasm)
+          =module:engine
+          mem=(unit [buffer=@ n-pages=@])         
+          tables=(list (list $>(%ref coin-wasm:wasm))) 
+          globals=(list coin-wasm:wasm)
+      ==
+  ^-  (list value:line:lia)
+  ?:  &(?=(@ types) ?=(@ coins))  ~
+  ?>  &(?=(^ types) ?=(^ coins))
+  :_  $(types t.types, coins t.coins)
+  ?.  ?=(%octs i.types)
+    ?>  =(i.types -.i.coins)
+    ?<  ?=(%ref -.i.coins)
+    i.coins
+  ?>  ?=(%i32 -.i.coins)
+  =/  out=(pole coin-wasm:wasm)
+    =<  -  %-  wasm-need:run
+    (invoke:run 'get-space-ptr' ~[i.coins] ~ module mem tables globals)
+  ?>  ?=([[%i32 ptr=@] ~] out)
+  ?>  (gth ptr.out 0)
+  ?:  =(minus-one-32:comp ptr.out)  [%octs 0 0]
+  ?>  ?=(^ mem)
+  =/  len=@   (cut 3 [ptr.out 4] buffer.u.mem)
+  =/  data=@  (cut 3 [(add ptr.out 4) len] buffer.u.mem)
+  [%octs len data]
 ::
 ++  lord
   |=  $:  serf-mod=module:wasm
           king-mod=module:wasm
           input=(list (list value:line:lia))
           lia-shop=(list (list value:line:lia))
+          import=(map term block-type:line:lia)
       ==
   ^-  lord-result
   =/  them=[king=store:engine serf=store:engine]
@@ -98,10 +162,10 @@
     ::  serf-engine-res = [%1 [[mod=cord name=cord] =request] module mem tables globals]
     ::
     ?.  ?=(%func -.request.serf-engine-res)
-      ?~  lia-shop  [[%1 +<.serf-engine-res] them]
+      ?~  lia-shop  [[%1 +<.serf-engine-res ~] them]
       %=  serf-loop
         lia-shop   t.lia-shop
-        serf-shop  (snoc serf-shop [i.lia-shop +>.serf-engine-res])
+        serf-shop  (snoc serf-shop [(demote i.lia-shop) +>.serf-engine-res])
       ==
     =/  name-chained=cord  (chain-name +<-.serf-engine-res)
     =/  serf-b4-block  serf.them
@@ -128,7 +192,9 @@
     ?>  ?=(%func -.request.king-engine-res)
     ?+    mod.king-engine-res  ~|(%weird-mod !!)
         %lia
-      ?~  lia-shop  [[%1 +<.king-engine-res] them]
+      ?~  lia-shop  [[%1 +<.king-engine-res `+>.king-engine-res] them]
+      =/  types  q:(~(got by import) name.king-engine-res)
+      ?>  =(types (turn i.lia-shop head))
       %=    $
           lia-shop  t.lia-shop
           shop.king.them
@@ -138,32 +204,30 @@
         =/  off=@  (get-export-global-i32 module.pause 'space-start')
         =/  data-idx=@  (get-export-global-i32 module.pause 'space-clue')
         =/  target-data  (snag data-idx data-section.module.pause)
-        ?>  ?=(%pass)  -.target-data
+        ?>  ?=(%pass -.target-data)
         =/  targets=(list @)
           %-  turn  :_  (curr add off)
-          (rope:run 3 p.target-data q.target-data)
-        ?>  ?=(^ mem.pause)
+          (rope:simd:run 3 p.b.target-data q.b.target-data)
         |-  ^+  pause
         ?:  &(?=(@ targets) ?=(@ i.lia-shop))
           pause
         ?>  &(?=(^ targets) ?=(^ i.lia-shop))
         ?.  ?=(?(%octs %v128) -.i.i.lia-shop)
           =/  ptr=@  (mul i.targets 8)
-          =*  buf  buffer.u.mem.pause
+          =/  [buffer=@ n-pages=@]  (need mem.pause)
           %=  $
             targets  t.targets
             i.lia-shop  t.i.lia-shop
-            buf  (sew 6 [ptr 1 +.i.i.lia-shop] buf)
+            mem.pause  `[(sew 6 [ptr 1 +.i.i.lia-shop] buffer) n-pages]
           ==
         =/  =octs
           ?-  -.i.i.lia-shop
             %octs  +.i.i.lia-shop
             %v128  [16 +.i.i.lia-shop]
           ==
-        =/  [out=(list coin-wasm:wasm) king-pause-new=store:engine]
-          =.  king.them  [~ pause]
+        =/  [out=(pole coin-wasm:wasm) king-pause-new=store:engine]
           %-  wasm-need:run
-          (king-invoke-name 'set-octs-ext' ~[[%i32 p.octs] [%i32 i.targets]])
+          (invoke:run 'set-octs-ext' ~[[%i32 p.octs] [%i32 i.targets]] ~ pause)
         ?>  ?=([[%i32 ptr=@] ~] out)
         ?:  =(minus-one-32:comp ptr.out)
           ?>  =([0 0] octs)
@@ -172,15 +236,15 @@
             i.lia-shop  t.i.lia-shop
             pause  +.king-pause-new
           ==
-        ?>  ?=(^ mem.king-pause-new)
         %=    $
             targets  t.targets
             i.lia-shop  t.i.lia-shop
             pause
           %=    +.king-pause-new
-              buffer.u.mem
-            %^  sew  3  [ptr.out p.octs q.octs]
-            buffer.u.mem.king-pause-new
+              mem
+            =/  [buffer=@ n-pages=@]  (need mem.king-pause-new)
+            :-  ~  :_  n-pages
+            (sew 3 [ptr.out p.octs q.octs] buffer)
           ==
         ==
       ==
@@ -243,29 +307,29 @@
     ^-  [them-result _them]
     =/  idx=@  (find-func-id:run name module.king.them)
     (king-invoke-idx idx in)
-  ::
+::
   ++  king-invoke-act
     |=  [i=@ in=(list value:line:lia)]
     =/  target=@  0
-    ?>  ?=(^ mem.king.them)
     |-  ^-  [them-result _them]
-    ?~  in  (king-invoke-idx i ~)
+    ?~  in
+      (king-invoke-idx i ~)
     ?.  ?=(?(%octs %v128) -.i.in)
       =/  ptr=@  (mul target 8)
-      =*  buf  buffer.u.mem.king.them
+      =/  [buffer=@ n-pages=@]  (need mem.king.them)
       %=  $
         target  +(target)
         in  t.in
-        buf  (sew 6 [ptr 1 +.i.i.lia-shop] buf)
+        mem.king.them  `[(sew 6 [ptr 1 +.i.in] buffer) n-pages]
       ==
     =/  =octs
       ?-  -.i.in
         %octs  +.i.in
         %v128  [16 +.i.in]
       ==
-    =/  [out=(list coin-wasm:wasm) king-temp-new=store:engine]
+    =/  [out=(pole coin-wasm:wasm) king-temp-new=store:engine]
       %-  wasm-need:run
-      (king-invoke-name 'set-octs-ext' ~[[%i32 p.octs] [%i32 target]])
+      (invoke:run 'set-octs-ext' ~[[%i32 p.octs] [%i32 target]] king.them)
     ?>  ?=([[%i32 ptr=@] ~] out)
     ?:  =(minus-one-32:comp ptr.out)
       ?>  =([0 0] octs)
@@ -274,15 +338,15 @@
         in  t.in
         king.them  king-temp-new
       ==
-    ?>  ?=(^ mem.king-pause-new)
     %=    $
         target  +(target)
         in  t.in
         king.them
       %=    king-temp-new
-          buffer.u.mem
-        %^  sew  3  [ptr.out p.octs q.octs]
-        buffer.u.mem.king-temp-new
+          mem
+        =/  [buffer=@ n-pages=@]  (need mem.king-temp-new)
+        :-  ~  :_  n-pages
+        (sew 3 [ptr.out p.octs q.octs] buffer)
       ==
     ==
   ::
@@ -310,10 +374,14 @@
     ::  serf-engine-res = [%1 [[mod=cord name=cord] =request] module mem tables globals]
     ::
     ?.  ?=(%func -.request.serf-engine-res)
-      ?~  lia-shop  [[%1 +<.serf-engine-res] them]
-      %=  $
-        lia-shop   t.lia-shop
-        shop.serf.them  (snoc shop.serf.them [i.lia-shop +>.serf-engine-res])
+      ?~  lia-shop  [[%1 +<.serf-engine-res ~] them]
+      %=    $
+          lia-shop
+        t.lia-shop
+      ::
+          shop.serf.them
+        (snoc shop.serf.them [(demote i.lia-shop) +>.serf-engine-res])
+      ::
       ==
     =/  name-chained=cord  (chain-name [mod name]:serf-engine-res)
     =/  serf-b4-block  serf.them

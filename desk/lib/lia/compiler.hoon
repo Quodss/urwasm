@@ -1448,7 +1448,9 @@
       [%const %i32 ^~((add offset space-size))]
       [%global-set heap-edge]
       [%const %i32 0]
-      [%global-set space-edge]
+      [%global-set space-start]
+      [%const %i32 0]
+      [%global-set space-end]
     ==
   ::  Function imports of serf are defined in ext field of the sample.
   ::  Imports of other parts of the store are not treated by king, and
@@ -1532,6 +1534,7 @@
       :-  ~[%i32 %i32]  ::  0: space-start prev frame, 1: new space-end cache
       ^-  expression:wasm
       ;:  weld
+        ^-  (list instruction:wasm)
         :~
           [%global-get space-start]
           [%local-set 0]
@@ -1539,8 +1542,9 @@
           [%global-set space-start]
         ==
       ::
-        (zing result)
+        `(list instruction:wasm)`(zing result)
       ::
+        ^-  (list instruction:wasm)
         :~
           [%local-get 0]
           [%global-set space-start]
@@ -1847,11 +1851,11 @@
         %read
       ?>  (lth p.op space-number)
       :~
-        [%const %i32 idx.op]
+        [%const %i32 p.op]
         [%global-get space-end]
         [%gt %i32 `%u]
         :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 idx.op]]
+          ~[[%const %i32 p.op]]
         ~[[%global-get space-end]]
       ::
         [%global-set space-end]
@@ -1862,11 +1866,11 @@
         %writ
       ?>  (lth p.op space-number)
       :~
-        [%const %i32 idx.op]
+        [%const %i32 p.op]
         [%global-get space-end]
         [%gt %i32 `%u]
         :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 idx.op]]
+          ~[[%const %i32 p.op]]
         ~[[%global-get space-end]]
       ::
         [%global-set space-end]
@@ -1892,11 +1896,11 @@
         %read-octs-i
       ?>  (lth p.op space-number)
       :~
-        [%const %i32 idx.op]
+        [%const %i32 p.op]
         [%global-get space-end]
         [%gt %i32 `%u]
         :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 idx.op]]
+          ~[[%const %i32 p.op]]
         ~[[%global-get space-end]]
       ::
         [%global-set space-end]
@@ -1911,11 +1915,11 @@
         %read-octs-f
       ?>  (lth p.op space-number)
       :~
-        [%const %i32 idx.op]
+        [%const %i32 p.op]
         [%global-get space-end]
         [%gt %i32 `%u]
         :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 idx.op]]
+          ~[[%const %i32 p.op]]
         ~[[%global-get space-end]]
       ::
         [%global-set space-end]

@@ -130,7 +130,7 @@
         $:  %1
             $%
               [%king name=term in=(list value)]
-              [%serf req=request:sur]
+              [%serf [mod=cord name=cord] req=request:sur]
         ==  ==
     ::
         [%2 ~]
