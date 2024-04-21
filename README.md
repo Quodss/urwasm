@@ -14,14 +14,15 @@ State of the project:
 
 Next:
 - [X] Language for Invocation of Assembly (Lia) specification
-- [ ] Lia interpreter in Hoon:
-  - [ ] Lia-to-Wasm compiler
+- [X] Lia interpreter in Hoon:
+  - [X] Lia-to-Wasm compiler
     - [X] Hoon code compiles
     - [X] Wasm implementation of GC and alloc typechecked
     - [X] Compiler runs and outputs valid Wasm
-    - [ ] Test the allocator
+    - [X] Test the allocator
   - [X] Wasm binary encoder
   - [ ] Lia end-to-end interpeting function (jet target)
+- (bonus) Test GC
 - [ ] Jet of Lia interpreter:
   - [ ] Lia jet
   - [ ] Ensure determinism of the Wasm runtime in C 
