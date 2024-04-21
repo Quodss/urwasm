@@ -365,6 +365,7 @@
       table:kind    (table:fetch i)
       memo:kind     (memo:fetch i)
       %select       select:fetch
+      %dbug         (dbug:fetch i)
   ::
       unary-num:kind
     |=  l=local-state
@@ -390,6 +391,28 @@
 ::
 ++  fetch
   |%
+  ++  dbug
+    =-  |=  i=instruction
+        ((~(got by m) ;;(@tas +<.i)) i)
+    ^~
+    ^=  m
+    ^-  (map @tas $-(instruction $-(local-state local-state)))
+    |^
+    %-  my
+    :~
+      print-tee+print-tee
+    ==
+    ::
+    ++  print-tee
+      |=  i=instruction
+      ?>  ?=([%dbug %print-tee a=term] i)
+      |=  l=local-state
+      ^-  local-state
+      ~&  [a.i ;;(@ux -.va.stack.l)]
+      l
+    ::
+    --
+  ::
   ++  select
     |=  l=local-state
     ^-  local-state
@@ -430,6 +453,7 @@
       |=  l=local-state
       ^-  local-state
       l(va.stack +.va.stack.l)
+    ::
     --
   ::
   ++  ref
@@ -1229,7 +1253,7 @@
       |=  v=@
       ^-  @
       ?-  mode.i
-        %u  (mod v base)
+        %u  v
         %s  (en-si base (to-si source.i v))
       ==
     ::

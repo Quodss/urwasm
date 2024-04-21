@@ -1,0 +1,75 @@
+/-  lia
+/+  run=lia-runtime
+/+  par=parser-lib
+/+  op-def=runner-op-def
+/*  flopper  %wasm  /tests/flopper/wasm
+::
+:: :-  %say  |=  *  :-  %noun
+|=  a=tape
+::
+|^
+=/  serf  (main:par flopper)
+=/  =script:tree:lia
+  :*
+    ~[%a]
+    [~[%octs] ~[%octs]]
+  ::
+    ^-  code:tree:lia
+    :~
+      [%let %retptr %i32]
+      [%op ~[[%retptr %i32]] %run '__wbindgen_add_to_stack_pointer' ~[[%zero %const %i32 (en-si:op-def 32 -16)]]]
+      [%let %len0 %i32]
+      [%op ~[[%len0 %i32]] %len %a]
+      [%let %ptr0 %i32]
+      [%op ~[[%ptr0 %i32]] %run '__wbindgen_malloc' ~[[%len %a] [%zero %const %i32 1]]]
+      [%writ %a [%name %ptr0 %i32] [%zero %const %i32 0] [%name %len0 %i32]]
+      [%op ~ %run 'process' ~[[%name %retptr %i32] [%name %ptr0 %i32] [%name %len0 %i32]]]
+      [%let %r0 %octs]
+      [%read %r0 [%name %retptr %i32] [%zero %const %i32 4]]
+      [%let %r1 %octs]
+      [%read %r1 [%two [%add %i32] [%name %retptr %i32] [%zero %const %i32 4]] [%zero %const %i32 4]]
+      [%let %r0-i32 %i32]
+      [%let %r1-i32 %i32]
+      [%op ~[[%r0-i32 %i32]] %read-octs-i %r0 %i32 [%zero %const %i32 0] [%zero %const %i32 4]]
+      [%op ~[[%r1-i32 %i32]] %read-octs-i %r1 %i32 [%zero %const %i32 0] [%zero %const %i32 4]]
+      [%let %b %octs]
+      [%read %b [%name %r0-i32 %i32] [%name %r1-i32 %i32]]
+    ==
+  ::
+    ~[%b]
+  ==
+::
+=/  res
+  %-  lia-main:run
+  :_  ~[~[[%octs (to-octs a)]]]
+  :*
+    serf
+    ~[script]
+    ~
+    ~
+    ~
+    |+~
+  ==
+?>  ?=(%0 -.res)
+?>  ?=([[%octs =octs] ~] +.res)
+(of-octs octs.i.out.res)
+::
+++  to-octs
+  |=  =tape
+  ^-  octs
+  :-  (lent tape)
+  (rep 3 tape)
+::
+++  rope
+  |=  [b=bloq s=step a=@]
+  ^-  (list @)
+  ?:  =(s 0)  ~
+  :-  (end b a)
+  $(a (rsh b a), s (dec s))
+::
+++  of-octs
+  |=  =octs
+  ^-  tape
+  (rope 3 octs)
+::
+--

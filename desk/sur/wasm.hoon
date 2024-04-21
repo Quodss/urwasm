@@ -57,8 +57,12 @@
 ::
 +$  lane-type  ?(%i8 %i16 num-type)
 +$  instruction
-  $%([%vec instr-vec] instr-short instr-num)
+  $%([%vec instr-vec] instr-short instr-num instr-dbug)
 ::
++$  instr-dbug
+  $%
+    [%dbug %print-tee term]
+  ==
 +$  instr-num  ?(instr-num-zero instr-num-one instr-num-two)
 +$  instr-num-zero
   $%

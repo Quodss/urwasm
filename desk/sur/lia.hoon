@@ -176,7 +176,7 @@
       [%while test=op body=code]
       [%break ~]
       [%read to=name offset=op len=op]
-      [%writ from=name offset=op len=op]
+      [%writ from=name ptr=op offset=op len=op]
       :: [%octs to=name dat=op len=op]
       :: [%cut from=name to=name offset=op len=op]
       [%run-lia p=term q=(list op) r=(list (pair name value-type))]

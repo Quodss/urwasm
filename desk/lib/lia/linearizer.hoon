@@ -249,6 +249,7 @@
       =.  code  [[%writ slot] code]
       =.  gen  (op-gen len.phrase behind):.(dest %stack)
       =.  gen  (op-gen offset.phrase behind):.(dest %stack)
+      =.  gen  (op-gen ptr.phrase behind):.(dest %stack)
       gen
     ::
         %run-lia

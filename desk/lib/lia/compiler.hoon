@@ -852,6 +852,7 @@
       ~
     ::
       [%local-get len]
+      [%eqz %i32]
       :^  %if  [~ ~]
         :~
           [%local-get idx]
@@ -1467,7 +1468,7 @@
   =.  data-section.king
     :_  ~
     :+  %acti  [%const %i32 offset]
-    [space-size (fil 5 space-number null-ptr)]
+    [space-size (fil 6 space-number null-ptr)]
   ::  compile and export actions, ext
   ::
   |^
