@@ -21,7 +21,7 @@ Next:
     - [X] Compiler runs and outputs valid Wasm
     - [X] Test the allocator
   - [X] Wasm binary encoder
-  - [ ] Lia end-to-end interpeting function (jet target)
+  - [X] Lia end-to-end interpeting function (jet target)
 - [ ] (bonus) Test GC
 - [ ] Jet of Lia interpreter:
   - [ ] Lia jet
