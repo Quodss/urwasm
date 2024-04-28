@@ -246,6 +246,7 @@
     two:arg  (two a)
     one:fc:arg  (one-fc a)
     two:fc:arg  (two-fc a)
+    %dbug  [0 0]
   ==
 ::
 ++  vec-instr

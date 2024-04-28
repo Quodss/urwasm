@@ -11,7 +11,7 @@
 ++  space-number  ^~((bex addr-size))               ::  number of elements in space
 ++  space-size  ^~((mul space-width space-number))  ::  space size in bytes
 ++  page-size  `@`65.536                            ::  page size in bytes
-++  heap-pages  `@`128                              ::  addressable heap limit in pages; need ~2x of this memory for gc
+++  heap-pages  `@`1                                ::  addressable heap limit in pages; need ~2x of this memory for gc
 ++  heap-lim  ^~((mul page-size heap-pages))        ::  addressable heap limit in bytes
 ++  len-size  `@`4                                  ::  size of length prefix in bytes
 ++  offset  `@`0  :: v                              ::  space offset
@@ -25,6 +25,8 @@
           import=(map term block-type:line:lia)
       ==
   ^-  module:wasm
+  =/  n-import-funcs=@
+    (lent (skim import-section.serf |=(import:wasm ?=(%func -.desc))))
   =|  king=module:wasm
   ::  Add funcs exported by serf as imports in king
   ::  Exports of globals, tables and memory are not treated
@@ -44,7 +46,8 @@
     %+  roll  exports-serf
     |:  [[name=*cord idx=*@] acc=[d=d i=i k=king]]
     ^-  [(map cord @) @ module:wasm]
-    =/  type-idx  (snag idx function-section.serf)
+    =/  idx-local  (sub idx n-import-funcs)
+    =/  type-idx  (snag idx-local function-section.serf)
     =/  type=func-type:wasm  (snag type-idx type-section.serf)
     =^  king-type-idx=@  type-section.k.acc
       (get-type-idx type type-section.k.acc)
@@ -930,30 +933,30 @@
       [%const %i32 empty-octs]
       [%eq %i32]
       :^  %if  [~ ~]
-        ~[[%unreachable ~]]
-      ~
-    ::
-      [%local-get ptr-king]
-      [%load %i32 [0 0] ~ ~]
-      [%local-set len-all]
-    ::
-      [%local-get offset-octs]
-      [%local-get len]
-      [%add %i32]
-      [%local-get len-all]
-      [%gt %i32 `%u]
-      :^  %if  [~ ~]
-        ~[[%unreachable ~]]
-      ~
-    ::
-      [%local-get ptr-king]
-      [%const %i32 len-size]
-      [%add %i32]
-      [%local-get offset-octs]
-      [%add %i32]
-      [%local-get ptr-serf]
-      [%local-get len]
-      [%call mem-write-idx]
+        ~
+      :~
+        [%local-get ptr-king]
+        [%load %i32 [0 0] ~ ~]
+        [%local-set len-all]
+      ::
+        [%local-get offset-octs]
+        [%local-get len]
+        [%add %i32]
+        [%local-get len-all]
+        [%gt %i32 `%u]
+        :^  %if  [~ ~]
+          ~[[%unreachable ~]]
+        ~
+      ::
+        [%local-get ptr-king]
+        [%const %i32 len-size]
+        [%add %i32]
+        [%local-get offset-octs]
+        [%add %i32]
+        [%local-get ptr-serf]
+        [%local-get len]
+        [%call mem-write-idx]
+      ==
     ==
   ::  len
   ::
@@ -1507,7 +1510,7 @@
     :~  ['act-0-func-idx' %glob (sub len-glob 2)]
         ['n-funcs' %glob (sub len-glob 1)]
         ['space-start' %glob space-start]
-        ['space-clue' %glob space-start]
+        ['space-clue' %glob space-clue]
         ['clear-space' %func clear-space-idx]
         ['set-octs-ext' %func set-octs-ext-idx]
         ['get-space-ptr' %func get-space-ptr-idx]
@@ -1521,10 +1524,13 @@
         ==
     ^-  [@ module:wasm]
     =/  type=func-type:wasm  type.ext-func
+    =/  space-start-save=@  (lent params.type)
+    =/  space-end-cache=@  +(space-start-save)
+    =/  ext-translate-app  (ext-translate space-end-cache)
+    =^  result=(list (list instruction:wasm))  data-section.king
+      (spin body.ext-func data-section.king ext-translate-app)
     =^  type-idx=@  type-section.king
       (get-type-idx type type-section.king)
-    =^  result=(list (list instruction:wasm))  data-section.king
-      (spin body.ext-func data-section.king ext-translate)
     :-  +(f-idx)
     %=    king
         function-section
@@ -1532,22 +1538,35 @@
     ::
         code-section
       %+  snoc  code-section.king
-      :-  ~[%i32 %i32]  ::  0: space-start prev frame, 1: new space-end cache
+      :-  ~[%i32 %i32]  ::  space-start prev frame, new space-end cache
       ^-  expression:wasm
       ;:  weld
         ^-  (list instruction:wasm)
         :~
           [%global-get space-start]
-          [%local-set 0]
+          [%local-set space-start-save]
           [%global-get space-end]
           [%global-set space-start]
+        ==
+      ::
+        =/  n-params=@  (lent p.type.ext-func)
+        ^-  (list instruction:wasm)
+        %-  zing
+        |-  ^-  (list (list instruction:wasm))
+        ?~  p.type.ext-func  ~
+        =/  idx-param=@  (dec n-params)
+        :_  $(p.type.ext-func t.p.type.ext-func, n-params (dec n-params))
+        ^-  (list instruction:wasm)
+        :*
+          [%local-get idx-param]
+          -:(ext-translate-app [%set i.p.type.ext-func idx-param] *data-section:wasm)
         ==
       ::
         `(list instruction:wasm)`(zing result)
       ::
         ^-  (list instruction:wasm)
         :~
-          [%local-get 0]
+          [%local-get space-start-save]
           [%global-set space-start]
         ==
       ==
@@ -1569,76 +1588,156 @@
   king
   ::
   ++  ext-translate
+    |=  space-end-cache=@
     |=  [=op:line:lia d=data-section:wasm]
+    =*  this  .
     ^-  [(list instruction:wasm) data-section:wasm]
-    ?.  ?=(?(%set %get) -.op)  (translate op d)
-    :_  d
+    ?.  ?=(?(%let %loop %if) -.op)  (translate op d)
     ?-    -.op
-        %get
+        %if
+      =^  result-true=(list (list instruction:wasm))  d
+        (spin true.op d this)
+      =^  result-false=(list (list instruction:wasm))  d
+        (spin false.op d this)
+      :_  d
+      :_  ~
+      :^    %if
+          [(turn p.type.op convert) (turn q.type.op convert)]
+        ^-  expression:wasm
+        (zing result-true)
+      ^-  expression:wasm
+      (zing result-false)
+    ::
+        %loop
+      =^  result=(list (list instruction:wasm))  d
+        (spin body.op d this)
+      :_  d
+      :_  ~
+      :+  %loop
+        [(turn p.type.op convert) (turn q.type.op convert)]
+      ^-  expression:wasm
+      (zing result)
+    ::
+        %let
+      :_  d
       ?>  (lth idx.op space-number)
-      ?:  ?=(%octs type.op)
-        :~  
-          [%const %i32 idx.op]
-          [%global-get space-start]
-          [%add %i32]
-          [%local-tee 1]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%local-get 1]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%local-get 1]
-        ==
-      =;  call=instruction:wasm
+      ?-    type.op
+          %i32
         :~
           [%const %i32 idx.op]
           [%global-get space-start]
           [%add %i32]
-          [%local-tee 1]
+          [%local-tee space-end-cache]
           [%global-get space-end]
-          [%gt %i32 `%u]
+          [%ge %i32 `%u]
           :^  %if  [~ ~[%i32]]
-            ~[[%local-get 1]]
+            ~[[%local-get space-end-cache] [%const %i32 1] [%add %i32]]
           ~[[%global-get space-end]]
         ::
           [%global-set space-end]
-          [%local-get 1]
-          call
+          [%const %i32 0]
+          [%local-get space-end-cache]
+          [%call set-i32-idx]
         ==
-      :-  %call
-      ?-  type.op
-        %i32   get-i32-idx
-        %i64   get-i64-idx
-        %f32   get-f32-idx
-        %f64   get-f64-idx
-        %v128  get-vec-idx
-      ==
-    ::
-        %set
-      ?>  (lth idx.op space-number)
-      :~
-        [%const %i32 idx.op]
-        [%global-get space-start]
-        [%add %i32]
-        [%local-tee 1]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%local-get 1]]
-        ~[[%global-get space-end]]
       ::
-        [%global-set space-end]
-        [%local-get 1]
-        :-  %call
-        ?-  type.op  
-          %i32   set-i32-idx
-          %i64   set-i64-idx
-          %f32   set-f32-idx
-          %f64   set-f64-idx
-          %v128  set-vec-idx
-          %octs  ~|(%set-octs !!)
+          %i64
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
+          [%local-tee space-end-cache]
+          [%global-get space-end]
+          [%ge %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get space-end-cache] [%const %i32 1] [%add %i32]]
+          ~[[%global-get space-end]]
+        ::
+          [%global-set space-end]
+          [%const %i64 0]
+          [%local-get space-end-cache]
+          [%call set-i64-idx]
+        ==
+      ::
+          %f32
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
+          [%local-tee space-end-cache]
+          [%global-get space-end]
+          [%ge %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get space-end-cache] [%const %i32 1] [%add %i32]]
+          ~[[%global-get space-end]]
+        ::
+          [%global-set space-end]
+          [%const %f32 `@rs`0]
+          [%local-get space-end-cache]
+          [%call set-f32-idx]
+        ==
+      ::
+          %f64
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
+          [%local-tee space-end-cache]
+          [%global-get space-end]
+          [%ge %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get space-end-cache] [%const %i32 1] [%add %i32]]
+          ~[[%global-get space-end]]
+        ::
+          [%global-set space-end]
+          [%const %f64 `@rd`0]
+          [%local-get space-end-cache]
+          [%call set-f64-idx]
+        ==
+      ::
+          %v128
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
+          [%local-tee space-end-cache]
+          [%global-get space-end]
+          [%ge %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get space-end-cache] [%const %i32 1] [%add %i32]]
+          ~[[%global-get space-end]]
+        ::
+          [%global-set space-end]
+          [%vec %const %v128 0]
+          [%local-get space-end-cache]
+          [%call set-vec-idx]
+        ==
+      ::
+          %octs
+        :~
+          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
+          [%local-tee space-end-cache]
+          [%global-get space-end]
+          [%ge %i32 `%u]
+          :^  %if  [~ ~[%i32]]
+            ~[[%local-get space-end-cache] [%const %i32 1] [%add %i32]]
+          ~[[%global-get space-end]]
+        ::
+          [%global-set space-end]
+        ::
+          [%local-get space-end-cache]
+          [%const %i32 space-number]
+          [%ge %i32 `%u]
+          :^  %if  [~ ~]
+            ~[[%unreachable ~]]
+          ~
+        ::
+          [%local-get space-end-cache]
+          [%const %i32 space-width]
+          [%mul %i32]
+          [%const %i64 minus-one-64]
+          [%store %i64 [0 offset] ~]
         ==
       ==
     ==
@@ -1698,96 +1797,125 @@
       ?-    type.op
           %i32
         :~
-          [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %i32 0]
-          [%const %i32 idx.op]
-          [%call set-i32-idx]
+          :+  %block  [~ ~]
+          :~
+            [%const %i32 idx.op]
+            [%global-get space-end]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~[%i32]]
+              ~[[%const %i32 idx.op] [%const %i32 1] [%add %i32]]
+            ~[[%global-get space-end]]
+          ::
+            [%global-set space-end]
+            [%const %i32 0]
+            [%const %i32 idx.op]
+            [%call set-i32-idx]
+          ==
         ==
       ::
           %i64
         :~
-          [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %i64 0]
-          [%const %i32 idx.op]
-          [%call set-i64-idx]
+          :+  %block  [~ ~]
+          :~
+            [%const %i32 idx.op]
+            [%global-get space-end]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~[%i32]]
+              ~[[%const %i32 idx.op] [%const %i32 1] [%add %i32]]
+            ~[[%global-get space-end]]
+          ::
+            [%global-set space-end]
+            [%const %i64 0]
+            [%const %i32 idx.op]
+            [%call set-i64-idx]
+          ==
         ==
       ::
           %f32
         :~
-          [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %f32 `@rs`0]
-          [%const %i32 idx.op]
-          [%call set-f32-idx]
+          :+  %block  [~ ~]
+          :~
+            [%const %i32 idx.op]
+            [%global-get space-end]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~[%i32]]
+              ~[[%const %i32 idx.op] [%const %i32 1] [%add %i32]]
+            ~[[%global-get space-end]]
+          ::
+            [%global-set space-end]
+            [%const %f32 `@rs`0]
+            [%const %i32 idx.op]
+            [%call set-f32-idx]
+          ==
         ==
       ::
           %f64
         :~
-          [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %f64 `@rd`0]
-          [%const %i32 idx.op]
-          [%call set-f64-idx]
+          :+  %block  [~ ~]
+          :~
+            [%const %i32 idx.op]
+            [%global-get space-end]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~[%i32]]
+              ~[[%const %i32 idx.op] [%const %i32 1] [%add %i32]]
+            ~[[%global-get space-end]]
+          ::
+            [%global-set space-end]
+            [%const %f64 `@rd`0]
+            [%const %i32 idx.op]
+            [%call set-f64-idx]
+          ==
         ==
       ::
           %v128
         :~
-          [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%vec %const %v128 0]
-          [%const %i32 idx.op]
-          [%call set-vec-idx]
+          :+  %block  [~ ~]
+          :~
+            [%const %i32 idx.op]
+            [%global-get space-end]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~[%i32]]
+              ~[[%const %i32 idx.op] [%const %i32 1] [%add %i32]]
+            ~[[%global-get space-end]]
+          ::
+            [%global-set space-end]
+            [%vec %const %v128 0]
+            [%const %i32 idx.op]
+            [%call set-vec-idx]
+          ==
         ==
       ::
           %octs
         :~
-          [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %i64 minus-one-64]
-          [%const %i32 idx.op]
-          [%call set-i64-idx]
+          :+  %block  [~ ~]
+          :~
+            [%const %i32 idx.op]
+            [%global-get space-end]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~[%i32]]
+              ~[[%const %i32 idx.op] [%const %i32 1] [%add %i32]]
+            ~[[%global-get space-end]]
+          ::
+            [%global-set space-end]
+          ::
+            [%const %i32 idx.op]
+            [%const %i32 space-number]
+            [%ge %i32 `%u]
+            :^  %if  [~ ~]
+              ~[[%unreachable ~]]
+            ~
+          ::
+            [%const %i32 idx.op]
+            [%const %i32 space-width]
+            [%mul %i32]
+            [%const %i64 minus-one-64]
+            [%store %i64 [0 offset] ~]
+          ==
         ==
       ==
     ::
-        %run  [%call (~(got by serf-diary) name.op)]~
+        %run
+          [%call (~(got by serf-diary) name.op)]~
         %nop  ~
     ::
         %get
@@ -1795,26 +1923,14 @@
       ?:  ?=(%octs type.op)
         :~
           [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
         ==
       =;  call=instruction:wasm
         :~
           [%const %i32 idx.op]
-          [%global-get space-end]
-          [%gt %i32 `%u]
-          :^  %if  [~ ~[%i32]]
-            ~[[%const %i32 idx.op]]
-          ~[[%global-get space-end]]
-        ::
-          [%global-set space-end]
-          [%const %i32 idx.op]
+          [%global-get space-start]
+          [%add %i32]
           call
         ==
       :-  %call
@@ -1830,14 +1946,8 @@
       ?>  (lth idx.op space-number)
       :~
         [%const %i32 idx.op]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 idx.op]]
-        ~[[%global-get space-end]]
-      ::
-        [%global-set space-end]
-        [%const %i32 idx.op]
+        [%global-get space-start]
+        [%add %i32]
         :-  %call
         ?-  type.op  
           %i32   set-i32-idx
@@ -1853,14 +1963,8 @@
       ?>  (lth p.op space-number)
       :~
         [%const %i32 p.op]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 p.op]]
-        ~[[%global-get space-end]]
-      ::
-        [%global-set space-end]
-        [%const %i32 p.op]
+        [%global-get space-start]
+        [%add %i32]
         [%call set-octs-idx]
       ==
     ::
@@ -1868,14 +1972,8 @@
       ?>  (lth p.op space-number)
       :~
         [%const %i32 p.op]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 p.op]]
-        ~[[%global-get space-end]]
-      ::
-        [%global-set space-end]
-        [%const %i32 p.op]
+        [%global-get space-start]
+        [%add %i32]
         [%call give-octs-idx]
       ==
     ::
@@ -1883,14 +1981,8 @@
       ?>  (lth idx.op space-number)
       :~
         [%const %i32 idx.op]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 idx.op]]
-        ~[[%global-get space-end]]
-      ::
-        [%global-set space-end]
-        [%const %i32 idx.op]
+        [%global-get space-start]
+        [%add %i32]
         [%call len-idx]
       ==
     ::
@@ -1898,14 +1990,8 @@
       ?>  (lth p.op space-number)
       :~
         [%const %i32 p.op]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 p.op]]
-        ~[[%global-get space-end]]
-      ::
-        [%global-set space-end]
-        [%const %i32 p.op]
+        [%global-get space-start]
+        [%add %i32]
         :-  %call
         ?-  type.op
           %i32  read-octs-i32-idx
@@ -1917,14 +2003,8 @@
       ?>  (lth p.op space-number)
       :~
         [%const %i32 p.op]
-        [%global-get space-end]
-        [%gt %i32 `%u]
-        :^  %if  [~ ~[%i32]]
-          ~[[%const %i32 p.op]]
-        ~[[%global-get space-end]]
-      ::
-        [%global-set space-end]
-        [%const %i32 p.op]
+        [%global-get space-start]
+        [%add %i32]
         :-  %call
         ?-  type.op
           %f32  read-octs-f32-idx

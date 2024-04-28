@@ -4,8 +4,7 @@
 /+  op-def=runner-op-def
 /*  flopper  %wasm  /tests/flopper/wasm
 ::
-:: :-  %say  |=  *  :-  %noun
-|=  a=tape
+:-  %say  |=  *  :-  %noun
 ::
 |^
 =/  serf  (main:par flopper)
@@ -34,19 +33,27 @@
       [%op ~[[%r1-i32 %i32]] %read-octs-i %r1 %i32 (i-32 0) (i-32 4)]
       [%let %b %octs]
       [%read %b [%name %r0-i32 %i32] [%name %r1-i32 %i32]]
+      [%op ~[[%retptr %i32]] %run '__wbindgen_add_to_stack_pointer' ~[(i-32 16)]]
+      [%op ~ %run '__wbindgen_free' ~[[%name %r0-i32 %i32] [%name %r1-i32 %i32] (i-32 1)]]
     ==
   ::
     ~[%b]
   ==
 ::
 =;  res
+  :: res
   ?>  &(?=(%0 -.res) ?=([[%octs =octs] ~] out.res))
   (of-octs octs.i.out.res)
 %-  lia-main:run
-:_  ~[~[[%octs (to-octs a)]]]
+:_  :~
+      ~[[%octs (to-octs "")]]
+      ~[[%octs (to-octs "abc")]]
+      ~[[%octs (to-octs "")]]
+      ~[[%octs (to-octs "zxczxc")]]
+    ==
 :*
   serf
-  ~[script]
+  `(list script:tree:lia)`(reap 4 script)
   ~
   ~
   ~

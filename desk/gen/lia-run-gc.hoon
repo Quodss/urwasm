@@ -4,8 +4,7 @@
 /+  op-def=runner-op-def
 /*  flopper  %wasm  /tests/flopper/wasm
 ::
-:: :-  %say  |=  *  :-  %noun
-|=  a=tape
+:-  %say  |=  *  :-  %noun
 ::
 |^
 =/  serf  (main:par flopper)
@@ -33,20 +32,27 @@
       [%op ~[[%r0-i32 %i32]] %read-octs-i %r0 %i32 (i-32 0) (i-32 4)]
       [%op ~[[%r1-i32 %i32]] %read-octs-i %r1 %i32 (i-32 0) (i-32 4)]
       [%let %b %octs]
-      [%read %b [%name %r0-i32 %i32] [%name %r1-i32 %i32]]
+      [%let %i %i32]
+      :+  %while  [%two [%lt %i32 `%u] [%name %i %i32] (i-32 24)]
+      :~
+        [%read %b [%name %r0-i32 %i32] [%name %r1-i32 %i32]]
+        [%op ~[[%i %i32]] %two [%add %i32] [%name %i %i32] (i-32 1)]
+      ==
     ==
   ::
     ~[%b]
   ==
 ::
 =;  res
+  :: res
   ?>  &(?=(%0 -.res) ?=([[%octs =octs] ~] out.res))
-  (of-octs octs.i.out.res)
+  =/  s  (of-octs octs.i.out.res)
+  [-.s (rear s) (lent s)]
 %-  lia-main:run
-:_  ~[~[[%octs (to-octs a)]]]
+:_  (reap 1 ~[[%octs (to-octs (zing (reap 100 (gulf 'a' 'z'))))]])
 :*
   serf
-  ~[script]
+  (reap 1 script)
   ~
   ~
   ~

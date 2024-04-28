@@ -25,7 +25,7 @@
     (lsh [3 +(size)] b)
   ==
 ::
-++  get-export-global-i32
+++  get-export-global-con-i32
   |=  [=module:engine name=cord]
   ^-  @
   =/  map  (make-export-map:run export-section.module)
@@ -37,6 +37,18 @@
   ?>  ?=(%i32 v.glob)
   ?>  ?=([%const %i32 @] i.glob)
   +.p.i.glob
+::
+++  get-export-global-var-i32
+  |=  [=module:engine name=cord globals=(list coin-wasm:wasm)]
+  ^-  @
+  =/  map  (make-export-map:run export-section.module)
+  =/  export-desc
+    (~(got by map) name)
+  ?>  ?=(%glob -.export-desc)
+  =/  i-local=@  (sub i.export-desc (lent globs.import-section.module))
+  =/  glob  (snag i-local globals)
+  ?>  ?=(%i32 -.glob)
+  +.glob
 ::
 +$  them-result
   $%  [%0 out=(list coin-wasm:wasm)]
@@ -79,7 +91,7 @@
     ?>  ((sane %tas) name.lord-result)
     =/  types  p:(~(got by import.input-line) name.lord-result)
     =,  lord-result
-    :+  %king  name
+    :+  %king  name 
     (extract types args.request u.king-paused)
   ::
       %0
@@ -97,7 +109,7 @@
           tables=(list (list $>(%ref coin-wasm:wasm))) 
           globals=(list coin-wasm:wasm)
       ==
-  ^-  (list value:line:lia)
+  |-  ^-  (list value:line:lia)
   ?:  &(?=(@ types) ?=(@ coins))  ~
   ?>  &(?=(^ types) ?=(^ coins))
   :_  $(types t.types, coins t.coins)
@@ -132,9 +144,9 @@
   =^  res=them-result  them  serf-init
   ?.  ?=(%0 -.res)  res
   =/  act-func-idx=@
-    (get-export-global-i32 module.king.them 'act-0-func-idx')
+    (get-export-global-con-i32 module.king.them 'act-0-func-idx')
   =/  n-funcs=@
-    (get-export-global-i32 module.king.them 'n-funcs')
+    (get-export-global-con-i32 module.king.them 'n-funcs')
   ?<  =(0 n-funcs)
   ?>  =(n-funcs (lent input))
   =/  idx-last  (dec (add act-func-idx n-funcs))
@@ -201,8 +213,14 @@
         %+  snoc  shop.king.them
         :-  ~
         =*  pause  +>.king-engine-res
-        =/  off=@  (get-export-global-i32 module.pause 'space-start')
-        =/  data-idx=@  (get-export-global-i32 module.pause 'space-clue')
+        =/  off=@
+          %^  get-export-global-var-i32  module.pause
+            'space-start'
+          globals.king-engine-res
+        =/  data-idx=@
+          %^  get-export-global-var-i32  module.pause
+            'space-clue'
+          globals.king-engine-res
         =/  target-data  (snag data-idx data-section.module.pause)
         ?>  ?=(%pass -.target-data)
         =/  targets=(list @)
@@ -214,11 +232,18 @@
         ?>  &(?=(^ targets) ?=(^ i.lia-shop))
         ?.  ?=(?(%octs %v128) -.i.i.lia-shop)
           =/  ptr=@  (mul i.targets 8)
+          ~&  [%target i.targets]
+          ~&  [%ptr ptr]
+          ~&  [%off off]
           =/  [buffer=@ n-pages=@]  (need mem.pause)
-          %=  $
-            targets  t.targets
-            i.lia-shop  t.i.lia-shop
-            mem.pause  `[(sew 6 [ptr 1 +.i.i.lia-shop] buffer) n-pages]
+          %=    $
+              targets  t.targets
+              i.lia-shop  t.i.lia-shop
+              mem.pause
+            :-  ~
+            :_  n-pages
+            =-  ~&  -  -
+            `@ux`(sew 3 [ptr 4 +.i.i.lia-shop] buffer)
           ==
         =/  =octs
           ?-  -.i.i.lia-shop
@@ -320,7 +345,7 @@
       %=  $
         target  +(target)
         in  t.in
-        mem.king.them  `[(sew 6 [ptr 1 +.i.in] buffer) n-pages]
+        mem.king.them  `[(sew 3 [ptr 4 +.i.in] buffer) n-pages]
       ==
     =/  =octs
       ?-  -.i.in
