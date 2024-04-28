@@ -22,7 +22,7 @@ Next:
     - [X] Test the allocator
   - [X] Wasm binary encoder
   - [X] Lia end-to-end interpeting function (jet target)
-- [ ] (bonus) Test GC
+- [X] (bonus) Test GC
 - [ ] Jet of Lia interpreter:
   - [ ] Lia jet
   - [ ] Ensure determinism of the Wasm runtime in C 
