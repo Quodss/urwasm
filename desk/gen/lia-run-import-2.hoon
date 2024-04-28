@@ -48,8 +48,6 @@
     [%printf [~[%octs] ~[%i32]]]
   ==
 ::
-=/  input-line  (main:line:run [serf (reap 1 script) shop ext import |+~])
-~&  ext.input-line
 :: (main:encoder (main:comp:run [module code ext import]:input-line))
 :: (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
 |-  ^-  result:line:lia

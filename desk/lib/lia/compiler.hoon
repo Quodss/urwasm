@@ -1914,8 +1914,7 @@
         ==
       ==
     ::
-        %run
-          [%call (~(got by serf-diary) name.op)]~
+        %run  [%call (~(got by serf-diary) name.op)]~
         %nop  ~
     ::
         %get

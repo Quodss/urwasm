@@ -232,9 +232,6 @@
         ?>  &(?=(^ targets) ?=(^ i.lia-shop))
         ?.  ?=(?(%octs %v128) -.i.i.lia-shop)
           =/  ptr=@  (mul i.targets 8)
-          ~&  [%target i.targets]
-          ~&  [%ptr ptr]
-          ~&  [%off off]
           =/  [buffer=@ n-pages=@]  (need mem.pause)
           %=    $
               targets  t.targets
@@ -242,7 +239,6 @@
               mem.pause
             :-  ~
             :_  n-pages
-            =-  ~&  -  -
             `@ux`(sew 3 [ptr 4 +.i.i.lia-shop] buffer)
           ==
         =/  =octs
