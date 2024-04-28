@@ -115,7 +115,8 @@
     ==
     ::
     ++  resolve
-      |=  $:  [[mod=cord name=cord] =request]        
+      |=  $:  [[mod=cord name=cord] =request]  
+              =module      
               mem=(unit [buffer=@ n-pages=@])        
               tables=(list (list $>(%ref coin-wasm)))
               globals=(list coin-wasm)
@@ -124,7 +125,7 @@
       ?>  =(['./import_test_bg.js' '__wbg_getn_e182583a43d51902'] [mod name])
       ?>  ?=(%func -.request)
       ?>  ?=(~ args.request)
-      [[%i32 42]~ [mem tables globals]]
+      [[%i32 42]~ [module mem tables globals]]
     ::
     --
 ::
@@ -144,7 +145,8 @@
     ==
     ::
     ++  resolve
-      |=  $:  [[mod=cord name=cord] =request]        
+      |=  $:  [[mod=cord name=cord] =request]
+              =module
               mem=(unit [buffer=@ n-pages=@])        
               tables=(list (list $>(%ref coin-wasm)))
               globals=(list coin-wasm)
@@ -153,7 +155,7 @@
       ?>  =(['./import_test_bg.js' '__wbg_getn_e182583a43d51902'] [mod name])
       ?>  ?=(%func -.request)
       ?>  ?=(~ args.request)
-      [[%i32 42]~ [mem tables globals]]
+      [[%i32 42]~ [module mem tables globals]]
     ::
     --
 ::
@@ -173,7 +175,8 @@
     ==
     ::
     ++  resolve
-      |=  $:  [[mod=cord name=cord] =request]        
+      |=  $:  [[mod=cord name=cord] =request]  
+              =module      
               mem=(unit [buffer=@ n-pages=@])        
               tables=(list (list $>(%ref coin-wasm)))
               globals=(list coin-wasm)
@@ -185,8 +188,9 @@
       ?>  ?=([[%i32 off=@] [%i32 len=@] ~] args-pole)
       ?>  ?=(^ mem)
       =,  args-pole
+      ~&  [off len]
       ~&  >>  `cord`(cut 3 [off len] buffer.u.mem)
-      [~ [mem tables globals]]
+      [~ [module mem tables globals]]
     ::
     --
 --

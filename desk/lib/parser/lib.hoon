@@ -17,7 +17,7 @@
   ::
   =.  bytes
     %+  weld  bytes
-    ;;  tape
+    ^-  tape
     (reap (sub p.wasm (lent bytes)) '\00')
   (scan bytes module:r)
   ::
@@ -139,16 +139,14 @@
     %+  cook
       |=  =(list @)
       ;;  @rs
-      %+  can  3
-      (turn list (lead 1))
+      (rep 3 list)
     (stun [4 4] next)
   ::
   ++  f64
     %+  cook
       |=  =(list @)
       ;;  @rd
-      %+  can  3
-      (turn list (lead 1))
+      (rep 3 list)
     (stun [8 8] next)
   ::  ++vec: parse .wasm vector of rule
   ::
@@ -163,7 +161,7 @@
   ++  name     (cook crip (vec prn))
   ++  vec-u32  (vec u32)
   ++  num-type
-    %+  cook  num-type:sur
+    %+  cook  |=(num-type:sur +<)
     ;~  pose
       (cold %i32 (just '\7f'))
       (cold %i64 (just '\7e'))
@@ -174,25 +172,25 @@
   ++  vec-type  (cold %v128 (just '\7b'))
   ::
   ++  ref-type
-    %+  cook  ref-type:sur
+    %+  cook  |=(ref-type:sur +<)
     ;~  pose
       (cold %extn (just '\6f'))
       (cold %func (just '\70'))
     ==
   ::
   ++  valtype
-    %+  cook  valtype:sur
+    %+  cook  |=(valtype:sur +<)
     ;~(pose num-type vec-type ref-type)
   ::
   ++  func-type
-    %+  cook  func-type:sur
+    %+  cook  |=(func-type:sur +<)
     ;~  pfix
       (just '\60')
       ;~(plug (vec valtype) (vec valtype))
     ==
   ::
   ++  limits
-    %+  cook  limits:sur
+    %+  cook  |=(limits:sur +<)
     ;~  pose
       ;~(plug (cold %flor (just '\00')) u32)
       ;~(plug (cold %ceil (just '\01')) u32 u32)
@@ -250,7 +248,7 @@
       ^.  limo
       :~
         ['\fc' ;~(pfix next fc)]
-        ['\fc' ;~(pfix next fd)]
+        ['\fd' ;~(pfix next fd)]
         ['\1c' select-vec]
         ['\0e' br-table]
         ['\02' block]
@@ -292,7 +290,7 @@
     ==
   ::
   ++  select-vec
-    %+  cook  instruction:sur
+    %+  cook  |=(instruction:sur +<)
     ;~  pfix
       next
       %+  stag  %select
@@ -322,11 +320,18 @@
     ==
   ::
   ++  block-type
-    %+  cook  block-type:sur
+    %+  cook  |=(block-type:sur +<)
     ;~  pose
       (cold [~ ~] (just '\40'))
-      ;~(plug (easy ~) (cook get-valtype next) (easy ~))
-      (cook abs:si (s-n 33))
+      ;~(plug (easy ~) (sear get-valtype next) (easy ~))
+    ::
+      %+  sear
+        |=  a=@s
+        ^-  (unit @)
+        ?.  (syn:si a)  ~
+        `(abs:si a)
+      (s-n 33)
+    ::
     ==
   ::
   ::  All handle-X functions must return `instruction` type
@@ -356,8 +361,7 @@
     ^-  (unit instruction:sur)
     ?+  op  ~
         %0x11
-      ?>  =(arg2 0)
-      `[%call-indirect arg1 %0x0]
+      `[%call-indirect arg1 arg2]
     ::
         %0x28
       `[%load %i32 [arg1 arg2] ~ ~]
@@ -441,12 +445,12 @@
   ::
   ++  get-valtype
     |=  byte=@
-    ^-  valtype:sur
-    ?+  byte  ~|(`@ux`byte !!)
-      %0x7f  %i32
-      %0x7e  %i64
-      %0x7d  %f32
-      %0x7c  %f64
+    ^-  (unit valtype:sur)
+    ?+  byte  ~
+      %0x7f  `%i32
+      %0x7e  `%i64
+      %0x7d  `%f32
+      %0x7c  `%f64
     ==
   ++  handle-loop
     |=  [type=block-type:sur body=expression:sur]
@@ -494,7 +498,7 @@
   ::
   ++  fc
     |^
-    %+  cook  instruction:sur
+    %+  cook  |=(instruction:sur +<)
     ;~  pose
       zero-args
       one-arg
@@ -606,7 +610,7 @@
       |=  =(list @)
       ^-  instruction:sur
       :^  %vec  %const  %v128
-      (can 3 (turn list (lead 1)))
+      (rep 3 list)
     ::
     ++  shuffle
       |=  =(list @)
@@ -642,16 +646,16 @@
   ::  Type section
   ::
   ++  type-section
-    %+  cook  type-section:sur
+    %+  cook  |=(type-section:sur +<)
     (vec func-type)
   ::  Import section
   ::
   ++  import-section
-    %+  cook  import-section:sur
+    %+  cook  |=(import-section:sur +<)
     (vec import)
   ::
   ++  import
-    %+  cook  import:sur
+    %+  cook  |=(import:sur +<)
     ;~  plug
       name
       name
@@ -684,33 +688,42 @@
   ::  Function section
   ::
   ++  function-section
-    %+  cook  function-section:sur
+    %+  cook  |=(function-section:sur +<)
     (vec u32)
   ::  Table section
   ::
   ++  table-section
-    %+  cook  table-section:sur
+    %+  cook  |=(table-section:sur +<)
     (vec table)
   ::
   ++  table  ;~(plug ref-type limits)
   ::  Memory section
   ::
   ++  memory-section
-    %+  cook  memory-section:sur
+    %+  cook  |=(memory-section:sur +<)
     (vec limits)
   ::  Global section
   ::
   ++  global-section
-    %+  cook  global-section:sur
+    %+  cook  |=(global-section:sur +<)
     (vec global)
   ::
   ++  global
-    %+  cook  global:sur
+    %+  cook  |=(global:sur +<)
     ;~  plug
       valtype
       con-var
-      ;~(sfix instr end)
+      ;~(sfix const-instr end)
     ==
+  ::
+  ++  const-instr
+  %+  sear
+    |=  i=instruction:sur
+    ^-  (unit const-instr:sur)
+    ?.  ?=(const-instr:sur i)
+      ~
+    `i
+  instr
   ::  Export section
   ::
   ++  export-section
@@ -720,23 +733,23 @@
   ++  export
     ;~  plug
       name
+      %+  cook  |=(export-desc:sur +<)
       ;~  pose
-        (cold %func (just '\00'))
-        (cold %tabl (just '\01'))
-        (cold %memo (just '\02'))
-        (cold %glob (just '\03'))
+        ;~(plug (cold %func (just '\00')) u32)
+        ;~(plug (cold %tabl (just '\01')) u32)
+        ;~(plug (cold %memo (just '\02')) u32)
+        ;~(plug (cold %glob (just '\03')) u32)
       ==
-      u32
     ==
   ::  Start section
   ::
   ++  start-section
-    %+  cook  start-section:sur
+    %+  cook  |=(start-section:sur +<)
     (punt u32)
   ::  Element section
   ::
   ++  elem-section
-    %+  cook  elem-section:sur
+    %+  cook  |=(elem-section:sur +<)
     (vec elem)
   ::
   ++  elem
@@ -753,7 +766,7 @@
   ::
   ++  elem-kind  (just '\00')
   ++  elem-0
-    %+  cook  handle-elem-0  ::  write handle functions
+    %+  cook  handle-elem-0
     ;~  pfix  (just '\00')
       ;~(plug expr (vec u32))
     ==
@@ -896,7 +909,7 @@
   ::  Code section
   ::
   ++  code-section
-    %+  cook  code-section:sur
+    %+  cook  |=(code-section:sur +<)
     (vec code)
   ::
   ++  code  (bonk (vec next) ;~(pfix u32 func))
@@ -918,7 +931,7 @@
   ::  Data section
   ::
   ++  data-section
-    %+  cook  data-section:sur
+    %+  cook  |=(data-section:sur +<)
     (vec data)
   ::
   ++  data
@@ -948,8 +961,7 @@
     |=  =tape
     ^-  octs
     :-  (lent tape)
-    %+  can  3
-    (turn tape (lead 1))
+    (rep 3 tape)
   ::
   ++  handle-data
     |=  $=  p
@@ -962,11 +974,11 @@
     p
   ::  
   ++  datacnt-section
-    %+  cook  datacnt-section:sur
+    %+  cook  |=(datacnt-section:sur +<)
     (punt u32)
   ::
   ++  module
-    %+  cook  module:sur
+    %+  cook  |=(module:sur +<)
     ;~  pfix
       magic
       version

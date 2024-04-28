@@ -1,10 +1,8 @@
 ::  Web Assembly AST interpreter
 ::
-::::  /hoon/ast-interpreter/lib
-  ::
 /-  *engine
 /+  *runner-op-def
-/+  parser-lib
+::
 |%
 ::  +get-types: turn a (list coin-wasm) into a list of types of coins
 ::
@@ -54,21 +52,13 @@
     (~(got by (make-export-map export-section)) name)
   ?>  ?=(%func -.export-desc)
   i.export-desc
-::  +prep: instantiate Wasm module. Returns global state
-::  after the validation and import handling (TODO validation),
-::  instantiation of table, globals and the membuffer,
-::  and running the start function
 ::
-::  Attention: it takes a parsed module, but the store
-::  will contain engine version, with locals added and
-::  some superfluous sections removed
-::
-++  prep
+++  conv
   |=  [m=^module sh=shop]
-  ^-  result
-  |^
+  ^-  store
   =|  st=store
   =.  shop.st  sh
+  |^
   =.  module.st
     =,  m
     :*
@@ -79,16 +69,11 @@
       memory-section
       global-section
       export-section
+      start-section
       elem-section
       data-section
     ==
-  ;<  [* st=store]  _wasm-bind  (init-globals st m)
-  ;<  [* st=store]  _wasm-bind  (init-table st m)
-  ;<  [* st=store]  _wasm-bind  (init-elems st m)
-  ;<  [* st=store]  _wasm-bind  (init-mem st m)
-  ;<  [* st=store]  _wasm-bind  (init-data st m)
-  ;<  [* st=store]  _wasm-bind  (start st m)
-  [%0 ~ st]
+  st
   ::
   ++  import-upd
     |=  i=^import-section
@@ -113,9 +98,37 @@
       ==
     $(i t.i)
   ::
+  --
+::  +prep: instantiate Wasm module. Returns global state
+::  after the validation and import handling (TODO validation),
+::  instantiation of table, globals and the membuffer,
+::  and running the start function
+::
+::  Attention: it takes a parsed module, but the store
+::  will contain engine version, with locals added and
+::  some superfluous sections removed
+::
+++  prep
+  |=  [m=^module sh=shop]
+  ^-  result
+  (instantiate (conv m sh))
+::
+++  instantiate
+  |=  st=store
+  ^-  result
+  |^
+  ;<  [* st=store]  _wasm-bind  (init-globals st)
+  ;<  [* st=store]  _wasm-bind  (init-table st)
+  ;<  [* st=store]  _wasm-bind  (init-elems st)
+  ;<  [* st=store]  _wasm-bind  (init-mem st)
+  ;<  [* st=store]  _wasm-bind  (init-data st)
+  ;<  [* st=store]  _wasm-bind  (start st)
+  [%0 ~ st]
+  ::
   ++  init-globals
-    |=  [st=store m=^module]
-    ^-  result
+    |=  st=store
+    =/  m=module  module.st
+    |-  ^-  result
     ?~  global-section.m
       [%0 ~ st(globals (flop globals.st))]
     =*  glob  i.global-section.m
@@ -143,11 +156,12 @@
     :+  %1
       :-  -:(snag index.i.glob globs.import-section.module.st)
       [%glob ~ i.glob]
-    [~ ~ ~]
+    [*module ~ ~ ~]
   ::
   ++  init-table
-    |=  [st=store m=^module]
-    ^-  result
+    |=  st=store
+    =/  m=module  module.st
+    |-  ^-  result
     :+  %0  ~
     |-  ^-  store
     ?~  table-section.m
@@ -162,8 +176,9 @@
     ==
   ::
   ++  init-elems
-    |=  [st=store m=^module]
-    ^-  result
+    |=  st=store
+    =/  m=module  module.st
+    |-  ^-  result
     :+  %0  ~
     |-  ^-  store
     ?~  elem-section.m  st
@@ -197,8 +212,9 @@
     ==
   ::
   ++  init-mem
-    |=  [st=store m=^module]
-    ^-  result
+    |=  st=store
+    =/  m=module  module.st
+    |-  ^-  result
     :+  %0  ~
     ?~  memory-section.m  st
     ?>  ?=(@ t.memory-section.m)  ::  Assert: single memory
@@ -206,7 +222,8 @@
     st(mem `[0 (lim-min mem)])
   ::
   ++  init-data
-    |=  [st=store m=^module]
+    |=  st=store
+    =/  m=module  module.st
     =+  id=`@`0
     |-  ^-  result
     ?~  data-section.m  [%0 ~ st]
@@ -232,8 +249,9 @@
     ==
   ::
   ++  start
-    |=  [st=store m=^module]
+    |=  st=store
     ^-  result
+    =/  m=module  module.st
     ?~  start-section.m  [%0 ~ st]
     =/  [=stack * st-out=store]
       (call u.start-section.m [[~ ~] ~ st])
@@ -262,6 +280,12 @@
   |=  [name=cord in=(list coin-wasm) st=store]
   ^-  result
   =/  id=@  (find-func-id name module.st)
+  (invoke-id id in st)
+::  ++invoke-id: call function by id, to call from the outside
+::
+++  invoke-id
+  |=  [id=@ in=(list coin-wasm) st=store]
+  ^-  result
   =/  id-local=@
     (sub id (lent funcs.import-section.module.st))
   ::  Type check for the input values
