@@ -260,6 +260,12 @@
       |:  [o=*op:tree g=gen]
       (op-gen o behind):.(gen g(dest %stack))
     ::
+        %writ-octs-i32
+      =^  slot=idx:line  gen
+        ((give-idx behind) [to.phrase %octs] gen)
+      =.  code  [[%writ-octs-i32 slot] code]
+      =.  gen  (op-gen dat.phrase behind):.(dest %stack)
+      gen
     ==
   ::
   ++  set-one

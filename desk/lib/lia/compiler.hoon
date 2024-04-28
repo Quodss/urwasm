@@ -132,7 +132,8 @@
   =/  read-octs-i64-idx=@  +(read-octs-i32-idx)
   =/  read-octs-f32-idx=@  +(read-octs-i64-idx)
   =/  read-octs-f64-idx=@  +(read-octs-f32-idx)
-  =/  set-octs-ext-idx=@   +(read-octs-f64-idx)
+  =/  writ-octs-i32-idx=@  +(read-octs-f64-idx)
+  =/  set-octs-ext-idx=@   +(writ-octs-i32-idx)
   =/  get-space-ptr-idx=@  +(set-octs-ext-idx)
   =/  clear-space-idx=@    +(get-space-ptr-idx)
   ::  allocator
@@ -1351,6 +1352,39 @@
       [%add %i32]
       [%load %f64 [0 len-size] ~ ~]
     ==
+  ::  writ-octs-i32-idx
+  ::
+  =^  type-idx=@  type-section.king
+    (get-type-idx [~[%i32 %i32] ~] type-section.king)
+  =.  function-section.king
+    (snoc function-section.king type-idx)
+  =.  code-section.king
+    %+  snoc  code-section.king
+    :-  ~[%i32]
+    =/  dat=@  0
+    =/  idx=@  1
+    =/  king-ptr=@  2
+    ^-  expression:wasm
+    :~
+      [%const %i32 len-size]
+      [%const %i32 4]
+      [%add %i32]
+      [%call alloc-idx]
+      [%local-tee king-ptr]
+      [%const %i32 4]
+      [%store %i32 [0 0] ~]
+      [%local-get king-ptr]
+      [%local-get dat]
+      [%store %i32 [0 len-size] ~]
+      [%local-get idx]
+      [%const %i32 space-width]
+      [%mul %i32]
+      [%local-get king-ptr]
+      [%extend %i64 %32 %u]
+      [%const %i64 null-ptr]
+      [%add %i64]
+      [%store %i64 [0 offset] ~]
+    ==
   ::  set-octs-ext
   ::
   =^  type-idx=@  type-section.king
@@ -2011,6 +2045,14 @@
         ==
       ==
     ::
+        %writ-octs-i32
+      ?>  (lth p.op space-number)
+      :~
+        [%const %i32 p.op]
+        [%global-get space-start]
+        [%add %i32]
+        [%call writ-octs-i32-idx]
+      ==
     ==
   ::
   --  ::  ++main

@@ -95,6 +95,7 @@
       [%run-lia name=term target=(list idx)]  ::  execute Lia import and write results to target
       [%read p=idx]  ::  consumes ptr and len
       [%writ p=idx]  ::  consumes ptr, offset and len
+      [%writ-octs-i32 p=idx]  ::  consumes i32
       :: [%cut from=idx to=idx]  ::  consumes offset and len
       :: [%octs to=idx]  ::  consumes data and len
       [%if type=block-type true=(list op) false=(list op)]
@@ -177,7 +178,7 @@
       [%break ~]
       [%read to=name offset=op len=op]
       [%writ from=name ptr=op offset=op len=op]
-      :: [%octs to=name dat=op len=op]
+      [%writ-octs-i32 to=name dat=op]
       :: [%cut from=name to=name offset=op len=op]
       [%run-lia p=term q=(list op) r=(list (pair name value-type))]
     ==
