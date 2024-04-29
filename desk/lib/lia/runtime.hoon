@@ -230,22 +230,24 @@
         ?:  &(?=(@ targets) ?=(@ i.lia-shop))
           pause
         ?>  &(?=(^ targets) ?=(^ i.lia-shop))
-        ?.  ?=(?(%octs %v128) -.i.i.lia-shop)
-          =/  ptr=@  (mul i.targets 8)
-          =/  [buffer=@ n-pages=@]  (need mem.pause)
-          %=    $
-              targets  t.targets
-              i.lia-shop  t.i.lia-shop
-              mem.pause
-            :-  ~
-            :_  n-pages
-            `@ux`(sew 3 [ptr 4 +.i.i.lia-shop] buffer)
+        ?.  ?=(%octs -.i.i.lia-shop)
+          =/  func
+            ?-  -.i.i.lia-shop
+              %i32   'set-i32'
+              %i64   'set-i64'
+              %f32   'set-f32'
+              %f64   'set-f64'
+              %v128  'set-vec'
+            ==
+          =/  [out=(pole coin-wasm:wasm) king-pause-new=store:engine]
+            %-  wasm-need:run
+            (invoke:run func ~[i.i.lia-shop [%i32 i.targets]] ~ pause)
+          %=  $
+            targets  t.targets
+            i.lia-shop  t.i.lia-shop
+            pause   +.king-pause-new
           ==
-        =/  =octs
-          ?-  -.i.i.lia-shop
-            %octs  +.i.i.lia-shop
-            %v128  [16 +.i.i.lia-shop]
-          ==
+        =/  =octs  +.i.i.lia-shop
         =/  [out=(pole coin-wasm:wasm) king-pause-new=store:engine]
           %-  wasm-need:run
           (invoke:run 'set-octs-ext' ~[[%i32 p.octs] [%i32 i.targets]] ~ pause)
@@ -335,19 +337,24 @@
     |-  ^-  [them-result _them]
     ?~  in
       (king-invoke-idx i ~)
-    ?.  ?=(?(%octs %v128) -.i.in)
-      =/  ptr=@  (mul target 8)
-      =/  [buffer=@ n-pages=@]  (need mem.king.them)
+    ?.  ?=(%octs -.i.in)
+      =/  func
+        ?-  -.i.in
+          %i32   'set-i32'
+          %i64   'set-i64'
+          %f32   'set-f32'
+          %f64   'set-f64'
+          %v128  'set-vec'
+        ==
+      =/  [out=(pole coin-wasm:wasm) king-temp-new=store:engine]
+        %-  wasm-need:run
+        (invoke:run func ~[i.in [%i32 target]] king.them)
       %=  $
         target  +(target)
         in  t.in
-        mem.king.them  `[(sew 3 [ptr 4 +.i.in] buffer) n-pages]
+        king.them  king-temp-new
       ==
-    =/  =octs
-      ?-  -.i.in
-        %octs  +.i.in
-        %v128  [16 +.i.in]
-      ==
+    =/  =octs  +.i.in
     =/  [out=(pole coin-wasm:wasm) king-temp-new=store:engine]
       %-  wasm-need:run
       (invoke:run 'set-octs-ext' ~[[%i32 p.octs] [%i32 target]] king.them)

@@ -1548,6 +1548,16 @@
         ['clear-space' %func clear-space-idx]
         ['set-octs-ext' %func set-octs-ext-idx]
         ['get-space-ptr' %func get-space-ptr-idx]
+        ['set-i32' %func set-i32-idx]
+        ['set-i64' %func set-i64-idx]
+        ['set-f32' %func set-f32-idx]
+        ['set-f64' %func set-f64-idx]
+        ['set-vec' %func set-vec-idx]
+        ['get-i32' %func get-i32-idx]
+        ['get-i64' %func get-i64-idx]
+        ['get-f32' %func get-f32-idx]
+        ['get-f64' %func get-f64-idx]
+        ['get-vec' %func get-vec-idx]
     ==
   ::
   =.  king
