@@ -41,7 +41,6 @@
     :*
       ~[%retptr %ptr %len]
       [~[%i32 %i32 %i32] ~]
-      ^-  code:tree:lia
       :~
         [%let %string %octs]
         [%let %out %octs]
@@ -56,7 +55,7 @@
         [%writ-octs-i32 %ptr-out-octs [%name %ptr-out %i32]]
         [%writ-octs-i32 %len-octs [%len %out]]
         [%writ %ptr-out-octs [%name %retptr %i32] (i-32 0) (i-32 4)]
-        [%writ %len-octs [%two [%add %i32] [%name %retptr %i32] (i-32 4)] (i-32 0) (i-32 4)]        
+        [%writ %len-octs [%two [%add %i32] [%name %retptr %i32] (i-32 4)] (i-32 0) (i-32 4)]
       ==
       ~
     ==
@@ -69,9 +68,6 @@
     [%wish [~[%octs] ~[%octs]]]
   ==
 ::
-:: =/  input-line  (main:line:run [serf (reap 1 script) shop ext import |+~])
-:: (main:encoder (main:comp:run [module code ext import]:input-line))
-:: (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
 |-  ^-  tape
 =/  res=result:line:lia
   (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
