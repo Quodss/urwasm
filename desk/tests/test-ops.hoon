@@ -1,6 +1,5 @@
-/-  *engine
 /+  *test
-/+  op-def=runner-op-def
+/+  *runner-engine
 ::
 |%
 ++  test-int
@@ -137,7 +136,7 @@
   ==
 ::
 ++  test-vec
-  =|  l=local-state
+  =|  l=local-state:engine-sur
   =.  mem.store.l  `[0 1]
   ;:  weld
     %+  expect-eq

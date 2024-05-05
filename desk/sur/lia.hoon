@@ -67,133 +67,139 @@
 ::        value of that type (default Wasm value are given by the Wasm spec,
 ::        default value for octs is [0 0])
 ::
-/-  sur=engine
+/-  engine
+=>  engine
+:: ~%  %lia-sur  +  ~
 |%
-::  Noun code definition for Lia stack machine
-::
-++  line
+++  lia-sur
+  =/  sur  engine-sur
   |%
-  +$  value-type  ?(num-type:sur vec-type:sur %octs)
-  +$  block-type  (pair (list value-type) (list value-type))
-  +$  numtype  ?(num-type:sur vec-type:sur)
-  +$  ext-func-type  (pair (list numtype) (list numtype))
-  +$  ext-func  [type=ext-func-type body=(list op)]
-  +$  idx  @D
-  +$  value
-    $%  $<(%ref coin-wasm:sur)
-        [%octs octs]
-    ==
+  ::  Noun code definition for Lia stack machine
   ::
-  +$  action  [type=block-type body=(list op)]
-  +$  op
-    $~  [%nop ~]
-    $%
-      [%get type=value-type =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
-      [%set type=value-type =idx]
-      [%let type=value-type =idx]  ::  set type of space index; compiler: set default value
-      [%run name=cord]
-      [%run-lia name=term target=(list idx)]  ::  execute Lia import and write results to target
-      [%read p=idx]  ::  consumes ptr and len
-      [%writ p=idx]  ::  consumes ptr, offset and len
-      [%writ-octs-i32 p=idx]  ::  consumes i32
-      :: [%cut from=idx to=idx]  ::  consumes offset and len
-      :: [%octs to=idx]  ::  consumes data and len
-      [%if type=block-type true=(list op) false=(list op)]
-      [%loop type=block-type body=(list op)]
-      [%br label=@]
-      [%len =idx]
-      [%read-octs-i p=idx type=?(%i32 %i64)]  ::  offset, len -> octs to int
-      [%read-octs-f p=idx type=?(%f32 %f64)]  ::  offset      -> octs to float
-      instr-num:sur
-      [%nop ~]
-    ==
-  ::
-  ::
-  +$  state
-    $:
-      space=(list value)  ::  storage of values
-      stack=(pole value)  ::  operational stack
-      store=store:sur     ::  Wasm store
-    ==
-  ::
-  +$  input
-    $:  =^module:sur
-        code=(list action)
-        shop=(list (list value))
-        ext=(map (pair cord cord) ext-func)
-        import=(map term block-type)
-        diff=(each action (list value))
-    ==
-  ::
-  +$  result
-    $%  [%0 out=(list value)]
+  ++  line
+    |%
+    +$  value-type  ?(num-type:sur vec-type:sur %octs)
+    +$  block-type  (pair (list value-type) (list value-type))
+    +$  numtype  ?(num-type:sur vec-type:sur)
+    +$  ext-func-type  (pair (list numtype) (list numtype))
+    +$  ext-func  [type=ext-func-type body=(list op)]
+    +$  idx  @D
+    +$  value
+      $%  $<(%ref coin-wasm:sur)
+          [%octs octs]
+      ==
     ::
-        $:  %1
-            $%
-              [%king name=term in=(list value)]
-              [%serf [mod=cord name=cord] req=request:sur]
-        ==  ==
+    +$  action  [type=block-type body=(list op)]
+    +$  op
+      $~  [%nop ~]
+      $%
+        [%get type=value-type =idx]  ::  compiler: numerical values are dereferenced and pushed onto the stack, for octs idx is pushed onto the stack
+        [%set type=value-type =idx]
+        [%let type=value-type =idx]  ::  set type of space index; compiler: set default value
+        [%run name=cord]
+        [%run-lia name=term target=(list idx)]  ::  execute Lia import and write results to target
+        [%read p=idx]  ::  consumes ptr and len
+        [%writ p=idx]  ::  consumes ptr, offset and len
+        [%writ-octs-i32 p=idx]  ::  consumes i32
+        :: [%cut from=idx to=idx]  ::  consumes offset and len
+        :: [%octs to=idx]  ::  consumes data and len
+        [%if type=block-type true=(list op) false=(list op)]
+        [%loop type=block-type body=(list op)]
+        [%br label=@]
+        [%len =idx]
+        [%read-octs-i p=idx type=?(%i32 %i64)]  ::  offset, len -> octs to int
+        [%read-octs-f p=idx type=?(%f32 %f64)]  ::  offset      -> octs to float
+        instr-num:sur
+        [%nop ~]
+      ==
     ::
-        [%2 ~]
-    ==
+    ::
+    +$  state
+      $:
+        space=(list value)  ::  storage of values
+        stack=(pole value)  ::  operational stack
+        store=store:sur     ::  Wasm store
+      ==
+    ::
+    +$  input
+      $:  =^module:sur
+          code=(list action)
+          shop=(list (list value))
+          ext=(map (pair cord cord) ext-func)
+          import=(map term block-type)
+          diff=(each action (list value))
+      ==
+    ::
+    +$  result
+      $%  [%0 out=(list value)]
+      ::
+          $:  %1
+              $%
+                [%king name=term in=(list value)]
+                [%serf [mod=cord name=cord] req=request:sur]
+          ==  ==
+      ::
+          [%2 ~]
+      ==
+    ::
+    --
+  ::  AST definition
   ::
-  --
-::  AST definition
-::
-++  tree
-  |%
-  +$  script
-    $:  input=(list name)
-        type=script-type
-        =code
-        return=(list name)
-    ==
-  ::
-  +$  input
-    $:  =^module:sur
-        code=(list script)
-        shop=(list (list value:line))
-        ext=(map (pair cord cord) ext-func)
-        import=(map term script-type)
-        diff=(each script (list value:line))
-    ==
-  ::
-  +$  ext-func
-    $:  input=(list name)
-        type=ext-type
-        =code
-        return=(list name)
-    ==
-  ::
-  +$  value-type  ?(num-type:sur vec-type:sur %octs)
-  +$  script-type  (pair (list value-type) (list value-type))
-  +$  ext-type  ext-func-type:line
-  +$  code  (list phrase)
-  +$  phrase
-    $%
-      [%op names=(list (pair name value-type)) =op]
-      [%let p=name q=value-type]
-      [%if test=op true=code false=code]
-      [%while test=op body=code]
-      [%break ~]
-      [%read to=name offset=op len=op]
-      [%writ from=name ptr=op offset=op len=op]
-      [%writ-octs-i32 to=name dat=op]
-      :: [%cut from=name to=name offset=op len=op]
-      [%run-lia p=term q=(list op) r=(list (pair name value-type))]
-    ==
-  +$  name  @tas
-  +$  op
-    $~  [%zero %const %i32 0]
-    $%
-      [%name p=name q=value-type]
-      [%run p=cord q=(list op)]
-      [%len from=name]
-      [%zero p=instr-num-zero:sur]
-      [%one p=instr-num-one:sur q=op]
-      [%two p=instr-num-two:sur q=op r=op]
-      [%read-octs-i from=name type=?(%i32 %i64) off=op len=op]
-      [%read-octs-f from=name type=?(%f32 %f64) off=op]
-    ==
+  ++  tree
+    |%
+    +$  script
+      $:  input=(list name)
+          type=script-type
+          =code
+          return=(list name)
+      ==
+    ::
+    +$  input
+      $:  =^module:sur
+          code=(list script)
+          shop=(list (list value:line))
+          ext=(map (pair cord cord) ext-func)
+          import=(map term script-type)
+          diff=(each script (list value:line))
+      ==
+    ::
+    +$  ext-func
+      $:  input=(list name)
+          type=ext-type
+          =code
+          return=(list name)
+      ==
+    ::
+    +$  value-type  ?(num-type:sur vec-type:sur %octs)
+    +$  script-type  (pair (list value-type) (list value-type))
+    +$  ext-type  ext-func-type:line
+    +$  code  (list phrase)
+    +$  phrase
+      $%
+        [%op names=(list (pair name value-type)) =op]
+        [%let p=name q=value-type]
+        [%if test=op true=code false=code]
+        [%while test=op body=code]
+        [%break ~]
+        [%read to=name offset=op len=op]
+        [%writ from=name ptr=op offset=op len=op]
+        [%writ-octs-i32 to=name dat=op]
+        :: [%cut from=name to=name offset=op len=op]
+        [%run-lia p=term q=(list op) r=(list (pair name value-type))]
+      ==
+    +$  name  @tas
+    +$  op
+      $~  [%zero %const %i32 0]
+      $%
+        [%name p=name q=value-type]
+        [%run p=cord q=(list op)]
+        [%len from=name]
+        [%zero p=instr-num-zero:sur]
+        [%one p=instr-num-one:sur q=op]
+        [%two p=instr-num-two:sur q=op r=op]
+        [%read-octs-i from=name type=?(%i32 %i64) off=op len=op]
+        [%read-octs-f from=name type=?(%f32 %f64) off=op]
+      ==
+    --
   --
 --
