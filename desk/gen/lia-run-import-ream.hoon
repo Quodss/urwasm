@@ -1,20 +1,17 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
-/+  encoder
+/+  *lia-runtime
 /*  import-ream  %wasm  /tests/import-ream/wasm
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  serf  (main:par import-ream)
+=*  lia  lia-sur
+=*  run  runtime
 =/  =script:tree:lia
   :*
     ~
     [~ ~[%octs]]
   ::
-    ^-  code:tree:lia
+    ^-  code:tree:lia-sur
     :~
       [%let %retptr %i32]
       [%op ~[[%retptr %i32]] %run '__wbindgen_add_to_stack_pointer' ~[(i-32 (en-si:op-def 32 -16))]]
@@ -34,7 +31,7 @@
     ~[%b]
   ==
 ::
-=/  ext=(map (pair cord cord) ext-func:tree:lia)
+=/  ext=(map (pair cord cord) ext-func:tree:lia-sur)
   %-  my
   :~
     :-  ['./import_test_bg.js' '__wbg_workstring_1b3e07327280b69f']
@@ -61,16 +58,16 @@
     ==
   ==
 ::
-=|  shop=(list (list value:line:lia))
-=/  import=(map term script-type:tree:lia)
+=|  shop=(list (list value:line:lia-sur))
+=/  import=(map term script-type:tree:lia-sur)
   %-  my
   :~
     [%wish [~[%octs] ~[%octs]]]
   ==
 ::
 |-  ^-  tape
-=/  res=result:line:lia
-  (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
+=/  res=result:line:lia-sur
+  (lia-main:run [import-ream (reap 1 script ~) shop ext import ~])
 ?-    -.res
     %2  !!
     %0
@@ -97,7 +94,7 @@
 ::
 ++  i-32
   |=  n=@
-  ^-  op:tree:lia
+  ^-  op:tree:lia-sur
   [%zero %const %i32 n]
 ::
 ++  to-octs

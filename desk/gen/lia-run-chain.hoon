@@ -1,13 +1,11 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
+/+  *lia-runtime
 /*  flopper  %wasm  /tests/flopper/wasm
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  serf  (main:par flopper)
+=*  lia  lia-sur
+=*  run  runtime
 =/  =script:tree:lia
   :*
     ~[%a]
@@ -45,24 +43,24 @@
   ?>  &(?=(%0 -.res) ?=([[%octs =octs] ~] out.res))
   (of-octs octs.i.out.res)
 %-  lia-main:run
-:_  :~
-      ~[[%octs (to-octs "")]]
-      ~[[%octs (to-octs "abc")]]
-      ~[[%octs (to-octs "")]]
-      ~[[%octs (to-octs "zxczxc")]]
-    ==
 :*
-  serf
-  `(list script:tree:lia)`(reap 4 script)
+  flopper
+  %+  fuse:linearizer  `(list script:tree:lia)`(reap 4 script)
+  :~
+    ~[[%octs (to-octs "")]]
+    ~[[%octs (to-octs "abc")]]
+    ~[[%octs (to-octs "")]]
+    ~[[%octs (to-octs "zxczxc")]]
+  ==
   ~
   ~
   ~
-  |+~
+  ~
 ==
 ::
 ++  i-32
   |=  n=@
-  ^-  op:tree:lia
+  ^-  op:tree:lia-sur
   [%zero %const %i32 n]
 ::
 ++  to-octs

@@ -1,12 +1,10 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
+/+  *lia-runtime
 /*  two-func  %wasm  /tests/two-functions/wasm
 ::
 :-  %say  |=  *  :-  %noun
 ::
-=/  serf  (main:par two-func)
+=*  lia  lia-sur
+=*  run  runtime
 =/  =script:tree:lia
   :*
     ~[%a %b]
@@ -22,12 +20,11 @@
   ==
 ::
 %-  lia-main:run
-:_  ~[~[[%i32 21] [%i32 21]]]
 :*
-  serf
-  ~[script]
+  two-func
+  (reap 1 script ~[[%i32 21] [%i32 21]])
   ~
   ~
   ~
-  |+~
+  ~
 ==

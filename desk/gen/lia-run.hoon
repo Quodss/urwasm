@@ -1,20 +1,18 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
+/+  *lia-runtime
 /*  flopper  %wasm  /tests/flopper/wasm
 ::
 :: :-  %say  |=  *  :-  %noun
 |=  a=tape
 ::
 |^
-=/  serf  (main:par flopper)
-=/  =script:tree:lia
+=/  lia  lia-sur
+=/  run  runtime
+=/  =script:tree:lia-sur
   :*
     ~[%a]
     [~[%octs] ~[%octs]]
   ::
-    ^-  code:tree:lia
+    ^-  code:tree:lia-sur
     :~
       [%let %retptr %i32]
       [%op ~[[%retptr %i32]] %run '__wbindgen_add_to_stack_pointer' ~[(i-32 (en-si:op-def 32 -16))]]
@@ -43,19 +41,18 @@
   ?>  &(?=(%0 -.res) ?=([[%octs =octs] ~] out.res))
   (of-octs octs.i.out.res)
 %-  lia-main:run
-:_  ~[~[[%octs (to-octs a)]]]
 :*
-  serf
-  ~[script]
+  flopper
+  (reap 1 script ~[[%octs (to-octs a)]])
   ~
   ~
   ~
-  |+~
+  ~
 ==
 ::
 ++  i-32
   |=  n=@
-  ^-  op:tree:lia
+  ^-  op:tree:lia-sur
   [%zero %const %i32 n]
 ::
 ++  to-octs

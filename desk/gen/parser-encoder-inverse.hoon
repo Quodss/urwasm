@@ -1,10 +1,11 @@
 ::  Test to check whether parser . encoder == id for u-n, s-n
 ::
-/+  e=encoder
-/+  p=parser-lib
+/+  *encoder
 ::
 :-  %say  |=  *  :-  %noun
 ::
+=/  e  encoder
+=/  p  parser
 =>  |%
     ++  toct
       |=  =octs
@@ -18,7 +19,7 @@
   =/  a=@s  -2.147.483.648
   =/  c=@  0
   |-  ^-  (unit @s)
-  ?:  =(2.000 c)  ~
+  ?:  =(20.000 c)  ~
   ?.  =(a (scan (toct (s-n:e a)) (s-n:r:p 32)))
     `a
   $(a (dec a), c +(c))
@@ -27,7 +28,7 @@
 =/  x
   =/  a=@s  `@`0
   |-  ^-  (unit @s)
-  ?:  =(2.000 a)  ~
+  ?:  =(20.000 a)  ~
   ?.  =(a (scan (toct (s-n:e a)) (s-n:r:p 32)))
     `a
   $(a +(a))
@@ -36,7 +37,7 @@
 =/  y
   =/  a=@  0
   |-  ^-  (unit @)
-  ?:  =(2.000 a)  ~
+  ?:  =(20.000 a)  ~
   ?.  =(a (scan (toct (u-n:e a)) (u-n:r:p 32)))
     ~&  [%y-fail a]
     `a
@@ -47,7 +48,7 @@
   =/  a=@  (dec (bex 32))
   =/  c=@  0
   |-  ^-  (unit @)
-  ?:  =(2.000 c)  ~
+  ?:  =(20.000 c)  ~
   ?.  =(a (scan (toct (u-n:e a)) (u-n:r:p 32)))
     ~&  [%z-fail a]
     `a

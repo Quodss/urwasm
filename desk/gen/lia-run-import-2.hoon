@@ -1,15 +1,12 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
-/+  encoder
+/+  *lia-runtime
 /*  printf-i32     %wasm  /tests/printf-i32/wasm
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  serf  (main:par printf-i32)
-=/  =script:tree:lia
+=/  lia  lia-sur
+=/  run  runtime
+=/  =script:tree:lia-sur
   :*
     ~
     [~ ~[%i32]]
@@ -23,7 +20,7 @@
     ~[%a]
   ==
 ::
-=/  ext=(map (pair cord cord) ext-func:tree:lia)
+=/  ext=(map (pair cord cord) ext-func:tree:lia-sur)
   %-  my
   :~
     :-  ['console' 'log']
@@ -41,18 +38,16 @@
     ==
   ==
 ::
-=|  shop=(list (list value:line:lia))
-=/  import=(map term script-type:tree:lia)
+=|  shop=(list (list value:line:lia-sur))
+=/  import=(map term script-type:tree:lia-sur)
   %-  my
   :~
     [%printf [~[%octs] ~[%i32]]]
   ==
 ::
-:: (main:encoder (main:comp:run [module code ext import]:input-line))
-:: (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
-|-  ^-  result:line:lia
-=/  res=result:line:lia
-  (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
+|-  ^-  result:line:lia-sur
+=/  res=result:line:lia-sur
+  (lia-main:run [printf-i32 (reap 1 script ~) shop ext import ~])
 ?-    -.res
     %0  res
     %2  res
@@ -67,7 +62,7 @@
 ::
 ++  i-32
   |=  n=@
-  ^-  op:tree:lia
+  ^-  op:tree:lia-sur
   [%zero %const %i32 n]
 ::
 ++  to-octs

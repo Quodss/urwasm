@@ -1,20 +1,17 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
-/+  encoder
+/+  *lia-runtime
 /*  printf     %wasm  /tests/printf/wasm
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  serf  (main:par printf)
-=/  =script:tree:lia
+=*  lia  lia-sur
+=*  run  runtime
+=/  =script:tree:lia-sur
   :*
     ~
     [~ ~]
   ::
-    ^-  code:tree:lia
+    ^-  code:tree:lia-sur
     :~
       [%op ~ %run 'writeHi' ~]
     ==
@@ -29,7 +26,7 @@
     :*
       ~[%off %len]
       [~[%i32 %i32] ~]
-      ^-  code:tree:lia
+      ^-  code:tree:lia-sur
       :~
         [%let %b %octs]
         [%read %b [%name %off %i32] [%name %len %i32]]
@@ -46,15 +43,14 @@
     [%printf [~[%octs] ~]]
   ==
 ::
-:: =/  input-line  (main:line:run [serf (reap 1 script) shop ext import |+~])
-:: (main:encoder (main:comp:run [module code ext import]:input-line))
-|-  ^-  result:line:lia
-=/  res=result:line:lia
-  (lia-main:run [serf (reap 1 script) shop ext import |+~] (reap 1 ~))
+|-  ^-  result:line:lia-sur
+=/  res=result:line:lia-sur
+  (lia-main:run printf (reap 1 script ~) shop ext import ~)
 ?-    -.res
     %0  res
     %2  res
     %1
+  ~&  %import
   ?>  ?=(%king +<.res)
   ?>  ?=(%printf name.res)
   =/  pole-in=(pole value:line:lia)  in.res
@@ -65,7 +61,7 @@
 ::
 ++  i-32
   |=  n=@
-  ^-  op:tree:lia
+  ^-  op:tree:lia-sur
   [%zero %const %i32 n]
 ::
 ++  to-octs

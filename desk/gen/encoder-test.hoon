@@ -1,5 +1,4 @@
-/+  e=encoder
-/+  p=parser-lib
+/+  *encoder
 /*  fac-loop   %wasm  /tests/fac-br/wasm
 /*  div-table  %wasm  /tests/del-table/wasm
 /*  fib-rust   %wasm  /tests/fib/wasm
@@ -12,6 +11,8 @@
 ::
 :-  %say  |=  *  :-  %noun
 ::
+=/  e  encoder
+=/  p  parser
 =/  l=(list (pair @tas octs))
   :~
     fac-loop+fac-loop
@@ -29,10 +30,13 @@
 =*  lab  p.i.l
 =*  bin  q.i.l
 =/  ast
+  ~&  %decode
   ~>  %bout  (main:p bin)
 =/  new-bin
+  ~&  %encode
   ~>  %bout  (main:e ast)
 =/  ast2
+  ~&  %decode
   ~>  %bout  (main:p new-bin)
 ?.  =(ast ast2)
   ~&  lab

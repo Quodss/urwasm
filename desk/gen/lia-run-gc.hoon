@@ -1,13 +1,11 @@
-/-  lia
-/+  run=lia-runtime
-/+  par=parser-lib
-/+  op-def=runner-op-def
+/+  *lia-runtime
 /*  flopper  %wasm  /tests/flopper/wasm
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  serf  (main:par flopper)
+=*  lia  lia-sur
+=*  run  runtime
 =/  =script:tree:lia
   :*
     ~[%a]
@@ -49,19 +47,18 @@
   =/  s  (of-octs octs.i.out.res)
   [-.s (rear s) (lent s)]
 %-  lia-main:run
-:_  (reap 1 ~[[%octs (to-octs (zing (reap 100 (gulf 'a' 'z'))))]])
 :*
-  serf
-  (reap 1 script)
+  flopper
+  (reap 1 script ~[[%octs (to-octs (zing (reap 100 (gulf 'a' 'z'))))]])
   ~
   ~
   ~
-  |+~
+  ~
 ==
 ::
 ++  i-32
   |=  n=@
-  ^-  op:tree:lia
+  ^-  op:tree:lia-sur
   [%zero %const %i32 n]
 ::
 ++  to-octs

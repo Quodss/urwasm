@@ -1,31 +1,28 @@
 ::  An example of using urwasm in production: parsing of
 ::  .wat format
 ::
-/-  *engine
-/+  parser=parser-lib
 /+  *runner-engine
-/+  op-def=runner-op-def
 /*  bin  %wasm  /lib/tools/wat2wasm/wasm
 ::
 |=  string-in=tape
-^-  ^module
+^-  module:wasm-sur
 ::  check text correctness to avoid having to call realloc
 ::
 ?>  (levy string-in (curr lte 0x7f))
 ~&  'parse wat2wasm module'
 =+  m=~>(%bout (main:parser bin))
 ~&  'instantiate'
-=+  st=+:(wasm-need (prep m ~))
-=^  out=(list coin-wasm)  st
-  %-  wasm-need
-  ~&  'invoke add-to-stack-pointer'
-  %^  invoke  '__wbindgen_add_to_stack_pointer'
+=+  st=+:(wasm-need:engine (prep:engine m ~))
+=^  out=(list coin-wasm:wasm-sur)  st
+  %-  wasm-need:engine
+  ~&  'invoke:engine add-to-stack-pointer'
+  %^  invoke:engine  '__wbindgen_add_to_stack_pointer'
   ~[[%i32 (en-si:op-def 32 -16)]]  st
 =/  retptr=@  ?>(?=([[%i32 n=@] ~] out) n.i.out)
-=^  out=(list coin-wasm)  st
-  %-  wasm-need
-  ~&  'invoke malloc'
-  %^  invoke  '__wbindgen_malloc'
+=^  out=(list coin-wasm:wasm-sur)  st
+  %-  wasm-need:engine
+  ~&  'invoke:engine malloc'
+  %^  invoke:engine  '__wbindgen_malloc'
   ~[[%i32 (lent string-in)] [%i32 1]]  st
 =/  ptr0=@  ?>(?=([[%i32 n=@] ~] out) n.i.out)
 =/  len0=@  (lent string-in)
@@ -33,12 +30,12 @@
 =.  buffer.u.mem.st
   ~&  'memory write'
   (sew bloq=3 [ptr0 size=len0 (crip string-in)] buffer.u.mem.st)
-=>  .(st `store`st)
+=>  .(st `store:engine-sur`st)
 =.  st
-  =<  +  %-  wasm-need
-  ~&  'invoke process'
+  =<  +  %-  wasm-need:engine
+  ~&  'invoke:engine process'
   ~>  %bout
-  %^  invoke  'process'
+  %^  invoke:engine  'process'
   ~[[%i32 retptr] [%i32 ptr0] [%i32 len0]]  st
 ?>  ?=(^ mem.st)
 ~&  'memory read'

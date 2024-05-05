@@ -127,7 +127,7 @@
           shop=(list (list value))
           ext=(map (pair cord cord) ext-func)
           import=(map term block-type)
-          diff=(each action (list value))
+          diff=$@(~ (each action (list value)))
       ==
     ::
     +$  result
@@ -155,12 +155,13 @@
       ==
     ::
     +$  input
-      $:  =^module:sur
-          code=(list script)
+      $:  module=octs
+          code-vals=(list (pair script (list value:line)))
           shop=(list (list value:line))
           ext=(map (pair cord cord) ext-func)
           import=(map term script-type)
-          diff=(each script (list value:line))
+          diff=$@(~ (each script (list value:line)))
+          hint=@tas
       ==
     ::
     +$  ext-func
