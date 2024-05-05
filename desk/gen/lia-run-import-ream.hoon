@@ -67,7 +67,7 @@
 ::
 |-  ^-  tape
 =/  res=result:line:lia-sur
-  (lia-main:run [import-ream (reap 1 script ~) shop ext import ~])
+  (lia-main:run [import-ream (reap 1 script ~) shop ext import ~ %$])
 ?-    -.res
     %2  !!
     %0

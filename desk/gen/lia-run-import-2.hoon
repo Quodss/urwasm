@@ -47,7 +47,7 @@
 ::
 |-  ^-  result:line:lia-sur
 =/  res=result:line:lia-sur
-  (lia-main:run [printf-i32 (reap 1 script ~) shop ext import ~])
+  (lia-main:run [printf-i32 (reap 1 script ~) shop ext import ~ %$])
 ?-    -.res
     %0  res
     %2  res

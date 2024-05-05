@@ -81,6 +81,8 @@
     :: ~/  %lia-main
     |=  =input:tree:lia
     ^-  result:line:lia
+    :: !.
+    :: ~&  !=(!.(main:encoder))  ::  [%9 1.524 %9 2 %0 2.047]
     =/  [input-line=input:line:lia vals=(list (list value:line:lia))]
       (main:line input)
     =?  code.input-line  &(?=(^ diff.input-line) ?=(%& -.diff.input-line))
