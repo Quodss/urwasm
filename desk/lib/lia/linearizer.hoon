@@ -1,6 +1,6 @@
 /+  runner-engine
 =>  runner-engine
-:: ~%  %lia-line  +  ~
+~%  %lia-line  +  ~
 |%
 ++  linearizer
   =,  lia-sur

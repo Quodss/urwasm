@@ -24,7 +24,7 @@
   ::
 /+  parser
 =>  parser
-:: ~%  %wasm-op-def  +  ~
+~%  %wasm-op-def  +  ~
 |%
 ++  op-def
   =,  engine-sur

@@ -2,7 +2,7 @@
 ::
 /+  runner-op-def
 =>  runner-op-def
-:: ~%  %wasm-engine  +  ~
+~%  %wasm-engine  +  ~
 |%
 ++  engine
   ::

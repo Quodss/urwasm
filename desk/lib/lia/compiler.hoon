@@ -1,6 +1,6 @@
 /+  lia-linearizer
 =>  lia-linearizer
-:: ~%  %lia-comp  +  ~
+~%  %lia-comp  +  ~
 |%
 ++  compiler
   =/  wasm  wasm-sur
@@ -141,6 +141,7 @@
     =/  set-octs-ext-idx=@   +(writ-octs-i32-idx)
     =/  get-space-ptr-idx=@  +(set-octs-ext-idx)
     =/  clear-space-idx=@    +(get-space-ptr-idx)
+    =/  memory-init-idx=@    +(clear-space-idx)
     ::  allocator
     ::
     =^  type-alloc-idx=@  type-section.king
@@ -1484,16 +1485,47 @@
       :-  ~
       ^-  expression:wasm
       :~
-        [%const %i32 offset]
-        [%const %i32 0]
-        [%const %i32 space-size]
-        [%memory-init 0 %0]
+        [%call memory-init-idx]
         [%const %i32 ^~((add offset space-size))]
         [%global-set heap-edge]
         [%const %i32 0]
         [%global-set space-start]
         [%const %i32 0]
         [%global-set space-end]
+      ==
+    ::  memory-init
+    ::
+    =^  type-idx=@  type-section.king
+      (get-type-idx [~ ~] type-section.king)
+    =.  function-section.king
+      (snoc function-section.king type-idx)
+    =.  code-section.king
+      %+  snoc  code-section.king
+      :-  ~[%i32]
+      =/  idx=@  0
+      ^-  expression:wasm
+      :~
+        :+  %loop  [~ ~]
+        :~
+          [%local-get idx]
+          [%const %i32 space-number]
+          [%eq %i32]
+          :^  %if  [~ ~]
+            ~
+          :~
+            [%local-get idx]
+            [%const %i32 space-width]
+            [%mul %i32]
+            [%const %i64 null-ptr]
+            [%store %i64 [0 offset] ~]
+          ::
+            [%local-get idx]
+            [%const %i32 1]
+            [%add %i32]
+            [%local-set idx]
+            [%br 1]
+          ==
+        ==
       ==
     ::  Function imports of serf are defined in ext field of the sample.
     ::  Imports of other parts of the store are not treated by king, and
@@ -1505,12 +1537,7 @@
     ::  two Lia instances is some extremely cursed business wrt jetting
     ::  (i might be wrong)
     ::
-    ::  initialize data
-    ::
-    =.  data-section.king
-      :_  ~
-      :+  %acti  [%const %i32 offset]
-      [space-size (fil 6 space-number null-ptr)]
+    =.  start-section.king  `memory-init-idx
     ::  compile and export actions, ext
     ::
     |^

@@ -69,7 +69,7 @@
 ::
 /-  engine
 =>  engine
-:: ~%  %lia-sur  +  ~
+~%  %lia-sur  +  ~
 |%
 ++  lia-sur
   =/  sur  engine-sur

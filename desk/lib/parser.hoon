@@ -2,7 +2,7 @@
 ::
 /-  lia
 =>  lia
-:: ~%  %wasm-parser  +  ~
+~%  %wasm-parser  +  ~
 |%
 ++  parser
   =/  sur  wasm-sur

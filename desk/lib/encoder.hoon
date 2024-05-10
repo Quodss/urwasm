@@ -1,7 +1,7 @@
 :: /-  sur=wasm
 /+  lia-compiler
 =>  lia-compiler
-:: ~%  %encoder  +  ~
+~%  %encoder  +  ~
 |%
 ++  encoder
   =/  sur  wasm-sur
@@ -12,18 +12,18 @@
     ;:  weld-octs
       [4 '\00asm'] 
       [4 '\01\00\00\00']
-      (mayb-weld [1 1] (mayb-len (type-section type-section.module)))
-      (mayb-weld [1 2] (mayb-len (import-section import-section.module)))
-      (mayb-weld [1 3] (mayb-len (function-section function-section.module)))
-      (mayb-weld [1 4] (mayb-len (table-section table-section.module)))
-      (mayb-weld [1 5] (mayb-len (memory-section memory-section.module)))
-      (mayb-weld [1 6] (mayb-len (global-section global-section.module)))
-      (mayb-weld [1 7] (mayb-len (export-section export-section.module)))
+      (mayb-weld [1 1] (mayb-len-vec (type-section type-section.module)))
+      (mayb-weld [1 2] (mayb-len-vec (import-section import-section.module)))
+      (mayb-weld [1 3] (mayb-len-vec (function-section function-section.module)))
+      (mayb-weld [1 4] (mayb-len-vec (table-section table-section.module)))
+      (mayb-weld [1 5] (mayb-len-vec (memory-section memory-section.module)))
+      (mayb-weld [1 6] (mayb-len-vec (global-section global-section.module)))
+      (mayb-weld [1 7] (mayb-len-vec (export-section export-section.module)))
       (mayb-weld [1 8] (mayb-len (start-section start-section.module)))
-      (mayb-weld [1 9] (mayb-len (elem-section elem-section.module)))
+      (mayb-weld [1 9] (mayb-len-vec (elem-section elem-section.module)))
       (mayb-weld [1 12] (mayb-len (datacnt-section datacnt-section.module)))
-      (mayb-weld [1 10] (mayb-len (code-section code-section.module)))
-      (mayb-weld [1 11] (mayb-len (data-section data-section.module)))
+      (mayb-weld [1 10] (mayb-len-vec (code-section code-section.module)))
+      (mayb-weld [1 11] (mayb-len-vec (data-section data-section.module)))
     ==
   ::
   ++  weld-octs
@@ -73,6 +73,13 @@
     |=  a=octs
     ^-  octs
     ?:  =([0 0] a)  [0 0]
+    (weld-octs (u-n p.a) a)
+  ::
+  ++  mayb-len-vec
+    |=  a=octs
+    ^-  octs
+    ?:  =([0 0] a)  [0 0]
+    ?:  =([1 0] a)  [0 0]
     (weld-octs (u-n p.a) a)
   ::
   ++  add-len
