@@ -16,25 +16,25 @@
     ~[%c]
   ==
 ::
-=/  =input:line:lia-sur
-  =<  -
-  %:  main:linearizer
-    [8 '\00asm\01']
-    (reap 1 script ~[[%i32 2] [%i32 3]])
-    ~
-    ~
-    ~
-    ~
-    %$
-  ==
-(main:encoder (main:compiler [module code ext import]:input))
-:: %-  lia-main:runtime
-:: :*
-::   [8 '\00asm\01']
-::   (reap 1 script ~[[%i32 2] [%i32 3]])
-::   ~
-::   ~
-::   ~
-::   ~
-::   %$
-:: ==
+:: =/  =input:line:lia-sur
+::   =<  -
+::   %:  main:linearizer
+::     [8 '\00asm\01']
+::     (reap 1 script ~[[%i32 2] [%i32 3]])
+::     ~
+::     ~
+::     ~
+::     ~
+::     %$
+::   ==
+:: (main:encoder (main:compiler [module code ext import]:input))
+%:  lia-main:runtime
+  [8 '\00asm\01']
+  (reap 1 script ~[[%i32 2] [%i32 3]])
+  ~
+  ~
+  ~
+  ~
+  %$
+==
+
