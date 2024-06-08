@@ -1,12 +1,16 @@
 /+  *lia-runtime
-/*  flopper  %wasm  /tests/flopper/wasm
+/*  bin  %wasm  /lib/tools/wat2wasm/wasm
 ::
-:: :-  %say  |=  *  :-  %noun
-|=  a=tape
-::
-|^
+|=  jetted=@tas
+|=  string-in=tape
+^-  module:wasm-sur
 =/  lia  lia-sur
 =/  run  runtime
+=;  res=result:line:lia
+  ?>  &(?=(%0 -.res) ?=([[%octs =octs] ~] out.res))
+  (main:parser octs.i.out.res)
+|^
+?>  (levy string-in (curr lte 0x7f))
 =/  =script:tree:lia-sur
   :*
     ~[%a]
@@ -37,20 +41,15 @@
     ~[%b]
   ==
 ::
-=;  res
-  :: res
-  ?>  &(?=(%0 -.res) ?=([[%octs =octs] ~] out.res))
-  (of-octs octs.i.out.res)
-~>  %bout
 %-  lia-main:run
 :*
-  flopper
-  (reap 1 script ~[[%octs (to-octs a)]])
+  bin
+  (reap 1 script ~[[%octs (to-octs string-in)]])
   ~
   ~
   ~
   ~
-  %$
+  jetted
 ==
 ::
 ++  i-32

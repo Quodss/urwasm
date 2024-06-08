@@ -14,6 +14,7 @@
     |=  wasm=octs
     =,  sur
     ^-  module
+    ~>  %bout
     =|  out=module
     =/  bytes=tape  (trip q.wasm)
     ::  add leading zeros
