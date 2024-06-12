@@ -2,15 +2,13 @@
 :-  %say  |=  *  :-  %noun
 ::
 =;  script
-  :: .=
-  ::   ~&  %jetted
-  ::   ~>  %bout
-  ::   ((wat %$) script)
-  :: ~&  %unjetted
-  :: ~>  %bout
-  :: ((wat %none) script)
+  .=
+    ~&  %jetted
+    ~>  %bout
+    ((wat %$) script)
+  ~&  %unjetted
   ~>  %bout
-  ((wat %$) script)
+  ((wat %none) script)
 """
 (module
 (func $fac (export "fac") (param f64) (result f64)

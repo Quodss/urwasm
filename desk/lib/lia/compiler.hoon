@@ -24,36 +24,23 @@
   ::  ^static data       ^space with numeric values/pointers   ^heap
   ::
   ++  main
-    |=  $:  serf=module:wasm
+    |=  $:  exports-serf=(list [cord func-type:wasm])
             code=(list action:line:lia)
             ext=(map (pair cord cord) ext-func:line:lia)
             import=(map term block-type:line:lia)
         ==
     ^-  module:wasm
-    =/  n-import-funcs=@
-      (lent (skim import-section.serf |=(import:wasm ?=(%func -.desc))))
     =|  king=module:wasm
     ::  Add funcs exported by serf as imports in king
     ::  Exports of globals, tables and memory are not treated
     ::
-    =/  exports-serf=(list [cord @])
-      =|  out=(list [cord @])
-      |-  ^-  (list [cord @])
-      ?~  export-section.serf  out
-      =/  exp=export:wasm  i.export-section.serf
-      =?  out  ?=(%func -.export-desc.exp)
-        [[name.exp i.export-desc.exp] out]
-      $(export-section.serf t.export-section.serf)
     =^  serf-diary=(map cord @)  king
       =|  d=(map cord @)
       =/  i=@  0
       =<  [d k]
       %+  roll  exports-serf
-      |:  [[name=*cord idx=*@] acc=[d=d i=i k=king]]
+      |:  [[name=*cord type=*func-type:wasm] acc=[d=d i=i k=king]]
       ^-  [(map cord @) @ module:wasm]
-      =/  idx-local  (sub idx n-import-funcs)
-      =/  type-idx  (snag idx-local function-section.serf)
-      =/  type=func-type:wasm  (snag type-idx type-section.serf)
       =^  king-type-idx=@  type-section.k.acc
         (get-type-idx type type-section.k.acc)
       %=    acc

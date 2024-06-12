@@ -90,9 +90,24 @@
       (snoc code.input-line p.diff.input-line)
     =?  shop.input-line  &(?=(^ diff.input-line) ?=(%| -.diff.input-line))
       (snoc shop.input-line p.diff.input-line)
-    =/  king  (main:comp [module code ext import]:input-line)
+    =/  serf-ast  (main:parser module.input-line)
+    =/  n-import-funcs=@
+      (lent (skim import-section.serf-ast |=(import:wasm ?=(%func -.desc))))
+    =/  exports-serf=(list [cord func-type:wasm])
+      =|  out=(list [cord func-type:wasm])
+      |-  ^-  (list [cord func-type:wasm])
+      ?~  export-section.serf-ast  out
+      =/  exp=export:wasm  i.export-section.serf-ast
+      =?  out  ?=(%func -.export-desc.exp)
+        =/  idx                  i.export-desc.exp
+        =/  idx-local            (sub idx n-import-funcs)
+        =/  type-idx             (snag idx-local function-section.serf-ast)
+        =/  type=func-type:wasm  (snag type-idx type-section.serf-ast)
+        [[name.exp type] out]
+      $(export-section.serf-ast t.export-section.serf-ast)
+    =/  king  (main:comp [exports-serf [code ext import]:input-line])
     =/  =lord-result
-      (lord module.input-line king vals shop.input-line import.input-line)
+      (lord serf-ast king vals shop.input-line import.input-line)
     ?-    -.lord-result
         %2  lord-result
     ::

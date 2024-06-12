@@ -122,7 +122,7 @@
       ==
     ::
     +$  input
-      $:  =^module:sur
+      $:  module=octs
           code=(list action)
           shop=(list (list value))
           ext=(map (pair cord cord) ext-func)

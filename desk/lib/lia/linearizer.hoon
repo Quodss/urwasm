@@ -79,7 +79,7 @@
       [%& (script-gen p.diff.input)]
     :_  (turn code-vals.input tail)
     :*
-      (main:parser module.input)
+      module.input
       (turn (turn code-vals.input head) script-gen)
       shop.input
       (~(run by ext.input) ext-gen)
