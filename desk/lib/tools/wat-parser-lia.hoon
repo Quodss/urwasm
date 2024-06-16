@@ -41,6 +41,7 @@
     ~[%b]
   ==
 ::
+~>  %bout
 %-  lia-main:run
 :*
   bin

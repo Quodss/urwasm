@@ -4,10 +4,8 @@
 =;  script
   .=
     ~&  %jetted
-    ~>  %bout
     ((wat %$) script)
   ~&  %unjetted
-  ~>  %bout
   ((wat %none) script)
 """
 (module
