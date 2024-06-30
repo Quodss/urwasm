@@ -1815,7 +1815,7 @@
       =/  data=octs
         :-  (lent target)
         (rep 3 target)
-      :_  (snoc d [%pass data])
+      :_  (snoc d [%acti [%const %i32 0] data])
       :~
         [%const %i32 data-idx]
         [%global-set space-clue]

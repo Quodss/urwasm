@@ -256,10 +256,13 @@
               'space-clue'
             globals.king-engine-res
           =/  target-data  (snag data-idx data-section.module.pause)
-          ?>  ?=(%pass -.target-data)
+          :: ?>  ?=(%pass -.target-data)  ::  TODO remove assertion
+          =/  data
+            ?:  ?=(%pass -.target-data)  b.target-data
+            b.target-data
           =/  targets=(list @)
             %-  turn  :_  (curr add off)
-            (rope:simd:run 3 p.b.target-data q.b.target-data)
+            (rope:simd:run 3 p.data q.data)
           |-  ^+  pause
           ?:  &(?=(@ targets) ?=(@ i.lia-shop))
             pause

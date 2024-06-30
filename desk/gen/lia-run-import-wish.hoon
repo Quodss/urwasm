@@ -54,6 +54,7 @@
     [%wish [~[%octs] ~[%octs]]]
   ==
 ::
+~>  %bout
 |-  ^-  result:line:lia-sur
 =/  res=result:line:lia-sur
   (lia-main:run [import-ream (reap 1 script ~) shop ext import ~ %$])

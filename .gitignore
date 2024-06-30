@@ -5,3 +5,5 @@ zod.loaded/
 urbit
 .vscode
 zod*
+desk/gen/bf-hoon.hoon
+desk/gen/bf2-hoon.hoon
