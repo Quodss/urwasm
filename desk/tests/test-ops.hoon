@@ -16,6 +16,26 @@
 ++  test-float
   ;:  weld
     %+  expect-eq
+      !>  `@`.inf
+      !>  (need ((unar:fetch:op-def [%abs %f32]) .-inf))
+  ::
+    %+  expect-eq
+      !>  `@`.~inf
+      !>  (need ((unar:fetch:op-def [%abs %f64]) .~-inf))
+  ::
+    %+  expect-eq
+      !>  `@`.nan
+      !>  (need ((unar:fetch:op-def [%abs %f32]) (add .nan (bex 31))))
+  ::
+    %+  expect-eq
+      !>  `@`.128
+      !>  (need ((unar:fetch:op-def [%abs %f32]) .-128))
+  ::
+    %+  expect-eq
+      !>  `@`.~128
+      !>  (need ((unar:fetch:op-def [%abs %f64]) .~-128))
+  ::
+    %+  expect-eq
       !>  `@`1.077.936.128
       !>  (need ((bina:fetch:op-def [%add %f32]) .1 .2))
   ::

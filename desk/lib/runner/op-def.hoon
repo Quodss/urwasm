@@ -1071,7 +1071,7 @@
             %f64  (sig:rd v)
           ==
         ?:  sign  v
-        %+  add  v
+        %+  sub  v
         ?-  type.i
           %f32  ^~((bex 31))
           %f64  ^~((bex 63))
@@ -1521,9 +1521,10 @@
             ==
         =/  sign=@   ?-(type.i %f32 (bex 31), %f64 (bex 63))
         =/  modul=@  ?-(type.i %f32 (bex 32), %f64 (bex 64))
+        =/  wid=@    ?-(type.i %f32 31, %f64 63)
         |=  [v=@ w=@]
         ^-  @
-        ?:  =((sig:r v) (sig:r w))  v
+        ?:  =((rsh [0 wid] v) (rsh [0 wid] w))  v
         (~(sum fo modul) v sign)
       ::
       ++  eq
