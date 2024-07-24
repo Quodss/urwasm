@@ -273,7 +273,7 @@
   +$  const-instr
     $~  [%const %i32 `@`0]
     $?  [%vec $>(%const instr-vec)]
-        $>(?(%const %global-get) instruction)
+        $>(?(%const %global-get %ref-null %ref-func) instruction)
     ==
   ::
   ::  Modules

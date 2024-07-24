@@ -149,6 +149,19 @@
           global-section.m  t.global-section.m
           globals.st  [p.i.glob globals.st]
         ==
+      ?:  ?=([%ref-null t=ref-type] i.glob)
+        =/  null-ref=coin-wasm
+          ?:  ?=(%func t.i.glob)  [%ref %func ~]
+          [%ref %extn ~]
+        %=  $
+          global-section.m  t.global-section.m
+          globals.st  [null-ref globals.st]
+        ==
+      ?:  ?=([%ref-func func-id=@] i.glob)
+        %=  $
+          global-section.m  t.global-section.m
+          globals.st  [[%ref %func `func-id.i.glob] globals.st]
+        ==
       ::  Imported globals. We assume here that %global-get
       ::  would not affect module store
       ::
