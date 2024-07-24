@@ -581,28 +581,49 @@
       &+[~[%i32 p.table %i32] ~]
     ::
         %load
-      !!
+      ?~  memo.store  |+'load no memo'
+      =/  malaligned=?
+        %+  gth  (bex align.m.instr)
+        ?~  n.instr
+          (byte-width type.instr)
+        (div u.n.instr 8)
+      ?:  malaligned  |+'load malaligned'
+      &+[~[%i32] ~[type.instr]]
     ::
         %store
-      !!
+      ?~  memo.store  |+'store no memo'
+      =/  malaligned=?
+        %+  gth  (bex align.m.instr)
+        ?~  n.instr
+          (byte-width type.instr)
+        (div u.n.instr 8)
+      ?:  malaligned  |+'store malaligned'
+      &+[~[%i32 type.instr] ~]
     ::
         %memory-size
-      !!
+      ?~  memo.store  |+'size no memo'
+      &+[~ ~[%i32]]
     ::
         %memory-grow
-      !!
+      ?~  memo.store  |+'grow no memo'
+      &+[~[%i32] ~[%i32]]
     ::
         %memory-init
-      !!
+      ?~  memo.store  |+'init no memo'
+      ;<  *  try  ((snug 'memo init elem') x.instr elem-section.module)
+      &+[~[%i32 %i32 %i32] ~]
     ::
         %data-drop
-      !!
+      ;<  *  try  ((snug 'memo init elem') x.instr elem-section.module)
+      &+[~ ~]
     ::
         %memory-copy
-      !!
+      ?~  memo.store  |+'copy no memo'
+      &+[~[%i32 %i32 %i32] ~]
     ::
         %memory-fill
-      !!
+      ?~  memo.store  |+'fill no memo'
+      &+[~[%i32 %i32 %i32] ~]
     ::
     ==
   ::
@@ -614,6 +635,11 @@
   ++  from-coin
     |=  coin=coin-wasm
     ^-  valtype
+    !!
+  ::
+  ++  byte-width
+    |=  v=valtype
+    ^-  @
     !!
   --  ::  |validator
 --
