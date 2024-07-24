@@ -468,102 +468,147 @@
     =/  try  (build-try func-type)
     ^-  (result func-type)
     ?-    -.instr
-        %vec     $+(get-type-vec +.instr)
+        %vec     (get-type-vec +.instr module store)
         %dbug    ~|(%dbug !!)
-        %const   $+[~ ~[(from-coin p.instr)]]
-        %eqz     $+[~[type.instr] ~[%i32]]
-        %clz     $+[~[type] ~[type]]:instr
-        %ctz     $+[~[type] ~[type]]:instr
-        %popcnt  $+?>(?=(valtype type.instr) [~[type] ~[type]]:instr)
-        %abs     $+?>(?=(valtype type.instr) [~[type] ~[type]]:instr)
-        %neg     $+?>(?=(valtype type.instr) [~[type] ~[type]]:instr)
-        %ceil    $+[~[type] ~[type]]:instr
-        %floor   $+[~[type] ~[type]]:instr
+        %const   &+[~ ~[(from-coin p.instr)]]
+        %eqz     &+[~[type.instr] ~[%i32]]
+        %clz     &+[~[type] ~[type]]:instr
+        %ctz     &+[~[type] ~[type]]:instr
+        %popcnt  &+?>(?=(valtype type.instr) [~[type] ~[type]]:instr)
+        %abs     &+?>(?=(valtype type.instr) [~[type] ~[type]]:instr)
+        %neg     &+?>(?=(valtype type.instr) [~[type] ~[type]]:instr)
+        %ceil    &+[~[type] ~[type]]:instr
+        %floor   &+[~[type] ~[type]]:instr
         %trunc
       ?~  source-type.instr
-        $+[~[type] ~[type]]:instr
-      $+[~[u.source-type] ~[type]]:instr
+        &+[~[type] ~[type]]:instr
+      &+[~[u.source-type] ~[type]]:instr
     ::
-        %nearest      $+[~[type] ~[type]]:instr
-        %sqrt         $+[~[type] ~[type]]:instr
-        %wrap         $+[~[%i64] ~[%i32]]
-        %extend       $+[~[%i32] ~[%i64]]
-        %convert      $+[~[source-type] ~[type]]:instr
-        %demote       $+[~[%f64] ~[%f32]]
-        %promote      $+[~[%f32] ~[%f64]]
-        %reinterpret  $+[~[source-type] ~[type]]:instr
+        %nearest      &+[~[type] ~[type]]:instr
+        %sqrt         &+[~[type] ~[type]]:instr
+        %wrap         &+[~[%i64] ~[%i32]]
+        %extend       &+[~[%i32] ~[%i64]]
+        %convert      &+[~[source-type] ~[type]]:instr
+        %demote       &+[~[%f64] ~[%f32]]
+        %promote      &+[~[%f32] ~[%f64]]
+        %reinterpret  &+[~[source-type] ~[type]]:instr
     ::
-        %eq    $+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
-        %ne    $+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
-        %lt    $+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
-        %gt    $+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
-        %le    $+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
-        %ge    $+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
-        %add   $+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
-        %sub   $+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
-        %mul   $+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
-        %div   $+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
-        %rem   $+[~[type type] ~[type]]:instr
-        %and   $+[~[type type] ~[type]]:instr
-        %or    $+[~[type type] ~[type]]:instr
-        %xor   $+[~[type type] ~[type]]:instr
-        %shl   $+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
-        %shr   $+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
-        %rotl  $+[~[type type] ~[type]]:instr
-        %rotr  $+[~[type type] ~[type]]:instr
-        %min   $+[~[type type] ~[type]]:instr
-        %max   $+[~[type type] ~[type]]:instr
-        %copysign  $+[~[type type] ~[type]]:instr
-        %nop  $+[~ ~]
+        %eq    &+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
+        %ne    &+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
+        %lt    &+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
+        %gt    &+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
+        %le    &+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
+        %ge    &+?>(?=(valtype type.instr) [~[type type] ~[%i32]]:instr)
+        %add   &+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
+        %sub   &+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
+        %mul   &+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
+        %div   &+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
+        %rem   &+[~[type type] ~[type]]:instr
+        %and   &+[~[type type] ~[type]]:instr
+        %or    &+[~[type type] ~[type]]:instr
+        %xor   &+[~[type type] ~[type]]:instr
+        %shl   &+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
+        %shr   &+?>(?=(valtype type.instr) [~[type type] ~[type]]:instr)
+        %rotl  &+[~[type type] ~[type]]:instr
+        %rotr  &+[~[type type] ~[type]]:instr
+        %min   &+[~[type type] ~[type]]:instr
+        %max   &+[~[type type] ~[type]]:instr
+        %copysign  &+[~[type type] ~[type]]:instr
+        %nop  &+[~ ~]
     ::
-        %ref-null  $+[~ ~[t.instr]]
-        %ref-func  $+[~ ~[%func]]
+        %ref-null  &+[~ ~[t.instr]]
+        %ref-func  &+[~ ~[%func]]
     ::
         %local-get
       ;<  type=valtype  try  ((snug 'local get') index.instr locals)
-      $+[~ ~[type]]
+      &+[~ ~[type]]
     ::
         %local-set
       ;<  type=valtype  try  ((snug 'local set') index.instr locals)
-      $+[~[type] ~]
+      &+[~[type] ~]
     ::
         %local-tee
       ;<  type=valtype  try  ((snug 'local tee') index.instr locals)
-      $+[~[type] ~[type]]
+      &+[~[type] ~[type]]
     ::
         %global-get
       ;<  type=glob-type  try  ((snug 'global get') index.instr globs.store)
-      $+[~ ~[v.type]]
+      &+[~ ~[v.type]]
     ::
         %global-set
       ;<  type=glob-type  try  ((snug 'global set') index.instr globs.store)
       ?:  ?=(%con m.type)  |+'constant global set'
-      $+[~[v.type] ~]
+      &+[~[v.type] ~]
     ::
         %table-get
-      ;<  =table  try  ((snug 'table get') tab-id tables.store)
-      $+[~[%i32] ~[p.table]]
+      ;<  =table  try  ((snug 'table get') tab-id.instr tables.store)
+      &+[~[%i32] ~[p.table]]
     ::
         %table-set 
+      ;<  =table  try  ((snug 'table get') tab-id.instr tables.store)
+      &+[~[%i32 p.table] ~]
+    ::
         %table-init
+      ;<  =table  try  ((snug 'table init table') tab-id.instr tables.store)
+      ;<  =elem  try
+        ((snug 'table init elem') elem-id.instr elem-section.module)
+      ?.  =(t.elem p.table)  |+'table init type mismatch'
+      &+[~[%i32 %i32 %i32] ~]
+    ::
         %elem-drop 
+      ;<  *  try
+        ((snug 'elem drop') elem-id.instr elem-section.module)
+      &+[~ ~]
+    ::
         %table-copy
+      ;<  tab-x=table  try
+        ((snug 'table copy') tab-id-x.instr tables.store)
+      ;<  tab-y=table  try
+        ((snug 'table copy') tab-id-y.instr tables.store)
+      ?.  =(p.tab-x p.tab-y)  |+'table copy type mismatch'
+      &+[~[%i32 %i32 %i32] ~]
+    ::
         %table-grow
+      ;<  =table  try  ((snug 'table grow') tab-id.instr tables.store)
+      &+[~[p.table %i32] ~[%i32]]
+    ::
         %table-size
+      ;<  =table  try  ((snug 'table grow') tab-id.instr tables.store)
+      &+[~ ~[%i32]]
+    ::
         %table-fill
+      ;<  =table  try  ((snug 'table grow') tab-id.instr tables.store)
+      &+[~[%i32 p.table %i32] ~]
+    ::
         %load
+      !!
+    ::
         %store
+      !!
+    ::
         %memory-size
+      !!
+    ::
         %memory-grow
+      !!
+    ::
         %memory-init
+      !!
+    ::
         %data-drop
+      !!
+    ::
         %memory-copy
+      !!
+    ::
         %memory-fill
+      !!
+    ::
     ==
   ::
   ++  get-type-vec
-    |=  instr=instr-vec
-    ^-  func-type
+    |=  [instr=instr-vec =module =store]
+    ^-  (result func-type)
     !!
   ::
   ++  from-coin
