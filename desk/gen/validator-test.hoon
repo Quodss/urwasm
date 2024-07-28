@@ -14,6 +14,7 @@
 ::
 :-  %say  |=  *  :-  %noun
 ::
+~>  %bout
 =;  modules=(list (pair term octs))
   |-  ^-  (list [term (result-form:validator ~)])
   ?~  modules  ~

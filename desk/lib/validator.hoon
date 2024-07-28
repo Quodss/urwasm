@@ -486,6 +486,7 @@
             =store
             locals=(list valtype)
         ==
+    ~+
     =/  r  (result func-type)
     ^-  form:r
     ?-    -.instr

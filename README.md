@@ -24,9 +24,10 @@ Next:
   - [X] Lia end-to-end interpeting function (jet target)
 - [X] (bonus) Test GC
 - [ ] Jet of Lia interpreter:
-  - [ ] Lia jet
+  - [X] Lia jet
   - [ ] Ensure determinism of the Wasm runtime in C 
-  - [ ] Wasm validation in Hoon, Lia validation in Hoon and C
+  - [X] Wasm validation in Hoon
+  - [ ] Wasm validation in C
 - [ ] Operationalization:
   - [ ] Caching of Lia state
   - [ ] Unit tests
