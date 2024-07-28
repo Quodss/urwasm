@@ -96,7 +96,14 @@
       [%nearest type=?(%f32 %f64)]
       [%sqrt type=?(%f32 %f64)]
       [%wrap ~]
-      [%extend type=?(%i32 %i64) source=?(%8 %16 %32) mode=?(%s %u)]
+    ::
+      $:  %extend
+          type=?(%i32 %i64)
+          source-type=?(%i32 %i64)
+          source-size=?(%8 %16 %32)
+          mode=?(%s %u)
+      ==
+    ::
       [%convert type=?(%f32 %f64) source-type=?(%i32 %i64) mode=?(%s %u)]
       [%demote ~]
       [%promote ~]

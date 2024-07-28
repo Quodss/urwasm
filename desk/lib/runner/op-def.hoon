@@ -1259,7 +1259,7 @@
         ^-  @
         ?-  mode.i
           %u  v
-          %s  (en-si base (to-si source.i v))
+          %s  (en-si base (to-si source-size.i v))
         ==
       ::
       ++  convert

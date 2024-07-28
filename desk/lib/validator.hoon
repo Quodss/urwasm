@@ -19,41 +19,47 @@
   ::
   +$  store  import:output  ::  right order
   ::
-  ++  result
+  ++  result-form
     |$  [mold]
     (each mold cord)
   ::
-  ++  build-try
+  ++  result
     |*  m2=mold
-    |*  m1=mold
-    |=  [a=(result m1) b=$-(m1 (result m2))]
-    ^-  (result m2)
-    ?:  ?=(%| -.a)  a
-    (b p.a)
+    |%
+    +$  form  $+(form (result-form m2))
+    ++  bind
+      |*  m1=mold
+      |=  [a=(result-form m1) b=$-(m1 form)]
+      ^-  form
+      ?:  ?=(%| -.a)  a
+      (b p.a)
+    ::
+    --
   ::
   ++  snug
     |=  where=cord
     |*  [a=@ b=(list)]
-    |-  ^-  (result _?>(?=(^ b) i.b))
-    ?~  b  |+(crip (weld "index error in " (trip where)))
+    =/  r  (result _?>(?=(^ b) i.b))
+    |-  ^-  form:r
+    ?~  b  |+(cat 3 'index error in ' where)
     ?:  =(a 0)  &+i.b
     $(a (dec a), b t.b)
   ::
   ++  validate-module
     |=  m=module
-    =/  try  (build-try ,~)
-    ^-  (result ~)
-    ;<  import-out=import:output  try  (v-import-section m)
+    =/  r  (result ,~)
+    ^-  form:r
+    ;<  import-out=import:output  bind:r  (v-import-section m)
     =/  n-funcs-import=@  (lent funcs.import-out)
-    ;<  functypes=(list func-type)  try
+    ;<  functypes=(list func-type)  bind:r
       (v-function-section m funcs.import-out)
-    ;<  tables=(list table)  try  (v-table-section m tables.import-out)
-    ;<  memo=(unit limits)  try  (v-memory-section m memo.import-out)
+    ;<  tables=(list table)  bind:r  (v-table-section m tables.import-out)
+    ;<  memo=(unit limits)  bind:r  (v-memory-section m memo.import-out)
     =/  n-funcs=@  (lent functypes)
     =/  n-tables=@  (lent tables)
-    ;<  =glob-types  try
+    ;<  =glob-types  bind:r
       (v-global-section m globs.import-out n-funcs)
-    ;<  ~  try
+    ;<  ~  bind:r
       %:  v-export-section
         m
         n-funcs
@@ -61,10 +67,10 @@
         ?^(memo 1 0)
         (lent glob-types)
       ==
-    ;<  ~  try  (v-start-section m functypes)
-    ;<  ~  try  (v-elem-section m n-tables)
-    ;<  datacnt=@  try  (v-datacnt-section m)
-    ;<  ~  try
+    ;<  ~  bind:r  (v-start-section m functypes)
+    ;<  ~  bind:r  (v-elem-section m n-tables)
+    ;<  datacnt=@  bind:r  (v-datacnt-section m)
+    ;<  ~  bind:r
       %:  v-code-section
         m
         n-funcs-import
@@ -79,14 +85,14 @@
     |=  m=module
     =|  out=import:output
     =/  num-types=@  (lent type-section.m)
-    =/  try  (build-try import:output)
-    |-  ^-  (result import:output)
+    =/  r  (result import:output)
+    |-  ^-  form:r
     ?~  import-section.m
       &+out
     ?-    -.desc.i.import-section.m
         %func
       =/  idx=@  type-id.desc.i.import-section.m
-      ;<  type=func-type  try  ((snug 'import functype') idx type-section.m)
+      ;<  type=func-type  bind:r  ((snug 'import functype') idx type-section.m)
       %=  $
         import-section.m  t.import-section.m
         funcs.out  [type funcs.out]
@@ -120,11 +126,11 @@
   ++  v-function-section
     |=  [m=module functypes-import=(list func-type)]
     =/  functypes=(list func-type)  functypes-import
-    =/  try  (build-try (list func-type))
-    |-  ^-  (result (list func-type))
+    =/  r  (result (list func-type))
+    |-  ^-  form:r
     ?~  function-section.m  &+(flop functypes)
     =/  idx=@  i.function-section.m
-    ;<  type=func-type  try  ((snug 'local functype') idx type-section.m)
+    ;<  type=func-type  bind:r  ((snug 'local functype') idx type-section.m)
     %=  $
       function-section.m  t.function-section.m
       functypes  [type functypes]
@@ -132,24 +138,28 @@
   ::
   ++  v-table-section
     |=  [m=module tables=(list table)]
-    ^-  (result (list table))
+    =/  r  (result (list table))
+    ^-  form:r
     ?~  table-section.m  &+(flop tables)
     ?.  (validate-limits q.i.table-section.m)  |+'invalid limits local table'
     $(table-section.m t.table-section.m, tables [i.table-section.m tables])
   ::
   ++  v-memory-section
     |=  [m=module memo=(unit limits)]
-    ^-  (result (unit limits))
+    =/  r  (result (unit limits))
+    ^-  form:r
     =/  len-memos=@  (lent memory-section.m)
     ?:  (gth len-memos 1)  |+'multiple memos'
     ?:  &(?=(^ memo) (gth len-memos 0))  |+'multiple memos'
     ?^  memo  &+memo
+    ?:  =(len-memos 0)  &+~
     &+`-.memory-section.m
   ::
   ++  v-global-section
     |=  [m=module gt=glob-types n-funcs=@]
     =/  n-glob-import=@  (lent gt)
-    |-  ^-  (result glob-types)
+    =/  r  (result glob-types)
+    |-  ^-  form:r
     ?~  global-section.m  &+(flop gt)
     =/  glob  i.global-section.m
     ?-    -.i.glob
@@ -176,7 +186,8 @@
   ++  v-export-section
     |=  [m=module n-funcs=@ n-tables=@ n-memos=@ n-globs=@]
     =|  names=(set cord)
-    |-  ^-  (result ~)
+    =/  r  (result ,~)
+    |-  ^-  form:r
     ?~  export-section.m  &+~
     =/  exp  i.export-section.m
     ?:  (~(has in names) name.exp)  |+'name duplicate'
@@ -192,11 +203,11 @@
   ::
   ++  v-start-section
     |=  [m=module functypes=(list func-type)]
-    =/  try  (build-try ,~)
-    ^-  (result ~)
+    =/  r  (result ,~)
+    ^-  form:r
     ?~  start-section.m  &+~
     =/  func-idx=@  u.start-section.m
-    ;<  type=func-type  try  ((snug 'start section') func-idx functypes)
+    ;<  type=func-type  bind:r  ((snug 'start section') func-idx functypes)
     ?.  ?=([~ ~] type)
       |+'non-void start function'
     &+~
@@ -207,7 +218,8 @@
     ::  and init expression are limited to a single %ref* instruction
     ::
     |=  [m=module n-tables=@]
-    ^-  (result ~)
+    =/  r  (result ,~)
+    ^-  form:r
     ?~  elem-section.m  &+~
     =/  elem  i.elem-section.m
     ?.  ?=(%acti -.m.elem)  $(elem-section.m t.elem-section.m)
@@ -217,7 +229,8 @@
   ::
   ++  v-datacnt-section
     |=  m=module
-    ^-  (result @)
+    =/  r  (result @)
+    ^-  form:r
     ?~  datacnt-section.m  &+0
     &+u.datacnt-section.m
   ::
@@ -227,11 +240,11 @@
             =store
         ==  
     =/  idx=@  n-funcs-import
-    =/  try  (build-try ,~)
-    |-  ^-  (result ~)
+    =/  r  (result ,~)
+    |-  ^-  form:r
     ?~  code-section.m  &+~
-    ;<  type=func-type  try  ((snug 'code section') idx funcs.store)
-    ;<  ~  try  (validate-code idx i.code-section.m type m store)
+    ;<  type=func-type  bind:r  ((snug 'code section') idx funcs.store)
+    ;<  ~  bind:r  (validate-code idx i.code-section.m type m store)
     $(idx +(idx), code-section.m t.code-section.m)
   ::
   ++  v-data-section
@@ -239,7 +252,8 @@
     ::  offset expression may only be %const instruction
     ::
     |=  m=module
-    ^-  (result ~)
+    =/  r  (result ,~)
+    ^-  form:r
     ?~  data-section.m  &+~
     =/  data  i.data-section.m
     ?:  ?=(%pass -.data)
@@ -254,10 +268,10 @@
             =module
             =store
         ==
-    =/  try  (build-try ,~)
-    ^-  (result ~)
-    =/  locals  locals.code
-    =/  stack=(list valtype)  (flop params.type)
+    =/  r  (result ,~)
+    ^-  form:r
+    =/  locals  (weld params.type locals.code)
+    =/  stack=(list valtype)  ~
     =/  frames=(list (list valtype))  ~[results.type]
     =/  res
       %:  validate-expr
@@ -270,7 +284,7 @@
       ==
     ?-  -.res
       %&  res
-      %|  |+(crip (weld "func {<idx>}: " (trip p.res)))
+      %|  |+(cat 3 (crip "func {<idx>}: ") p.res)
     ==
   ::
   ++  validate-expr
@@ -282,24 +296,26 @@
                 stack=(list valtype)
                 frames=(list (list valtype))
         ==  ==
-    =/  try  (build-try ,~)
-    ^-  (result ~)
+    =/  r  (result ,~)
+    ^-  form:r
     ?~  expr
-      ?.  =(-.frames.args (flop stack.args))  |+'type error in result'
+      ?.  =(-.frames.args (flop stack.args))
+        ~&  [frames.args (flop stack.args)]
+        |+'type error in result'
       &+~
     =/  instr  i.expr
     ::  stack-polymorphic instructions (unconditional control transfer)
     ::
     ?:  ?=(%unreachable -.instr)  &+~
     ?:  ?=(%br -.instr)
-      ;<  results=(list valtype)  try  ((snug 'br frames') label.instr frames.args)
+      ;<  results=(list valtype)  bind:r  ((snug 'br frames') label.instr frames.args)
       ?.  =(results (flop (scag (lent results) stack.args)))  |+'br type error'
       &+~
     ?:  ?=(%br-table -.instr)
       =/  labels=(list @)  [label-default label-vec]:instr
-      |-  ^-  (result ~)
+      |-  ^-  form:r
       ?~  labels  &+~
-      ;<  results=(list valtype)  try  ((snug 'br-table frames') i.labels frames.args)
+      ;<  results=(list valtype)  bind:r  ((snug 'br-table frames') i.labels frames.args)
       ?.  =(results (flop (scag (lent results) stack.args)))  |+'br-table type error'
       $(labels t.labels)
     ?:  ?=(%return -.instr)
@@ -307,9 +323,9 @@
       =/  results=(list valtype)  (rear frames.args)
       ?.  =(results (flop (scag (lent results) stack.args)))  |+'return type error'
       &+~
-    ;<  [stack1=_stack.args frames1=_frames.args]  try
+    ;<  [stack1=_stack.args]  bind:r
       (validate-instr instr module store args)
-    $(expr t.expr, stack.args stack1, frames.args frames1)
+    $(expr t.expr, stack.args stack1)
   ::
   ++  validate-instr
     |=  $:  $=  instr
@@ -322,34 +338,34 @@
             stack=(pole valtype)
             frames=(list (list valtype))      
         ==
-    =/  try  (build-try _[stack frames])
-    ^-  (result _[stack frames])
+    =/  r  (result _stack)
+    ^-  form:r
     ::  value-polymorphic instructions
     ::
     ?:  ?=(%drop -.instr)
       ?~  stack  |+'drop empty'
-      &+[+.stack frames]
+      &+[+.stack]
     ?:  ?=(%select -.instr)
       ?~  +.instr
         ?.  &(?=([%i32 t1=* t2=* *] stack) =(t1.stack t2.stack))
           |+'select type error'
-        &+[+>.stack frames]
+        &+[+>.stack]
       ?.  ?&  ?=([%i32 t1=* t2=* *] stack)
               =(t1.stack t2.stack)
               =(t1.stack u.instr)
           ==
         |+'select type error'
-      &+[+>.stack frames]
+      &+[+>.stack]
     ::  block instructions
     ::
     ?:  ?=(%block -.instr)
-      ;<  type=func-type  try
+      ;<  type=func-type  bind:r
         ?@  type.instr  ((snug 'type idx in block') type.instr funcs.store)
         &+type.instr
       =/  n-params=@  (lent params.type)
       ?.  =(params.type (flop (scag n-params stack)))
         |+'block params mismatch'
-      ;<  ~  try
+      ;<  ~  bind:r
         %:  validate-expr
           body.instr
           module
@@ -358,15 +374,15 @@
           (flop params.type)
           [results.type frames]
         ==
-      &+[(weld (flop results.type) (slag n-params stack)) frames]
+      &+(weld (flop results.type) (slag n-params stack))
     ?:  ?=(%loop -.instr)
-      ;<  type=func-type  try
+      ;<  type=func-type  bind:r
         ?@  type.instr  ((snug 'type idx in loop') type.instr funcs.store)
         &+type.instr
       =/  n-params=@  (lent params.type)
       ?.  =(params.type (flop (scag (lent params.type) stack)))
-        |+'block params mismatch'
-      ;<  ~  try
+        |+'loop params mismatch'
+      ;<  ~  bind:r
         %:  validate-expr
           body.instr
           module
@@ -375,9 +391,9 @@
           (flop params.type)
           [params.type frames]
         ==
-      &+[(weld (flop results.type) (slag n-params stack)) frames]
+      &+(weld (flop results.type) (slag n-params stack))
     ?:  ?=(%if -.instr)
-      ;<  type=func-type  try
+      ;<  type=func-type  bind:r
         ?@  type.instr  ((snug 'type idx in loop') type.instr funcs.store)
         &+type.instr
       =/  n-params=@  (lent params.type)
@@ -385,62 +401,67 @@
       =.  stack  +.stack
       ?.  =(params.type (flop (scag n-params stack)))
         |+'if params mismatch'
-      ;<  ~  try
+      ;<  ~  bind:r
         %:  validate-expr
           branch-true.instr
           module
           store
           locals
           (flop params.type)
-          [params.type frames]
+          [results.type frames]
         ==
-      ;<  ~  try
+      ;<  ~  bind:r
         %:  validate-expr
           branch-false.instr
           module
           store
           locals
           (flop params.type)
-          [params.type frames]
+          [results.type frames]
         ==
-      &+[(weld (flop results.type) (slag n-params stack)) frames]
+      &+(weld (flop results.type) (slag n-params stack))
     ::  some instructions that are handled separately from the rest
     ::  for no good reason (except for %ref-is-null, it's kinda
     ::  polymorphic)
     ::
     ?:  ?=(%br-if -.instr)
-      ;<  results=(list valtype)  try
+      ;<  results=(list valtype)  bind:r
         ((snug 'br-if frames') label.instr frames)
       ?:  =(~ stack)  |+'br-if no cond'
       ?.  =(%i32 -.stack)  |+'br-if cond type mismatch'
       =.  stack  +.stack
-      ?.  =(results (flop stack))  |+'br-if type error'
-      &+[stack frames]
+      ?.  =(results (flop (scag (lent results) stack)))
+        |+'br-if type error'
+      &+stack
     ?:  ?=(%call -.instr)
-      ;<  type=func-type  try
+      ;<  type=func-type  bind:r
         ((snug 'call idx') func-id.instr funcs.store)
       =/  n-params=@  (lent params.type)
       ?.  =(params.type (flop (scag n-params stack)))
         |+'call params mismatch'
-      &+[(weld (flop results.type) (slag n-params stack)) frames]
+      &+(weld (flop results.type) (slag n-params stack))
     ?:  ?=(%call-indirect -.instr)
-      ;<  type=func-type  try
+      ;<  type=func-type  bind:r
         ((snug 'call-indirect idx') type-id.instr type-section.module)
       =/  n-params=@  (lent params.type)
+      ?:  =(~ stack)  |+'call-indirect stack empty'
+      ?.  =(%i32 -.stack)  |+'call-indirect idx type error'
+      =.  stack  +.stack
       ?.  =(params.type (flop (scag n-params stack)))
         |+'call-indirect params mismatch'
-      &+[(weld (flop results.type) (slag n-params stack)) frames]
+      &+(weld (flop results.type) (slag n-params stack))
     ?:  ?=(%ref-is-null -.instr)
       ?:  =(~ stack)  |+'ref-is-null empty stack'
       ?.  ?=(ref-type -.stack)  |+'ref-is-null type mismatch'
-      &+[[%i32 +.stack] frames]
+      &+[%i32 +.stack]
     ::  the rest
     ::
-    ;<  type=func-type  try  (get-type instr module store locals)
+    ;<  type=func-type  bind:r  (get-type instr module store locals)
     =/  n-params=@  (lent params.type)
     ?.   =(params.type (flop (scag n-params stack)))
+      ~&  [need=params.type find=(scag n-params stack)]
       |+(crip "type mismatch {<instr>}")
-    &+[(weld (flop results.type) (slag n-params stack)) frames]
+    &+(weld (flop results.type) (slag n-params stack))
   ::
   ++  get-type
     |=  $:  $=  instr
@@ -465,8 +486,8 @@
             =store
             locals=(list valtype)
         ==
-    =/  try  (build-try func-type)
-    ^-  (result func-type)
+    =/  r  (result func-type)
+    ^-  form:r
     ?-    -.instr
         %vec     (get-type-vec +.instr module store)
         %dbug    ~|(%dbug !!)
@@ -487,7 +508,7 @@
         %nearest      &+[~[type] ~[type]]:instr
         %sqrt         &+[~[type] ~[type]]:instr
         %wrap         &+[~[%i64] ~[%i32]]
-        %extend       &+[~[%i32] ~[%i64]]
+        %extend       &+[~[source-type] ~[type]]:instr
         %convert      &+[~[source-type] ~[type]]:instr
         %demote       &+[~[%f64] ~[%f32]]
         %promote      &+[~[%f32] ~[%f64]]
@@ -517,87 +538,91 @@
         %nop  &+[~ ~]
     ::
         %ref-null  &+[~ ~[t.instr]]
-        %ref-func  &+[~ ~[%func]]
+        %ref-func
+      ?.  (lth func-id.instr (lent funcs.store))  |+'ref func idx error'
+      &+[~ ~[%func]]
     ::
         %local-get
-      ;<  type=valtype  try  ((snug 'local get') index.instr locals)
+      ;<  type=valtype  bind:r  ((snug 'local get') index.instr locals)
       &+[~ ~[type]]
     ::
         %local-set
-      ;<  type=valtype  try  ((snug 'local set') index.instr locals)
+      ;<  type=valtype  bind:r  ((snug 'local set') index.instr locals)
       &+[~[type] ~]
     ::
         %local-tee
-      ;<  type=valtype  try  ((snug 'local tee') index.instr locals)
+      ;<  type=valtype  bind:r  ((snug 'local tee') index.instr locals)
       &+[~[type] ~[type]]
     ::
         %global-get
-      ;<  type=glob-type  try  ((snug 'global get') index.instr globs.store)
+      ;<  type=glob-type  bind:r  ((snug 'global get') index.instr globs.store)
       &+[~ ~[v.type]]
     ::
         %global-set
-      ;<  type=glob-type  try  ((snug 'global set') index.instr globs.store)
+      ;<  type=glob-type  bind:r  ((snug 'global set') index.instr globs.store)
       ?:  ?=(%con m.type)  |+'constant global set'
       &+[~[v.type] ~]
     ::
         %table-get
-      ;<  =table  try  ((snug 'table get') tab-id.instr tables.store)
+      ;<  =table  bind:r  ((snug 'table get') tab-id.instr tables.store)
       &+[~[%i32] ~[p.table]]
     ::
         %table-set 
-      ;<  =table  try  ((snug 'table get') tab-id.instr tables.store)
+      ;<  =table  bind:r  ((snug 'table get') tab-id.instr tables.store)
       &+[~[%i32 p.table] ~]
     ::
         %table-init
-      ;<  =table  try  ((snug 'table init table') tab-id.instr tables.store)
-      ;<  =elem  try
+      ;<  =table  bind:r  ((snug 'table init table') tab-id.instr tables.store)
+      ;<  =elem  bind:r
         ((snug 'table init elem') elem-id.instr elem-section.module)
       ?.  =(t.elem p.table)  |+'table init type mismatch'
       &+[~[%i32 %i32 %i32] ~]
     ::
         %elem-drop 
-      ;<  *  try
+      ;<  *  bind:r
         ((snug 'elem drop') elem-id.instr elem-section.module)
       &+[~ ~]
     ::
         %table-copy
-      ;<  tab-x=table  try
+      ;<  tab-x=table  bind:r
         ((snug 'table copy') tab-id-x.instr tables.store)
-      ;<  tab-y=table  try
+      ;<  tab-y=table  bind:r
         ((snug 'table copy') tab-id-y.instr tables.store)
       ?.  =(p.tab-x p.tab-y)  |+'table copy type mismatch'
       &+[~[%i32 %i32 %i32] ~]
     ::
         %table-grow
-      ;<  =table  try  ((snug 'table grow') tab-id.instr tables.store)
+      ;<  =table  bind:r  ((snug 'table grow') tab-id.instr tables.store)
       &+[~[p.table %i32] ~[%i32]]
     ::
         %table-size
-      ;<  =table  try  ((snug 'table grow') tab-id.instr tables.store)
+      ;<  =table  bind:r  ((snug 'table grow') tab-id.instr tables.store)
       &+[~ ~[%i32]]
     ::
         %table-fill
-      ;<  =table  try  ((snug 'table grow') tab-id.instr tables.store)
+      ;<  =table  bind:r  ((snug 'table grow') tab-id.instr tables.store)
       &+[~[%i32 p.table %i32] ~]
     ::
         %load
       ?~  memo.store  |+'load no memo'
-      =/  malaligned=?
+      =/  misaligned=?
         %+  gth  (bex align.m.instr)
         ?~  n.instr
           (byte-width type.instr)
         (div u.n.instr 8)
-      ?:  malaligned  |+'load malaligned'
+      ?:  misaligned
+        ~&  instr
+        |+'load misaligned'
       &+[~[%i32] ~[type.instr]]
     ::
         %store
       ?~  memo.store  |+'store no memo'
-      =/  malaligned=?
+      =/  misaligned=?
         %+  gth  (bex align.m.instr)
         ?~  n.instr
           (byte-width type.instr)
         (div u.n.instr 8)
-      ?:  malaligned  |+'store malaligned'
+      ?:  misaligned  |+'store misaligned'
       &+[~[%i32 type.instr] ~]
     ::
         %memory-size
@@ -610,11 +635,11 @@
     ::
         %memory-init
       ?~  memo.store  |+'init no memo'
-      ;<  *  try  ((snug 'memo init elem') x.instr elem-section.module)
+      ;<  *  bind:r  ((snug 'memo init elem') x.instr elem-section.module)
       &+[~[%i32 %i32 %i32] ~]
     ::
         %data-drop
-      ;<  *  try  ((snug 'memo init elem') x.instr elem-section.module)
+      ;<  *  bind:r  ((snug 'memo init elem') x.instr elem-section.module)
       &+[~ ~]
     ::
         %memory-copy
@@ -629,17 +654,144 @@
   ::
   ++  get-type-vec
     |=  [instr=instr-vec =module =store]
-    ^-  (result func-type)
-    !!
+    =/  r  (result func-type)
+    ^-  form:r
+    ?-    -.instr
+        %load
+      ?~  memo.store  |+'load no memo'
+      ?~  kind.instr
+        ?:  (gth (bex align.m.instr) 16)
+          |+'load misaligned'
+        &+[~[%i32] ~[%v128]]
+      ?-    q.u.kind.instr
+          ?(%splat %zero)
+        ?:  (gth (bex align.m.instr) (div p.u.kind.instr 8))
+          |+'load misaligned'
+        &+[~[%i32] ~[%v128]]
+      ::
+          [%extend sign=?(%s %u)]
+        ?:  (gth (bex align.m.instr) 8)
+          |+'load misaligned'
+        &+[~[%i32] ~[%v128]]
+      ==
+    ::
+        %load-lane
+      ?~  memo.store  |+'load no memo'
+      ?.  (lth l.instr (div 128 p.instr))  |+'load bad lane'
+      ?:  (gth (bex align.m.instr) (div p.instr 8))
+        |+'load misaligned'
+      &+[~[%i32 %v128] ~[%v128]]
+    ::
+        %store
+      ?~  memo.store  |+'store no memo'
+      ?:  (gth (bex align.m.instr) 16)
+        |+'store misaligned'
+      &+[~[%i32 %v128] ~]
+    ::
+        %store-lane
+      ?~  memo.store  |+'store no memo'
+      ?.  (lth l.instr (div 128 p.instr))  |+'load bad lane'
+      ?:  (gth (bex align.m.instr) (div p.instr 8))
+        |+'store misaligned'
+      &+[~[%i32 %v128] ~]
+    ::
+        %const  &+[~ ~[%v128]]
+        %shuffle
+      |-  ^-  form:r
+      ?~  lane-ids.instr  &+[~[%v128 %v128] ~[%v128]]
+      ?.  (lth i.lane-ids.instr 32)  |+'shuffle bad lane'
+      $(lane-ids.instr t.lane-ids.instr)
+    ::
+        %extract
+      ?.  (lth l.instr (dim-lane p.instr))  |+'extract bad lane'
+      &+[~[%v128] ~[(unpack p.instr)]]
+    ::
+        %replace
+      ?.  (lth l.instr (dim-lane p.instr))  |+'extract bad lane'
+      &+[~[%v128 (unpack p.instr)] ~[%v128]]
+    ::
+        %swizzle  &+[~[%v128 %v128] ~[%v128]]
+        %splat    &+[~[(unpack p.instr)] ~[%v128]]
+    ::
+        ?(%eq %ne %lt %gt %le %ge)  &+[~[%v128 %v128] ~[%v128]]  ::  vrelop
+    ::
+        %not
+      &+[~[%v128] ~[%v128]]  ::  vvunop
+    ::
+        ?(%and %andnot %or %xor)
+      &+[~[%v128 %v128] ~[%v128]]  ::  vvbinop
+    ::
+        %bitselect
+      &+[~[%v128 %v128 %v128] ~[%v128]]  ::  vvterop
+    ::
+        %any-true
+      &+[~[%v128] ~[%i32]]  ::  vvtestop
+    ::
+        ?(%abs %neg %popcnt %sqrt %ceil %floor %trunc %nearest)
+      &+[~[%v128] ~[%v128]]  ::  vunop
+    ::
+        %all-true  &+[~[%v128] ~[%i32]]
+        %bitmask   &+[~[%v128] ~[%i32]]
+        %narrow  &+[~[%v128 %v128] ~[%v128]]
+        ?(%shl %shr)  &+[~[%v128 %i32] ~[%v128]]
+        $?  %add
+            %sub
+            %min
+            %max
+            %avgr
+            %q15mul-r-sat
+            %mul
+            %div
+            %pmin
+            %pmax
+        ==
+      &+[~[%v128 %v128] ~[%v128]]
+    ::
+        %extadd  &+[~[%v128] ~[%v128]]
+        %extmul  &+[~[%v128 %v128] ~[%v128]]
+        %dot  &+[~[%v128 %v128] ~[%v128]]
+    ::
+        $?  %extend  
+            %convert 
+            %demote  
+            %promote 
+        ==
+      &+[~[%v128] ~[%v128]]  ::  vcvtop, trunc_sat is covered by vunop
+    ==
   ::
   ++  from-coin
     |=  coin=coin-wasm
     ^-  valtype
-    !!
+    ?-  -.coin
+      valtype  -.coin
+      %ref     +<.coin
+    ==
   ::
   ++  byte-width
-    |=  v=valtype
+    |=  v=?(num-type vec-type)
     ^-  @
-    !!
+    ?-  v
+      ?(%i32 %f32)  4
+      ?(%i64 %f64)  8
+      %v128         16
+    ==
+  ::
+  ++  dim-lane
+    |=  l=lane-type
+    ^-  @
+    ?-  l
+      %i8           16
+      %i16          8
+      ?(%i32 %f32)  4
+      ?(%i64 %f64)  2
+    ==
+  ::
+  ++  unpack
+    |=  l=lane-type
+    ^-  num-type
+    ?-  l
+      num-type  l
+      ?(%i8 %i16)  %i32
+    ==
   --  ::  |validator
 --

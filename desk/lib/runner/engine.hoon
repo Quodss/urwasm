@@ -122,12 +122,12 @@
     |=  st=store
     ^-  result
     |^
-    ;<  [* st=store]  _wasm-bind  (init-globals st)
-    ;<  [* st=store]  _wasm-bind  (init-table st)
-    ;<  [* st=store]  _wasm-bind  (init-elems st)
-    ;<  [* st=store]  _wasm-bind  (init-mem st)
-    ;<  [* st=store]  _wasm-bind  (init-data st)
-    ;<  [* st=store]  _wasm-bind  (start st)
+    ;<  [* st=store]  _wasm-bind  (init-globals st)  =>  +(st st)
+    ;<  [* st=store]  _wasm-bind  (init-table st)    =>  +(st st)
+    ;<  [* st=store]  _wasm-bind  (init-elems st)    =>  +(st st)
+    ;<  [* st=store]  _wasm-bind  (init-mem st)      =>  +(st st)
+    ;<  [* st=store]  _wasm-bind  (init-data st)     =>  +(st st)
+    ;<  [* st=store]  _wasm-bind  (start st)         =>  +(st st)
     [%0 ~ st]
     ::
     ++  init-globals
@@ -391,7 +391,7 @@
     |=  [e=expression l=local-state]
     ^-  local-state
     ?:  |(=(~ e) !=(~ br.stack.l))  ::  if navigating branch
-      l                             ::  jump to the end of expression 
+      l                             ::  jump to the end of expression
     $(l (apply -.e l), e +.e)
   ::  +dec-br: "decrement" branch. Preserve absolute branching
   ::  coordinates (trap, return, block), and safely decrement

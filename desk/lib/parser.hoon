@@ -385,7 +385,7 @@
         `[%load %i32 [arg1 arg2] `%8 `%u]
       ::
           %0x2e
-        `[%load %i32 [arg1 arg2] `%8 `%s]
+        `[%load %i32 [arg1 arg2] `%16 `%s]
       ::
           %0x2f
         `[%load %i32 [arg1 arg2] `%16 `%u]
@@ -1353,13 +1353,13 @@
       :-  ~
       :-  %extend
       ?-  op
-        %0xac  [%i64 %32 %s]
-        %0xad  [%i64 %32 %u]
-        %0xc0  [%i32 %8 %s]
-        %0xc1  [%i32 %16 %s]
-        %0xc2  [%i64 %8 %s]
-        %0xc3  [%i64 %16 %s]
-        %0xc4  [%i64 %32 %s]
+        %0xac  [%i64 %i32 %32 %s]
+        %0xad  [%i64 %i32 %32 %u]
+        %0xc0  [%i32 %i32 %8 %s]
+        %0xc1  [%i32 %i32 %16 %s]
+        %0xc2  [%i64 %i64 %8 %s]
+        %0xc3  [%i64 %i64 %16 %s]
+        %0xc4  [%i64 %i64 %32 %s]
       ==
     ::
         convert-opcodes:sur

@@ -324,7 +324,7 @@
                 [%sub %i32]
                 [%const %i32 offset]
                 [%add %i32]             ::  (copy_edge - edge + offset = edge after shift)
-                [%extend %i64 %32 %u]
+                [%extend %i64 %i32 %32 %u]  ::  0xad
                 [%const %i64 null-ptr]  ::  leading 1
                 [%add %i64]
               ::
@@ -483,7 +483,7 @@
           [%const %i32 space-width]
           [%mul %i32]
           [%local-get ptr]
-          [%extend %i64 %32 %u]
+          [%extend %i64 %i32 %32 %u]  ::  0xad
           [%const %i64 null-ptr]
           [%add %i64]
           [%store %i64 [0 offset] ~]
@@ -568,7 +568,7 @@
           [%const %i32 space-width]
           [%mul %i32]
           [%local-get ptr]
-          [%extend %i64 %32 %u]
+          [%extend %i64 %i32 %32 %u]  ::  0xad
           [%const %i64 null-ptr]
           [%add %i64]
           [%store %i64 [0 offset] ~]
@@ -607,7 +607,7 @@
     ::     [%const %i32 space-width]
     ::     [%mul %i32]
     ::     [%local-get ptr]
-    ::     [%extend %i64 %32 %u]
+    ::     [%extend %i64 %i32 %32 %u]  ::  0xad
     ::     [%const %i64 null-ptr]
     ::     [%add %i64]
     ::     [%store %i64 [0 offset] ~]
@@ -879,7 +879,7 @@
           [%const %i32 space-width]
           [%mul %i32]
           [%local-get ptr-king]
-          [%extend %i64 %32 %u]
+          [%extend %i64 %i32 %32 %u]  ::  0xad
           [%const %i64 null-ptr]
           [%add %i64]
           [%store %i64 [0 offset] ~]
@@ -1207,7 +1207,7 @@
               [%add %i32]
               [%load %i64 [0 len-size] `%8 `%u]
               [%local-get pow]
-              [%extend %i64 %32 %u]
+              [%extend %i64 %i32 %32 %u]  ::  0xad
               [%shl %i64]
               [%local-get res]
               [%add %i64]
@@ -1375,7 +1375,7 @@
         [%const %i32 space-width]
         [%mul %i32]
         [%local-get king-ptr]
-        [%extend %i64 %32 %u]
+        [%extend %i64 %i32 %32 %u]  ::  0xad
         [%const %i64 null-ptr]
         [%add %i64]
         [%store %i64 [0 offset] ~]
@@ -1409,7 +1409,7 @@
             [%const %i32 space-width]
             [%mul %i32]
             [%local-get king-ptr]
-            [%extend %i64 %32 %u]
+            [%extend %i64 %i32 %32 %u]  ::  0xad
             [%const %i64 null-ptr]
             [%add %i64]
             [%store %i64 [0 offset] ~]
