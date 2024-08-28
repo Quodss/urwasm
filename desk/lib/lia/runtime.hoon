@@ -2,6 +2,13 @@
 =>  encoder
 ~%  %lia-run-out  +  ~
 |%
+:: ++  sew
+::   |=  [a=bloq [b=step c=step d=@] e=@]
+::   ^-  @
+::   =/  g  (rsh [a (add b c)] e)
+::   =/  f  (met a g)
+::   (can a b^e c^d f^g ~)
+::
 ++  runtime
   =*  wasm    wasm-sur
   =*  lia     lia-sur

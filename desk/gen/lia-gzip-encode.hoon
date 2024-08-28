@@ -1,7 +1,7 @@
 /+  *lia-runtime
 /*  bin  %wasm  /tests/gzip/wasm
 ::
-|=  a=tape
+|=  a=octs
 ^-  octs
 ::
 |^  !.
@@ -47,12 +47,12 @@
 %-  lia-main:run
 :*
   bin
-  (reap 1 script ~[[%octs (to-octs a)]])
+  (reap 1 script ~[[%octs a]])
   ~
   ~
   ~
   ~
-  %none
+  %$
 ==
 ::
 ++  i-32

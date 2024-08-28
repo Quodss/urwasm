@@ -69,7 +69,7 @@
       ==
     ;<  ~  bind:r  (v-start-section m functypes)
     ;<  ~  bind:r  (v-elem-section m n-tables)
-    ;<  datacnt=@  bind:r  (v-datacnt-section m)
+    ;<  datacnt=(unit @)  bind:r  (v-datacnt-section m)
     ;<  ~  bind:r
       %:  v-code-section
         m
@@ -79,7 +79,7 @@
         memo
         glob-types
       ==
-    (v-data-section m)
+    (v-data-section m datacnt)
   ::
   ++  v-import-section
     |=  m=module
@@ -229,10 +229,9 @@
   ::
   ++  v-datacnt-section
     |=  m=module
-    =/  r  (result @)
+    =/  r  (result (unit @))
     ^-  form:r
-    ?~  datacnt-section.m  &+0
-    &+u.datacnt-section.m
+    &+datacnt-section.m
   ::
   ++  v-code-section
     |=  $:  m=module
@@ -249,12 +248,15 @@
   ::
   ++  v-data-section
     ::  data section is additionaly restrained by the parser:
-    ::  offset expression may only be %const instruction
+    ::  offset expression may only be a single %const instruction
     ::
-    |=  m=module
+    |=  [m=module datacnt=(unit @)]
     =/  r  (result ,~)
     ^-  form:r
-    ?~  data-section.m  &+~
+    ?:  &(?=(^ datacnt) !=(u.datacnt (lent data-section.m)))
+      |+'wrong datacnt'
+    ?~  data-section.m
+      &+~
     =/  data  i.data-section.m
     ?:  ?=(%pass -.data)
       $(data-section.m t.data-section.m)
@@ -284,7 +286,7 @@
       ==
     ?-  -.res
       %&  res
-      %|  |+(cat 3 (crip "func {<idx>}: ") p.res)
+      %|  |+(rap 3 'func ' (scot %ud idx) ': ' p.res ~)
     ==
   ::
   ++  validate-expr
@@ -422,7 +424,7 @@
       &+(weld (flop results.type) (slag n-params stack))
     ::  some instructions that are handled separately from the rest
     ::  for no good reason (except for %ref-is-null, it's kinda
-    ::  polymorphic)
+    ::  polymorphic, and br-if depends on frames)
     ::
     ?:  ?=(%br-if -.instr)
       ;<  results=(list valtype)  bind:r
@@ -459,7 +461,6 @@
     ;<  type=func-type  bind:r  (get-type instr module store locals)
     =/  n-params=@  (lent params.type)
     ?.   =(params.type (flop (scag n-params stack)))
-      ~&  [need=params.type find=(scag n-params stack)]
       |+(crip "type mismatch {<instr>}")
     &+(weld (flop results.type) (slag n-params stack))
   ::

@@ -34,6 +34,12 @@
   =/  rs  ~(. rs %n)
   =/  rd  ~(. rd %n)
   |%
+  :: ++  sew
+  ::   |=  [a=bloq [b=step c=step d=@] e=@]
+  ::   ^-  @
+  ::   =/  g  (rsh [a (add b c)] e)
+  ::   =/  f  (met a g)
+  ::   (can a b^e c^d f^g ~)
   ::  ++mayb: turn output of gat into a unit
   ::
   ++  mayb

@@ -977,7 +977,7 @@
       p
     ::  
     ++  datacnt-section
-      %+  cook  |=(datacnt-section:sur +<)
+      %+  cook  |=(datacnt-section:sur ~&([%foo +<] +<))
       (punt u32)
     ::
     ++  module
