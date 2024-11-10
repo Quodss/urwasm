@@ -88,7 +88,7 @@
           globals=(list coin-wasm)
       ==
     ::
-      [%2 ~]                                         ::  trap, crash
+      [%2 st=store]                                  ::  trap, crash
     ==
   ::
   +$  request

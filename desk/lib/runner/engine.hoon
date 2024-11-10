@@ -258,7 +258,7 @@
       ?^  br.stack.l
         ?+  br.stack.l  !!
           [%bloq p=*]  [%1 p.br.stack.l] 
-          [%trap ~]    [%2 ~]
+          [%trap ~]    [%2 store.l]
         ==
       %=    $
           id  +(id)
@@ -276,7 +276,7 @@
       ?+  br.stack  !!
         ~            [%0 ~ st-out]
         [%bloq p=*]  [%1 p.br.stack] 
-        [%trap ~]    [%2 ~]
+        [%trap ~]    [%2 st-out]
       ==
     --
   ::
@@ -325,7 +325,7 @@
           (change results.func-type (flop va.stack-out))
         st-out
       [%bloq p=*]  [%1 p.br.stack-out] 
-      [%trap ~]    [%2 ~]
+      [%trap ~]    [%2 st-out]
     ==
   ::  +call: call function by id, inside caller
   ::
