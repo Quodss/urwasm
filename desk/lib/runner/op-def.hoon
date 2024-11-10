@@ -22,8 +22,8 @@
 ::
 ::::  /hoon/op-def/lib
   ::
-/+  parser
-=>  parser
+/+  validator
+=>  validator
 ~%  %wasm-op-def  +  ~
 |%
 ++  op-def

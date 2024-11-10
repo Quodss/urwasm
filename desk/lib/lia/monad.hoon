@@ -1,7 +1,9 @@
 /+  runner-engine
 =>  runner-engine
+~%  %monad  +  ~
 |%
 ++  monad
+  ~%  %core  +  ~
   |%
   ++  tag-call       %0
   ++  tag-read       %1
@@ -24,9 +26,9 @@
       [mold-call name=cord args=(list cw)]
       [mold-read ptr=@ len=@]
       [mold-write ptr=@ len=@ src=@]
-      [mold-bind p=lia-monad q=$-((list lv) lia-monad)]
       [mold-pure p=(list lv)]
       [mold-call-lia name=term p=(list lv)]
+      [mold-bind p=lia-monad q=$-((list lv) lia-monad)]
     ==
   ::
   +$  seed
@@ -89,6 +91,7 @@
   ::
   ++  page-size  ^~((bex 16))
   ++  lia-reduce
+    ~/  %lia-reduce
     =*  run  engine
     |=  =seed
     =/  ast  (main:parser module.seed)  ::  TODO validate
