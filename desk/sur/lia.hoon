@@ -12,7 +12,12 @@
         $<(%ref coin-wasm)
     ==
   ::
-  +$  lia-state  (pair store (list (list lia-value)))
+  +$  import                               
+    %+  map  (pair cord cord)                
+    $-  (list coin-wasm)
+    (script-raw-form (list coin-wasm))
+  ::
+  +$  lia-state  (trel store (list (list lia-value)) import)
   ++  script-yield
     |$  [a]
     $%  [%0 p=a]
@@ -50,9 +55,11 @@
     ::
     ++  catch  ::  bind either
       |*  b=mold
-      |=  $:  m-try=(script-raw-form b)
-              m-err=(script-raw-form b)
-              gat=$-(b form)
+      |=  $:
+            $:  m-try=(script-raw-form b)
+                m-err=(script-raw-form b)
+            ==
+            gat=$-(b form)
           ==
       ^-  form
       |=  s=lia-state
@@ -77,16 +84,13 @@
     ::  shop: external results accumulator
     ::  import: Wasm module imports, static:
     ::    /import/name -> 
-    ::  script Kleisli arrow (coin-wasm -> coin-wasm)
+    ::  script Kleisli arrow ((list coin-wasm) -> (list coin-wasm))
     ::
     $:                                         
       module=octs                              
       past=(script-raw-form (list lia-value))  
-      shop=(list (list lia-value))             
-      $=  import                               
-      %+  map  (pair cord cord)                
-      $-  (list coin-wasm)                     
-      (script-raw-form coin-wasm)
+      shop=(list (list lia-value))
+      =import
     ==
   --
 --  ::  |lia-sur

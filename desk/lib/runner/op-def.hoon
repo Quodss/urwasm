@@ -178,7 +178,11 @@
     ^-  val
     ?:  ?=(%ref -.c)
       c
-    +.c
+    ?-  -.c
+      ?(%i32 %f32)  (mod +.c ^~((bex 32)))
+      ?(%i64 %f64)  (mod +.c ^~((bex 64)))
+      %v128         (mod +.c ^~((bex 128)))
+    ==
   ::
   ++  val-to-coin
     |=  [v=val ex=coin-wasm]
@@ -206,14 +210,23 @@
     ?>  (lth b (lent a))
     (snap a b c)
   ::  ++buy: resolve import. If shop is empty, build
-  ::  a request, otherwise push values on the stack
+  ::  a request, otherwise typecheck ans push values on the stack
   ::
   ++  buy
-    |=  [l=local-state req=[[mod=cord name=cord] =request]]
+    |=  [l=local-state req=[[mod=cord name=cord] =request] type=(list valtype)]
     ^-  local-state
     ?~  shop.store.l
       =,  store.l
       l(br.stack [%bloq req module mem tables globals])
+    =/  valid-types=?
+      =/  res=(list coin-wasm)  p.i.shop.store.l
+      |-  ^-  ?
+      ?:  &(?=(~ res) ?=(~ type))  &
+      ?>  &(?=(^ res) ?=(^ type))
+      ?&  =(-.i.res i.type)
+          $(res t.res, type t.type)
+      ==
+    ?>  valid-types
     %=    l
         va.stack
       %+  weld  
@@ -251,7 +264,7 @@
       :-  %&
       =+  idx=(sub id (lent tables))
       :-  idx
-      (snag (sub id (lent tables)) tables.st)
+      (snag idx tables.st)
     ::
     ++  memo
       |=  [id=@ st=store]
@@ -527,12 +540,13 @@
       =/  index=@  (add addr offset.m.i)
       =+  mem=(memo:grab 0 store.l)
       ?:  ?=(%| -.mem)
-        %+  buy  l(va.stack rest)
-        :*  -.p.mem
-            %memo
-            (change ~[%i32] ~[addr])
-            i
-        ==
+        %^  buy  l(va.stack rest)
+          :*  -.p.mem
+              %memo
+              (change ~[%i32] ~[addr])
+              i
+          ==
+        ~[type.i]
       =;  loaded=(unit @)
         ?~  loaded  l(br.stack [%trap ~])
         l(va.stack [u.loaded rest])
@@ -564,12 +578,13 @@
       =,  va.stack.l
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
-        %+  buy  l(va.stack rest)
-        :*  -.p.memo
-            %memo
-            (change ~[%i32 type.i] ~[addr content])
-            i
-        ==
+        %^  buy  l(va.stack rest)
+          :*  -.p.memo
+              %memo
+              (change ~[%i32 type.i] ~[addr content])
+              i
+          ==
+        ~
       =/  index=@  (add addr offset.m.i)
       =;  [size=@ to-put=@]
         =+  stored=(mem-store index size to-put p.memo)
@@ -601,8 +616,9 @@
         l(va.stack [(snag index.i locals.l) va.stack.l])
       =+  glob=(glob:grab index.i store.l)
       ?:  ?=(%| -.glob)
-        %+  buy  l
-        [-.p.glob %glob ~ i]
+        %^  buy  l
+          [-.p.glob %glob ~ i]
+        ~[v.p.glob]
       l(va.stack [(coin-to-val q.p.glob) va.stack.l])
     ::
     ++  set
@@ -622,8 +638,9 @@
           %global-set
         =+  glob=(glob:grab index.i store.l)
         ?:  ?=(%| -.glob)
-          %+  buy  l(va.stack rest)
-          [-.p.glob %glob (change ~[v.p.glob] ~[a]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.glob %glob (change ~[v.p.glob] ~[a]) i]
+          ~
         %=    l
             va.stack  rest
             globals.store
@@ -685,8 +702,9 @@
         =,  va.stack.l
         =+  tab=(table:grab tab-id.i store.l)
         ?:  ?=(%| -.tab)
-          %+  buy  l(va.stack rest)
-          [-.p.tab %tabl (change ~[%i32] ~[a]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.tab %tabl (change ~[%i32] ~[a]) i]
+          ~[p.t.p.tab]
         l(va.stack [(snag a q.p.tab) rest])
       ::
       ++  table-set
@@ -699,8 +717,9 @@
         =,  va.stack.l
         =+  tab=(table:grab tab-id.i store.l)
         ?:  ?=(%| -.tab)
-          %+  buy  l(va.stack rest)
-          [-.p.tab %tabl (change ~[%i32 p.t.p.tab] ~[a ref]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.tab %tabl (change ~[%i32 p.t.p.tab] ~[a ref]) i]
+          ~
         %=    l
             va.stack  rest
         ::
@@ -718,8 +737,9 @@
         =,  va.stack.l
         =+  tab=(table:grab tab-id.i store.l)
         ?:  ?=(%| -.tab)
-          %+  buy  l(va.stack rest)
-          [-.p.tab %tabl (change ~[%i32 %i32 %i32] ~[d s n]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.tab %tabl (change ~[%i32 %i32 %i32] ~[d s n]) i]
+          ~
         =+  elem=(snag elem-id.i elem-section.module.store.l)
         |-  ^-  local-state
         ?:  =(n 0)  l
@@ -809,8 +829,9 @@
         =,  va.stack.l
         =+  tab=(table:grab tab-id.i store.l)
         ?:  ?=(%| -.tab)
-          %+  buy  l(va.stack rest)
-          [-.p.tab %tabl (change ~[p.t.p.tab %i32] ~[val n]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.tab %tabl (change ~[p.t.p.tab %i32] ~[val n]) i]
+          ~[%i32]
         ?.  %+  lte-lim  (add n (lent q.p.tab))
             q:(snag p.p.tab table-section.module.store.l)
           l(va.stack [^~((en-si 32 -1)) rest])
@@ -829,8 +850,9 @@
         ^-  local-state
         =+  tab=(table:grab tab-id.i store.l)
         ?:  ?=(%| -.tab)
-          %+  buy  l
-          [-.p.tab %tabl ~ i]
+          %^  buy  l
+            [-.p.tab %tabl ~ i]
+          ~[%i32]
         l(va.stack [(lent q.p.tab) va.stack.l])
       ::
       ++  table-fill
@@ -843,8 +865,9 @@
         =,  va.stack.l
         =+  tab=(table:grab tab-id.^i store.l)
         ?:  ?=(%| -.tab)
-          %+  buy  l(va.stack rest)
-          [-.p.tab %tabl (change ~[%i32 p.t.p.tab %i32] ~[i val n]) ^i]
+          %^  buy  l(va.stack rest)
+            [-.p.tab %tabl (change ~[%i32 p.t.p.tab %i32] ~[i val n]) ^i]
+          ~
         %=    l
             va.stack  rest
         ::
@@ -880,8 +903,9 @@
         ^-  local-state
         =+  memo=(memo:grab 0 store.l)
         ?:  ?=(%| -.memo)
-          %+  buy  l
-          [-.p.memo %memo ~ i]
+          %^  buy  l
+            [-.p.memo %memo ~ i]
+          ~[%i32]
         l(va.stack [n-pages.p.memo va.stack.l])
       ::
       ++  memory-grow
@@ -895,8 +919,9 @@
         ::  imported memory
         ::
         ?:  ?=(%| -.memo)
-          %+  buy  l(va.stack rest)
-          [-.p.memo %memo (change ~[%i32] ~[a]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.memo %memo (change ~[%i32] ~[a]) i]
+          ~[%i32]
         ::  local memory
         ::
         %=  l
@@ -913,8 +938,9 @@
         =,  va.stack.l
         =+  memo=(memo:grab 0 store.l)
         ?:  ?=(%| -.memo)
-          %+  buy  l(va.stack rest)
-          [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+          ~
         =/  data-bytes=octs
           =+  data=(snag x.i data-section.module.store.l)
           ?:(?=(%acti -.data) b.data b.data)
@@ -955,8 +981,9 @@
         =,  va.stack.l
         =+  memo=(memo:grab 0 store.l)
         ?:  ?=(%| -.memo)
-          %+  buy  l(va.stack rest)
-          [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d s n]) i]
+          ~
         ?.  ?&  (lte (add s n) (mul page-size n-pages.p.memo))
                 (lte (add d n) (mul page-size n-pages.p.memo))
             ==
@@ -979,8 +1006,9 @@
         =,  va.stack.l
         =+  memo=(memo:grab 0 store.l)
         ?:  ?=(%| -.memo)
-          %+  buy  l(va.stack rest)
-          [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d val n]) i]
+          %^  buy  l(va.stack rest)
+            [-.p.memo %memo (change ~[%i32 %i32 %i32] ~[d val n]) i]
+          ~
         ?.  (lte (add d n) (mul page-size n-pages.p.memo))
           l(br.stack [%trap ~])
         %=    l
@@ -1673,12 +1701,13 @@
       =/  index=@  (add addr offset.m.i)
       =+  mem=(memo:grab 0 store.l)
       ?:  ?=(%| -.mem)
-        %+  buy  l(va.stack rest)
-        :*  -.p.mem
-            %memo
-            (change ~[%i32] ~[addr])
-            [%vec i]
-        ==
+        %^  buy  l(va.stack rest)
+          :*  -.p.mem
+              %memo
+              (change ~[%i32] ~[addr])
+              [%vec i]
+          ==
+        ~[%v128]
       ?~  kind.i
         =+  loaded=(mem-load index 16 p.mem)
         ?~  loaded  l(br.stack [%trap ~])
@@ -1726,12 +1755,13 @@
       =/  index=@  (add addr offset.m.i)
       =+  mem=(memo:grab 0 store.l)
       ?:  ?=(%| -.mem)
-        %+  buy  l(va.stack rest)
-        :*  -.p.mem
-            %memo
-            (change ~[%i32 %v128] ~[addr vec])
-            [%vec i]
-        ==
+        %^  buy  l(va.stack rest)
+          :*  -.p.mem
+              %memo
+              (change ~[%i32 %v128] ~[addr vec])
+              [%vec i]
+          ==
+        ~[%v128]
       =+  lane=(mem-load index (div p.i 8) p.mem)
       ?~  lane  l(br.stack [%trap ~])
       %=    l
@@ -1748,12 +1778,13 @@
       =,  va.stack.l
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
-        %+  buy  l(va.stack rest)
-        :*  -.p.memo
-            %memo
-            (change ~[%i32 %v128] ~[addr vec])
-            [%vec i]
-        ==
+        %^  buy  l(va.stack rest)
+          :*  -.p.memo
+              %memo
+              (change ~[%i32 %v128] ~[addr vec])
+              [%vec i]
+          ==
+        ~
       =/  index=@  (add addr offset.m.i)
       =+  mem-stored=(mem-store index 16 vec p.memo)
       ?~  mem-stored  l(br.stack [%trap ~])
@@ -1773,12 +1804,13 @@
       =,  va.stack.l
       =+  memo=(memo:grab 0 store.l)
       ?:  ?=(%| -.memo)
-        %+  buy  l(va.stack rest)
-        :*  -.p.memo
-            %memo
-            (change ~[%i32 %v128] ~[addr vec])
-            [%vec i]
-        ==
+        %^  buy  l(va.stack rest)
+          :*  -.p.memo
+              %memo
+              (change ~[%i32 %v128] ~[addr vec])
+              [%vec i]
+          ==
+        ~
       =/  index=@  (add addr offset.m.i)
       =+  lane=(cut (xeb (dec p.i)) [l.i 1] vec)
       =+  mem-stored=(mem-store index (div p.i 8) lane p.memo)

@@ -339,11 +339,12 @@
     ::  import case
     ::
     ?:  ?=(%| -.f)
-      %+  buy  l(va.stack (slag (lent params.func-type) va.stack.l))
-      :+  -.p.f  %func
-      %+  change  params.func-type
-      %-  flop
-      (scag (lent params.func-type) va.stack.l)
+      %^  buy  l(va.stack (slag (lent params.func-type) va.stack.l))
+        :+  -.p.f  %func
+        %+  change  params.func-type
+        %-  flop
+        (scag (lent params.func-type) va.stack.l)
+      results.func-type
     ::  local case
     ::  take input values
     ::
@@ -472,12 +473,13 @@
       ::  import table
       ::
       ?:  ?=(%| -.tab)
-        =+  params=params:(snag type-id.i type-section)
+        =/  =func-type  (snag type-id.i type-section)
         =/  input=(list coin-wasm)
-          %+  change  params
-          (flop (scag (lent params) rest))
-        %+  buy  l(va.stack (slag (lent params) rest))
-        [-.p.tab %tabl (weld input (change ~[%i32] ~[ref-id])) i]
+          %+  change  params.func-type
+          (flop (scag (lent params.func-type) rest))
+        %^  buy  l(va.stack (slag (lent params.func-type) rest))
+          [-.p.tab %tabl (weld input (change ~[%i32] ~[ref-id])) i]
+        results.func-type
       ::  local table
       ::
       ::  Type check of reference
@@ -503,10 +505,11 @@
       ::
       ?.  ?=([%ref %extn p=^] ref)
         l(br.stack [%trap ~])
-      %+  buy  l(va.stack (slag (lent params.type.u.p.ref) rest))
-      :-  -.u.p.ref
-      =*  params  params.type.u.p.ref
-      [%func (change params (flop (scag (lent params) rest)))]
+      %^  buy  l(va.stack (slag (lent params.type.u.p.ref) rest))
+        :-  -.u.p.ref
+        =*  params  params.type.u.p.ref
+        [%func (change params (flop (scag (lent params) rest)))]
+      results.type.u.p.ref
     ::
         [%if *]  ::  [%if type=block-type branch-true=expression branch-false=expression]
       ?>  ?=([f=@ rest=*] va.stack.l)
