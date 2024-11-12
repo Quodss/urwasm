@@ -16,7 +16,7 @@
 ::
 ::  Addition of non-numerical instructions, i.e. instructions
 ::  that read and/or write to fields other than the stack or
-::  involve references is slightly more general and requires 
+::  involve references is slightly more general and requires
 ::  writing a gate $-(local-state local-state). Look at
 ::  the examples in set:fetch
 ::
@@ -127,7 +127,7 @@
       ?>  &(?=(~ a) ?=(~ b))
       ~
     :_  $(a t.a, b t.b)
-    ;;  coin-wasm  ::  the compiler isn't convinced that the 
+    ;;  coin-wasm  ::  the compiler isn't convinced that the
     ?-    i.a      ::  expression below is a coin-wasm, why? :(
         ?(num-type vec-type)
       [i.a ?>(?=(@ i.b) i.b)]
@@ -189,7 +189,7 @@
     ^-  coin-wasm
     ?@  v
       ?<  ?=(%ref -.ex)
-      ;;  coin-wasm    ::  the compiler isn't convinced that the 
+      ;;  coin-wasm    ::  the compiler isn't convinced that the
       [-.ex v]         ::  expression below is a coin-wasm, why? :(
     ?>  ?=(%ref -.ex)
     ?>  =(+<.v +<.ex)  ::  assert: same reftypes
@@ -229,7 +229,7 @@
     ?>  valid-types
     %=    l
         va.stack
-      %+  weld  
+      %+  weld
         %-  flop
         (turn p.i.shop.store.l coin-to-val)
       va.stack.l
@@ -1377,7 +1377,7 @@
         =/  modulo=@  (bex (lane-size type.i))
         |=  [v=@ w=@]
         ^-  @
-        ?+  type.i  (~(sum fo modulo) v w) 
+        ?+  type.i  (~(sum fo modulo) v w)
           %f32  (add:rs v w)
           %f64  (add:rd v w)
         ==
@@ -1510,7 +1510,6 @@
         |=  [v=@ w=@]
         ^-  @
         (~(ror fe n) 0 (mod w base) v)
-
       ::
       ++  min
         |=  i=instruction
@@ -1962,7 +1961,7 @@
           ==
         ::
         +$  lane-wise-binary
-          $?  %eq  %ne  %lt  %gt  %le  %ge  %add  %sub 
+          $?  %eq  %ne  %lt  %gt  %le  %ge  %add  %sub
               %min  %max  %avgr  %q15mul-r-sat  %mul  %div
               %pmin  %pmax
           ==
@@ -2255,7 +2254,7 @@
           =,  si
           (sum (to-si size a) (to-si size b))
         ::
-            %sub 
+            %sub
           ?~  sat.i
             (bina:fetch [%sub p.i])
           =+  size=(lane-size p.i)
@@ -2336,7 +2335,7 @@
         ::
         ==
       ::  ++get-size: get size of a line-wise simd instruction.
-      ::  simd instructions that we care about either 
+      ::  simd instructions that we care about either
       ::  have the size at +2, or +6, or we set the size
       ::  manually in the case of %q15mul-r-sat and others
       ::

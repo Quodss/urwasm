@@ -113,9 +113,9 @@
     ==
     ::
     ++  resolve
-      |=  $:  [[mod=cord name=cord] =request:engine-sur]  
+      |=  $:  [[mod=cord name=cord] =request:engine-sur]
               =module:engine-sur
-              mem=(unit [buffer=@ n-pages=@])        
+              mem=(unit [buffer=@ n-pages=@])
               tables=(list (list $>(%ref coin-wasm:wasm-sur)))
               globals=(list coin-wasm:wasm-sur)
           ==
@@ -145,7 +145,7 @@
     ++  resolve
       |=  $:  [[mod=cord name=cord] =request:engine-sur]
               =module:engine-sur
-              mem=(unit [buffer=@ n-pages=@])        
+              mem=(unit [buffer=@ n-pages=@])
               tables=(list (list $>(%ref coin-wasm:wasm-sur)))
               globals=(list coin-wasm:wasm-sur)
           ==
@@ -173,9 +173,9 @@
     ==
     ::
     ++  resolve
-      |=  $:  [[mod=cord name=cord] =request:engine-sur]  
+      |=  $:  [[mod=cord name=cord] =request:engine-sur]
               =module:engine-sur
-              mem=(unit [buffer=@ n-pages=@])        
+              mem=(unit [buffer=@ n-pages=@])
               tables=(list (list $>(%ref coin-wasm:wasm-sur)))
               globals=(list coin-wasm:wasm-sur)
           ==

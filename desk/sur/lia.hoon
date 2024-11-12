@@ -12,8 +12,8 @@
         $<(%ref coin-wasm)
     ==
   ::
-  +$  import                               
-    %+  map  (pair cord cord)                
+  +$  import
+    %+  map  (pair cord cord)
     $-  (list coin-wasm)
     (script-raw-form (list coin-wasm))
   ::
@@ -83,12 +83,12 @@
     ::  past: script accumulator, fixed type
     ::  shop: external results accumulator
     ::  import: Wasm module imports, static:
-    ::    /import/name -> 
+    ::    /import/name ->
     ::  script Kleisli arrow ((list coin-wasm) -> (list coin-wasm))
     ::
-    $:                                         
-      module=octs                              
-      past=(script-raw-form (list lia-value))  
+    $:
+      module=octs
+      past=(script-raw-form (list lia-value))
       shop=(list (list lia-value))
       =import
     ==

@@ -53,7 +53,7 @@
       (comp |*([a=* b=*] b))
     ::  ++bonk: rule modifier. Applies two rules to a nail,
     ::  failing if either failed or if the rules returned
-    ::  different continuation. Returns the result of 
+    ::  different continuation. Returns the result of
     ::  the second rule otherwise.
     ::
     ++  bonk
@@ -222,7 +222,7 @@
     ++  const-i32  (just '\41')
     ++  const-i64  (just '\42')
     ++  const-f32  (just '\43')
-    ++  const-f64  (just '\44')  
+    ++  const-f64  (just '\44')
     ++  block-op   (just '\02')
     ++  loop-op    (just '\03')
     ++  if-op      (just '\04')
@@ -687,7 +687,7 @@
       ;~  pose
         (cold %con (just '\00'))
         (cold %var (just '\01'))
-      ==  
+      ==
     ::  Function section
     ::
     ++  function-section
@@ -810,7 +810,7 @@
         ;~(plug u32 expr ref-type (vec expr))
       ==
     ::
-    ++  elem-7  
+    ++  elem-7
       %+  cook  handle-elem-7
       ;~  pfix  (just '\07')
         ;~(plug ref-type (vec expr))
@@ -975,7 +975,7 @@
       ?:  ?=(%pass -.p)  p
       ?>  ?=($>(%const instruction:sur) off.p)
       p
-    ::  
+    ::
     ++  datacnt-section
       %+  cook  |=(datacnt-section:sur ~&([%foo +<] +<))
       (punt u32)
@@ -994,7 +994,7 @@
         (check 2 import-section *import-section:sur)
         (check 3 function-section *function-section:sur)
         (check 4 table-section *table-section:sur)
-        (check 5 memory-section *memory-section:sur) 
+        (check 5 memory-section *memory-section:sur)
         (check 6 global-section *global-section:sur)
         (check 7 export-section *export-section:sur)
         (check 8 start-section *start-section:sur)
@@ -1398,7 +1398,7 @@
       `[%vec u.unit]
     ?+  op    ~
       %14   `[%swizzle ~]
-      %98   `[%popcnt ~] 
+      %98   `[%popcnt ~]
       %77   `[%not ~]
       %78   `[%and ~]
       %79   `[%andnot ~]
@@ -1407,7 +1407,7 @@
       %82   `[%bitselect ~]
       %83   `[%any-true ~]
       %130  `[%q15mul-r-sat ~]
-      %186  `[%dot ~] 
+      %186  `[%dot ~]
       %94   `[%demote ~]
       %95   `[%promote ~]
     ::
@@ -1417,23 +1417,23 @@
       ?(%234 %246)  `(pmin op)
       ?(%235 %247)  `(pmax op)
       ?(%123 %155)  `(avgr op)
-      ?(%103 %116)  `(ceil op) 
+      ?(%103 %116)  `(ceil op)
       ?(%104 %117)  `(floor op)
     ::
       ?(%99 %131 %163 %195)   `(all-true op)
-      ?(%100 %132 %164 %196)  `(bitmask op) 
+      ?(%100 %132 %164 %196)  `(bitmask op)
       ?(%101 %102 %133 %134)  `(narrow op)
       ?(%107 %139 %171 %203)  `(shl op)
-      ?(%124 %125 %126 %127)  `(extadd op) 
+      ?(%124 %125 %126 %127)  `(extadd op)
       ?(%250 %251 %254 %255)  `(convert op)
     ::
-      ?(%149 %181 %213 %230 %242)       `(mul op) 
+      ?(%149 %181 %213 %230 %242)       `(mul op)
       ?(%15 %16 %17 %18 %19 %20)        `(splat op)
       ?(%35 %45 %55 %214 %65 %71)       `(eq op)
       ?(%36 %46 %56 %215 %66 %72)       `(ne op)
       ?(%96 %128 %160 %192 %224 %236)   `(abs op)
-      ?(%97 %129 %161 %193 %225 %237)   `(neg op) 
-      ?(%105 %122 %248 %249 %252 %253)  `(trunc op) 
+      ?(%97 %129 %161 %193 %225 %237)   `(neg op)
+      ?(%105 %122 %248 %249 %252 %253)  `(trunc op)
     ::
       ?(%37 %38 %47 %48 %57 %58 %216 %67 %73)  `(lt op)
       ?(%39 %40 %49 %50 %59 %60 %217 %68 %74)  `(gt op)
@@ -1444,8 +1444,8 @@
       ?(%118 %119 %150 %151 %182 %183 %232 %244)  `(min op)
       ?(%120 %121 %152 %153 %184 %185 %233 %245)  `(max op)
     ::
-      ?(%110 %111 %112 %142 %143 %144 %174 %206 %228 %240)  `(add op) 
-      ?(%113 %114 %115 %145 %146 %147 %177 %209 %229 %241)  `(sub op) 
+      ?(%110 %111 %112 %142 %143 %144 %174 %206 %228 %240)  `(add op)
+      ?(%113 %114 %115 %145 %146 %147 %177 %209 %229 %241)  `(sub op)
     ::
       ?(%135 %136 %137 %138 %167 %168 %169 %170 %199 %200 %201 %202)  `(extend op)
       ?(%156 %157 %158 %159 %188 %189 %190 %191 %220 %221 %222 %223)  `(extmul op)
@@ -1535,7 +1535,7 @@
         %195  %i64
       ==
     ::
-    ++  bitmask 
+    ++  bitmask
       |=  op=?(%100 %132 %164 %196)
       ^-  instr-vec:sur
       :-  %bitmask
@@ -1568,7 +1568,7 @@
         %203  %i64
       ==
     ::
-    ++  extadd 
+    ++  extadd
       |=  op=?(%124 %125 %126 %127)
       ^-  instr-vec:sur
       :-  %extadd
@@ -1590,8 +1590,8 @@
         %255  [%f64 %u]
       ==
     ::
-    ++  mul 
-      |=  op=?(%149 %181 %213 %230 %242)       
+    ++  mul
+      |=  op=?(%149 %181 %213 %230 %242)
       ^-  instr-vec:sur
       :-  %mul
       ?-  op
@@ -1603,7 +1603,7 @@
       ==
     ::
     ++  splat
-      |=  op=?(%15 %16 %17 %18 %19 %20)        
+      |=  op=?(%15 %16 %17 %18 %19 %20)
       ^-  instr-vec:sur
       :-  %splat
       ?-  op
@@ -1616,7 +1616,7 @@
       ==
     ::
     ++  eq
-      |=  op=?(%35 %45 %55 %214 %65 %71)       
+      |=  op=?(%35 %45 %55 %214 %65 %71)
       ^-  instr-vec:sur
       :-  %eq
       ?-  op
@@ -1629,7 +1629,7 @@
       ==
     ::
     ++  ne
-      |=  op=?(%36 %46 %56 %215 %66 %72)       
+      |=  op=?(%36 %46 %56 %215 %66 %72)
       ^-  instr-vec:sur
       :-  %ne
       ?-  op
@@ -1642,7 +1642,7 @@
       ==
     ::
     ++  abs
-      |=  op=?(%96 %128 %160 %192 %224 %236)   
+      |=  op=?(%96 %128 %160 %192 %224 %236)
       ^-  instr-vec:sur
       :-  %abs
       ?-  op
@@ -1654,8 +1654,8 @@
         %236  %f64
       ==
     ::
-    ++  neg 
-      |=  op=?(%97 %129 %161 %193 %225 %237)   
+    ++  neg
+      |=  op=?(%97 %129 %161 %193 %225 %237)
       ^-  instr-vec:sur
       :-  %neg
       ?-  op
@@ -1668,7 +1668,7 @@
       ==
     ::
     ++  trunc
-      |=  op=?(%105 %122 %248 %249 %252 %253)  
+      |=  op=?(%105 %122 %248 %249 %252 %253)
       ^-  instr-vec:sur
       :-  %trunc
       ?-  op

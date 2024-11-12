@@ -15,9 +15,9 @@
       =import-section      ::  Changed
       =function-section    ::  Changed to include code
     ::
-      =table-section    
-      =memory-section   
-      =global-section   
+      =table-section
+      =memory-section
+      =global-section
       =export-section
       =start-section
       =elem-section
@@ -71,7 +71,6 @@
             mem=(unit [buffer=@ n-pages=@])          ::  single membuffer
             tables=(list (list $>(%ref coin-wasm)))  ::  tables
             globals=(list coin-wasm)
-            
     ==  ==
   ::  $result: what we get after instantiation of
   ::  or invocation from a module
@@ -83,8 +82,8 @@
       $:  %1                                         ::  block
           [[mod=cord name=cord] =request]          ::  /module/name, request
           =module
-          mem=(unit [buffer=@ n-pages=@])         
-          tables=(list (list $>(%ref coin-wasm))) 
+          mem=(unit [buffer=@ n-pages=@])
+          tables=(list (list $>(%ref coin-wasm)))
           globals=(list coin-wasm)
       ==
     ::

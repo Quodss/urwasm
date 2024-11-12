@@ -382,7 +382,7 @@
   +$  elem-section  (list elem)
   ::  The %func-ref instructions are going to contain
   ::  function references. The offset in %acti
-  ::  active mode `off` and an element of `i` list 
+  ::  active mode `off` and an element of `i` list
   ::  of expressions are a single instruction because
   ::  they yield a single value
   ::
@@ -435,7 +435,7 @@
     $?
   ::  trap  nop   return  drop   select  wrap  demote  promote
       %0x0  %0x1  %0xf    %0x1a  %0x1b  %0xa7  %0xb6   %0xbb
-  ::    
+  ::
       eqz-opcodes  eq-opcodes  ne-opcodes  lt-opcodes  gt-opcodes  le-opcodes
       ge-opcodes  clz-opcodes  ctz-opcodes  popcnt-opcodes  add-opcodes
       sub-opcodes  mul-opcodes  div-opcodes  rem-opcodes  and-opcodes  or-opcodes
@@ -448,7 +448,7 @@
   +$  pseudo-opcode  ?(%0x5 %0xb)  ::  else, end
   +$  bin-opcodes-one-arg
     $?
-  ::  br    br_if  call  local.get  local.set  local.tee  global.get  global.set  
+  ::  br    br_if  call  local.get  local.set  local.tee  global.get  global.set
       %0xc  %0xd   %0x10  %0x20     %0x21      %0x22      %0x23       %0x24
   ::
       const-opcodes

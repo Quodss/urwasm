@@ -238,7 +238,7 @@
     |=  $:  m=module
             n-funcs-import=@
             =store
-        ==  
+        ==
     =/  idx=@  n-funcs-import
     =/  r  (result ,~)
     |-  ^-  form:r
@@ -339,7 +339,7 @@
             =store
             locals=(list valtype)
             stack=(pole valtype)
-            frames=(list (list valtype))      
+            frames=(list (list valtype))
         ==
     =/  r  (result _stack)
     ^-  form:r
@@ -570,7 +570,7 @@
       ;<  =table  bind:r  ((snug 'table get') tab-id.instr tables.store)
       &+[~[%i32] ~[p.table]]
     ::
-        %table-set 
+        %table-set
       ;<  =table  bind:r  ((snug 'table get') tab-id.instr tables.store)
       &+[~[%i32 p.table] ~]
     ::
@@ -581,7 +581,7 @@
       ?.  =(t.elem p.table)  |+'table init type mismatch'
       &+[~[%i32 %i32 %i32] ~]
     ::
-        %elem-drop 
+        %elem-drop
       ;<  *  bind:r
         ((snug 'elem drop') elem-id.instr elem-section.module)
       &+[~ ~]
@@ -754,10 +754,10 @@
         %extmul  &+[~[%v128 %v128] ~[%v128]]
         %dot  &+[~[%v128 %v128] ~[%v128]]
     ::
-        $?  %extend  
-            %convert 
-            %demote  
-            %promote 
+        $?  %extend
+            %convert
+            %demote
+            %promote
         ==
       &+[~[%v128] ~[%v128]]  ::  vcvtop, trunc_sat is covered by vunop
     ==
