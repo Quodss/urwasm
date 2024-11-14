@@ -41,13 +41,19 @@
     ++  form  (script-raw-form a)
     ++  return  ::  pure
       |=  arg=a
-      `form`|=(s=lia-state [0+arg s])
+      :: =*  sam  +<
+      ^-  form
+      |=  s=lia-state
+      :: ~&  !.(ret-sam+!=(sam))
+      [0+arg s]
     ::
     ++  try  ::  monadic bind
       |*  b=mold
       |=  [m-b=(script-raw-form b) gat=$-(b form)]
+      :: =*  sam  +<
       ^-  form
       |=  s=lia-state
+      :: ~&  !.(try-sam+!=(sam))
       =^  b-yil=(script-yield b)  s  (m-b s)
       ^-  output
       ?.  ?=(%0 -.b-yil)  [b-yil s]

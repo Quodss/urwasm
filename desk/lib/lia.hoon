@@ -21,13 +21,23 @@
     ~/  %run
     |=  [input=run-input =seed hint=term]
     ::
-    :: ~&  !.(call+!=(call))                 ::  [9 20 0 7]        pull
-    :: ~&  !.(memread+!=(memread))           ::  [9 374 0 7]       pull
-    :: ~&  !.(memwrite+!=(memwrite))         ::  [9 92 0 7]        pull
-    :: ~&  !.(call-ext+!=(call-ext))         ::  [9 2986 0 7]      pull
-    :: ~&  !.(try-m+!=(try:runnable))        ::  [9 21 9 372 0 7]  pull x2
-    :: ~&  !.(catch-m+!=(catch:runnable))    ::  [9 4 9 372 0 7]   pull x2
-    :: ~&  !.(return-m+!=(return:runnable))  ::  [9 20 9 372 0 7]  pull
+    :: =+  `(script-raw-form)`(call)  =>  +
+    :: =+  `(script-raw-form)`(memread)  =>  +
+    :: =+  `(script-raw-form)`(memwrite)  =>  +
+    :: =+  `(script-raw-form)`(call-ext)  =>  +
+    :: =+  `(script-raw-form)`((try:runnable))  =>  +
+    :: =+  `(script-raw-form)`((catch:runnable))  =>  +
+    :: =+  `(script-raw-form)`(return:runnable)  =>  +
+
+    :: ~&  !.(call+!=(call))                 ::  [9 20 0 7]        kick
+    :: ~&  !.(memread+!=(memread))           ::  [9 374 0 7]       kick
+    :: ~&  !.(memwrite+!=(memwrite))         ::  [9 92 0 7]        kick
+    :: ~&  !.(call-ext+!=(call-ext))         ::  [9 2986 0 7]      kick
+    :: ~&  !.(runnable+!=(runnable))         ::  [9 372 0 7]
+    :: ~&  'from runnable:'
+    :: ~&  !.(try-m+!=(try):runnable)        ::  [9 21 0 1]  kick x2
+    :: ~&  !.(catch-m+!=(catch):runnable)    ::  [9 4 0 1]   kick x2
+    :: ~&  !.(return-m+!=(return):runnable)  ::  [9 20 0 1]  kick
     ::
     =,  engine-sur
     =/  m  runnable
@@ -36,7 +46,9 @@
     =.  seed
       ?-    -.input
           %&
-        seed(past ;<(,*:~ try:m past.seed p.input))  ::  past.seed >> p.input
+        ::  jet matching hack
+        ::
+        seed(past ((try:m) past.seed =>(p.input |=(* +>))))  ::  past.seed >> p.input
       ::
           %|
         seed(shop (snoc shop.seed p.input))
@@ -76,9 +88,13 @@
   ::
   ++  call
     |=  [name=cord args=(list @)]
+    :: =*  ctx  +>
+    :: =*  sam  +<
     =/  m  (script (list @))
     ^-  form:m
     |=  sat=lia-state
+    :: ~&  !.(call-ctx+!=(ctx))
+    :: ~&  !.(call-sam+!=(sam))
     =,  module.p.sat
     =/  id=@  (find-func-id:engine name module.p.sat)
     =/  id-local=@
@@ -113,9 +129,11 @@
   ::
   ++  memread
     |=  [ptr=@ len=@]
+    :: =*  ctx  +>
     =/  m  (script octs)
     ^-  form:m
     |=  sat=lia-state
+    :: ~&  !.(memread-ctx+!=(ctx))
     ?~  mem.p.sat  [2+~ sat]
     =,  u.mem.p.sat
     ?:  (gth (add ptr len) (mul n-pages page-size))
@@ -124,9 +142,11 @@
   ::
   ++  memwrite
     |=  [ptr=@ len=@ src=@]
+    :: =*  ctx  +>
     =/  m  (script ,~)
     ^-  form:m
     |=  sat=lia-state
+    :: ~&  !.(memwrite-ctx+!=(ctx))
     ?~  mem.p.sat  [2+~ sat]
     =,  u.mem.p.sat
     ?:  (gth (add ptr len) (mul n-pages page-size))
