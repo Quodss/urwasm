@@ -69,7 +69,7 @@
         (lent glob-types)
       ==
     ;<  ~  bind:r  (v-start-section m functypes)
-    ;<  ~  bind:r  (v-elem-section m n-tables)
+    ;<  ~  bind:r  (v-elem-section m n-tables functypes)
     ;<  datacnt=(unit @)  bind:r  (v-datacnt-section m)
     ;<  ~  bind:r
       %:  v-code-section
@@ -218,11 +218,22 @@
     ::  expression is limited to a single %const instruction,
     ::  and init expression are limited to a single %ref* instruction
     ::
-    |=  [m=module n-tables=@]
+    |=  [m=module n-tables=@ functypes=(list func-type)]
     =/  r  (result ,~)
     ^-  form:r
     ?~  elem-section.m  &+~
     =/  elem  i.elem-section.m
+    ;<  ~  bind:r
+      =/  r  (result ,~)
+      |-  ^-  form:r
+      ?~  i.elem  &+~
+      ?:  ?=(%ref-null -.i.i.elem)
+        ?:  =(t.elem t.i.i.elem)  $(i.elem t.i.elem)
+        |+'%ref-null type mismatch in element'
+      ?.  ?=(%func t.elem)  |+'%ref-null type mismatch in element'
+      =/  idx=@  func-id.i.i.elem
+      ;<  *  bind:r  ((snug 'elem section funcref') idx functypes)
+      $(i.elem t.i.elem)
     ?.  ?=(%acti -.m.elem)  $(elem-section.m t.elem-section.m)
     ?:  (gte tab.m.elem n-tables)  |+'element index error'
     ?.  ?=(%i32 -.p.off.m.elem)  |+'type error in element offset'

@@ -47,8 +47,9 @@
       ?-    -.input
           %&
         ::  jet matching hack
+        ::  past.seed >> p.input
         ::
-        seed(past ((try:m) past.seed =>(p.input |=(* +>))))  ::  past.seed >> p.input
+        seed(past ((try:m) past.seed =>(p.input |=(* +>))))
       ::
           %|
         seed(shop (snoc shop.seed p.input))
@@ -58,10 +59,8 @@
     ?>  ?=(%& -.valid)
     =/  sat=lia-state  [(conv:engine ast ~) shop.seed import.seed]
     |^  ^-  [yield:m _seed]
-    :_  seed
-    =<  -
-    %.  sat
-    ;<(* try:m init past.seed)  ::  init >> past.seed
+    =/  yil=yield:m  -:(;<(* try:m init past.seed) sat)  ::  ((init >> past.seed) sat)
+    [yil seed]
     ::
     ++  init
       =/  m  (script ,~)

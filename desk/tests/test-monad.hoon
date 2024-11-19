@@ -62,9 +62,11 @@
     =/  m  runnable:script-lib
     =,  script-lib
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
-    ;<  ptr0=@    try:m  (call-1 '__wbindgen_malloc' 5 1 ~)
-    ;<  *         try:m  (memwrite ptr0 5 'hello')
-    ;<  *         try:m  (call 'process' retptr ptr0 5 ~)
+    =/  src=@  'hello'
+    =/  len0=@  (met 3 src)
+    ;<  ptr0=@    try:m  (call-1 '__wbindgen_malloc' len0 1 ~)
+    ;<  *         try:m  (memwrite ptr0 len0 src)
+    ;<  *         try:m  (call 'process' retptr ptr0 len0 ~)
     ;<  r0=octs   try:m  (memread retptr 4)
     ;<  r1=octs   try:m  (memread (add 4 retptr) 4)
     ;<  r2=octs   try:m  (memread q.r0 q.r1)

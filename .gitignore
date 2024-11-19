@@ -8,3 +8,5 @@ zod*
 dev*
 desk/gen/bf-hoon.hoon
 desk/gen/bf2-hoon.hoon
+bus
+bus.new
