@@ -3,6 +3,8 @@
 /*  import-vec  %wasm  /tests/import-vec/wasm
 /*  fac-loop    %wasm  /tests/fac-br/wasm
 /*  flopper     %wasm  /tests/flopper/wasm
+::
+=/  flag=@tas  %$
 |%
 ++  test-import-vec
   %+  expect-eq
@@ -10,7 +12,7 @@
     !>
     |^
     %-  yield-need:script-lib
-    %^  run-once:script-lib  [import-vec import]  %$
+    %^  run-once:script-lib  [import-vec import]  flag
     =/  m  runnable:script-lib
     =,  script-lib
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
@@ -47,7 +49,7 @@
     !>  `(list lia-value:lia-sur)`~[i32+362.880]
     !>
     %-  yield-need:script-lib
-    %^  run-once:script-lib  [fac-loop ~]  %$
+    %^  run-once:script-lib  [fac-loop ~]  flag
     =/  m  runnable:script-lib
     =,  script-lib
     ;<  out=@  try:m  (call-1 'factorial' 9 ~)
@@ -58,7 +60,7 @@
     !>
     |^
     %-  yield-need:script-lib
-    %^  run-once:script-lib  [flopper ~]  %$
+    %^  run-once:script-lib  [flopper ~]  flag
     =/  m  runnable:script-lib
     =,  script-lib
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
@@ -79,10 +81,9 @@
     !>  `(list lia-value:lia-sur)`~[i32+42]
     !>
     %-  yield-need:script-lib
-    %^  run-once:script-lib  [flopper ~]  %$
+    %^  run-once:script-lib  [flopper ~]  flag
     =/  m  runnable:script-lib
     =,  script-lib
     ;<  ptr0=@  try:m  (call-1 '__wbindgen_malloc' 5 1 ~)
     (return:m i32+42 ~)
-
 --

@@ -327,6 +327,8 @@
       &+~
     ?:  ?=(%br-table -.instr)
       =/  labels=(list @)  [label-default label-vec]:instr
+      ?.  =(%i32 -.stack.args)  |+'br-table index type error'
+      =.  stack.args  +.stack.args
       |-  ^-  form:r
       ?~  labels  &+~
       ;<  results=(list valtype)  bind:r  ((snug 'br-table frames') i.labels frames.args)

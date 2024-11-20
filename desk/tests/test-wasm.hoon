@@ -8,6 +8,7 @@
 /*  flopper    %wasm  /tests/flopper/wasm
 /*  import     %wasm  /tests/import/wasm
 /*  printf     %wasm  /tests/printf/wasm
+/*  br-table   %wasm  /tests/br-table1/wasm
 ::
 |%
 ++  test-table
@@ -190,4 +191,10 @@
       [~ [module mem tables globals]]
     ::
     --
+::
+++  test-validator
+  %+  expect-eq
+    !>  [%& ~]
+    !>
+    (validate-module:validator (main:parser br-table))
 --

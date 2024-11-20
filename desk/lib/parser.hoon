@@ -548,7 +548,7 @@
         ^-  (unit instruction:sur)
         ?+  op  ~
           %8   `[%memory-init arg1 ?>(?=(%0 arg2) arg2)]
-          %10  `[%memory-copy ?>(?=(%0 arg1) arg1) ?>(?=(%0 arg1) arg1)]
+          %10  `[%memory-copy ?>(?=(%0 arg1) arg1) ?>(?=(%0 arg2) arg2)]
           %12  `[%table-init arg1 arg2]
           %14  `[%table-copy arg1 arg2]
         ==
