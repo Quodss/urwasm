@@ -3,6 +3,7 @@
 /*  import-vec  %wasm  /tests/import-vec/wasm
 /*  fac-loop    %wasm  /tests/fac-br/wasm
 /*  flopper     %wasm  /tests/flopper/wasm
+/*  fac-if      %wasm  /tests/fac/wasm
 ::
 =/  flag=@tas  %$
 |%
@@ -44,6 +45,7 @@
       ::
       ==
     --
+:: ::
 ++  test-simple
   %+  expect-eq
     !>  `(list lia-value:lia-sur)`~[i32+362.880]
@@ -54,6 +56,7 @@
     =,  script-lib
     ;<  out=@  try:m  (call-1 'factorial' 9 ~)
     (return:m i32+out ~)
+::
 ++  test-flop
   %+  expect-eq
     !>  `(list lia-value:lia-sur)`~[octs+[5 'olleh']]
@@ -76,6 +79,7 @@
     ::
     ++  i32neg  ^~((cury sub (bex 32)))
     --
+::
 ++  test-1
   %+  expect-eq
     !>  `(list lia-value:lia-sur)`~[i32+42]
@@ -86,4 +90,15 @@
     =,  script-lib
     ;<  ptr0=@  try:m  (call-1 '__wbindgen_malloc' 5 1 ~)
     (return:m i32+42 ~)
+::
+++  test-2
+  %+  expect-eq
+    !>  `(list lia-value:lia-sur)`~[f64+.~362880]
+    !>
+    %-  yield-need:script-lib
+    %^  run-once:script-lib  [fac-if ~]  flag
+    =/  m  runnable:script-lib
+    =,  script-lib
+    ;<  out=@  try:m  (call-1 'fac' .~9 ~)
+    (return:m f64+out ~)
 --
