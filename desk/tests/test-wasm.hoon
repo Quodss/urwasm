@@ -188,7 +188,6 @@
       ?>  ?=([[%i32 off=@] [%i32 len=@] ~] args-pole)
       ?>  ?=(^ mem)
       =,  args-pole
-      ~&  [off len]
       ~&  >>  `cord`(cut 3 [off len] buffer.u.mem)
       [~ [module mem tables globals]]
     ::

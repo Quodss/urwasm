@@ -3,3 +3,5 @@ zod/
 zod.new/
 urbit
 .vscode
+bus*
+dev*
