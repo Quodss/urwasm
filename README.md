@@ -11,6 +11,8 @@ State of the project:
 
 - [X] Complete Wasm interpreter specification in Hoon
 - [X] Parsing of both binary and text Wasm file formats (the latter is done via Wasm calls, so it's slow without jets)
+- [X] Stage 1 complete! Jetted execution of Wasm without state preservation
+  - suitable for parsers, compession algorithms, etc
 
 Next:
 - [X] Language for Invocation of Assembly (Lia) specification
