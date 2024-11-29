@@ -1147,8 +1147,8 @@
         ^-  @
         =/  int=(unit @s)  (toi:r v)
         ?~  int  v
-        ?:  =(--0 u.int)  v
         ?:  &((gth:r v neg-one) (lth:r v `@`0))  neg-zero
+        ?:  =(--0 u.int)  v
         (san:r u.int)
       ::
       ++  floor
@@ -1165,8 +1165,8 @@
         ^-  @
         =/  int=(unit @s)  (toi:r v)
         ?~  int  v
-        ?:  =(--0 u.int)  v
         ?:  &((gth:r v `@`0) (lth:r v one))  0
+        ?:  =(--0 u.int)  v
         (san:r u.int)
       ::
       ++  trunc
@@ -1189,9 +1189,9 @@
           ^-  @
           =/  int=(unit @s)  (toi:r v)
           ?~  int  v
-          ?:  =(--0 u.int)  v
           ?:  &((lth:r v one) (gth:r v `@`0))  0
           ?:  &((lth:r v `@`0) (gth:r v neg-one))  neg-zero
+          ?:  =(--0 u.int)  v
           (san:r u.int)
         ::  conversion
         ::
@@ -1266,7 +1266,7 @@
         =/  int=(unit @s)  (toi:r v)
         ?~  int  v
         ?:  =(--0 u.int)
-          ?:  (gth:r v `@`0)  0
+          ?:  |((gth:r v `@`0) =(v 0))  0
           neg-zero
         (san:r u.int)
       ::
