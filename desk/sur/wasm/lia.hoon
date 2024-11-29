@@ -1,6 +1,6 @@
-/-  engine
-=>  engine
-~%  %monad-sur  +  ~
+/-  wasm-engine
+=>  wasm-engine
+~%  %monad-sur-v0  +  ~
 |%
 ++  lia-sur
   =,  wasm-sur

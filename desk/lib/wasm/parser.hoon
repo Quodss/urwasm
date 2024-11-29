@@ -1,8 +1,8 @@
 ::  WebAssembly parser
 ::
-/-  lia
-=>  lia
-~%  %wasm-parser  +  ~
+/-  wasm-lia
+=>  wasm-lia
+~%  %wasm-parser-v0  +  ~
 |%
 ++  parser
   =/  sur  wasm-sur

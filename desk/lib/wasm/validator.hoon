@@ -1,6 +1,6 @@
-/+  parser
-=>  parser
-~%  %validator  +  ~
+/+  wasm-parser
+=>  wasm-parser
+~%  %validator-v0  +  ~
 |%
 ++  validator
   =,  wasm-sur

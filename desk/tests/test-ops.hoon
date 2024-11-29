@@ -1,5 +1,5 @@
 /+  *test
-/+  *runner-engine
+/+  *wasm-runner-engine
 ::
 |%
 ++  test-int

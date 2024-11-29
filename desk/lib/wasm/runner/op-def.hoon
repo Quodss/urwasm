@@ -22,9 +22,9 @@
 ::
 ::::  /hoon/op-def/lib
   ::
-/+  validator
-=>  validator
-~%  %wasm-op-def  +  ~
+/+  wasm-validator
+=>  wasm-validator
+~%  %wasm-op-def-v0  +  ~
 |%
 ++  op-def
   =,  engine-sur

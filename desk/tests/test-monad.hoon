@@ -1,21 +1,23 @@
 /+  *test
-/+  *lia
+/+  wasm=wasm-lia
 /*  import-vec  %wasm  /tests/import-vec/wasm
 /*  fac-loop    %wasm  /tests/fac-br/wasm
 /*  flopper     %wasm  /tests/flopper/wasm
 /*  fac-if      %wasm  /tests/fac/wasm
 ::
 =/  flag=@tas  %$
+=/  lv  lia-value:lia-sur:wasm
+=/  cw  coin-wasm:wasm-sur:wasm
 |%
 ++  test-import-vec
   %+  expect-eq
-    !>  `(list lia-value:lia-sur)`~[octs+[5 'olleh']]
+    !>  `(list lv)`~[octs+[5 'olleh']]
     !>
     |^
-    %-  yield-need:script-lib
-    %^  run-once:script-lib  [import-vec import]  flag
-    =/  m  runnable:script-lib
-    =,  script-lib
+    %-  yield-need:wasm
+    %^  run-once:wasm  [import-vec import]  flag
+    =/  m  runnable:wasm
+    =,  wasm
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
     ;<  *         try:m  (call 'process' retptr ~)
     ;<  r0=octs   try:m  (memread retptr 4)
@@ -25,18 +27,18 @@
     ::
     ++  i32neg  ^~((cury sub (bex 32)))
     ++  import
-      ^-  import:lia-sur
-      =/  m  (script:lia-sur (list coin-wasm:wasm-sur))
+      ^-  import:lia-sur:wasm
+      =/  m  (script:lia-sur:wasm (list cw))
       %-  malt
       ^-  %-  list
           %+  pair  (pair cord cord)
-          $-((list coin-wasm:wasm-sur) form:m)
+          $-((list cw) form:m)
       :~
         :-  ['./len_bg.js' '__wbg_getvec_ab3ebae2a99ce16c']
-        |=  args=(pole coin-wasm:wasm-sur)
+        |=  args=(pole cw)
         ?>  ?=([[%i32 arg0=@] ~] args)
         =/  arg0=@  arg0.args
-        =,  script-lib
+        =,  wasm
         ;<  ptr1=@  try:m  (call-1 '__wbindgen_malloc' 5 1 ~)
         ;<  *       try:m  (memwrite ptr1 5 'hello')
         ;<  *       try:m  (memwrite arg0 4 ptr1)
@@ -48,24 +50,24 @@
 :: ::
 ++  test-simple
   %+  expect-eq
-    !>  `(list lia-value:lia-sur)`~[i32+362.880]
+    !>  `(list lv)`~[i32+362.880]
     !>
-    %-  yield-need:script-lib
-    %^  run-once:script-lib  [fac-loop ~]  flag
-    =/  m  runnable:script-lib
-    =,  script-lib
+    %-  yield-need:wasm
+    %^  run-once:wasm  [fac-loop ~]  flag
+    =/  m  runnable:wasm
+    =,  wasm
     ;<  out=@  try:m  (call-1 'factorial' 9 ~)
     (return:m i32+out ~)
 ::
 ++  test-flop
   %+  expect-eq
-    !>  `(list lia-value:lia-sur)`~[octs+[5 'olleh']]
+    !>  `(list lv)`~[octs+[5 'olleh']]
     !>
     |^
-    %-  yield-need:script-lib
-    %^  run-once:script-lib  [flopper ~]  flag
-    =/  m  runnable:script-lib
-    =,  script-lib
+    %-  yield-need:wasm
+    %^  run-once:wasm  [flopper ~]  flag
+    =/  m  runnable:wasm
+    =,  wasm
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
     =/  src=@  'hello'
     =/  len0=@  (met 3 src)
@@ -82,23 +84,23 @@
 ::
 ++  test-1
   %+  expect-eq
-    !>  `(list lia-value:lia-sur)`~[i32+42]
+    !>  `(list lv)`~[i32+42]
     !>
-    %-  yield-need:script-lib
-    %^  run-once:script-lib  [flopper ~]  flag
-    =/  m  runnable:script-lib
-    =,  script-lib
+    %-  yield-need:wasm
+    %^  run-once:wasm  [flopper ~]  flag
+    =/  m  runnable:wasm
+    =,  wasm
     ;<  ptr0=@  try:m  (call-1 '__wbindgen_malloc' 5 1 ~)
     (return:m i32+42 ~)
 ::
 ++  test-2
   %+  expect-eq
-    !>  `(list lia-value:lia-sur)`~[f64+.~362880]
+    !>  `(list lv)`~[f64+.~362880]
     !>
-    %-  yield-need:script-lib
-    %^  run-once:script-lib  [fac-if ~]  flag
-    =/  m  runnable:script-lib
-    =,  script-lib
+    %-  yield-need:wasm
+    %^  run-once:wasm  [fac-if ~]  flag
+    =/  m  runnable:wasm
+    =,  wasm
     ;<  out=@  try:m  (call-1 'fac' .~9 ~)
     (return:m f64+out ~)
 --

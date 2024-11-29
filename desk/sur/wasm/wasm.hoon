@@ -7,7 +7,7 @@
 ::::  /hoon/wasm/sur
   ::
 =>  ..part
-~%  %wasm-sur  +  ~
+~%  %wasm-sur-v0  +  ~
 ::
 |%
 +$  octs  (pair @ud @)

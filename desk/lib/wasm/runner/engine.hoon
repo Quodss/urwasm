@@ -1,8 +1,8 @@
 ::  Web Assembly AST interpreter
 ::
-/+  runner-op-def
-=>  runner-op-def
-~%  %wasm-engine  +  ~
+/+  wasm-runner-op-def
+=>  wasm-runner-op-def
+~%  %wasm-engine-v0  +  ~
 |%
 ++  engine
   ::

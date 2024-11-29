@@ -1,5 +1,5 @@
 /+  *test
-/+  *runner-engine
+/+  *wasm-runner-engine
 /*  div-table  %wasm  /tests/del-table/wasm
 /*  fac-loop   %wasm  /tests/fac-br/wasm
 /*  fib-rust   %wasm  /tests/fib/wasm
