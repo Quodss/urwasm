@@ -1438,13 +1438,18 @@
       ::
       ++  rem
         |=  i=instruction
-        %-  mayb
         ?>  ?=(%rem -.i)
-        ?:  =(%u mode.i)  mod
+        ?:  =(%u mode.i)
+          |=  [v=@ w=@]
+          ^-  (unit @)
+          ?:  =(0 w)  ~
+          `(mod v w)
         =/  base=@  ?-(type.i %i32 32, %i64 64)
+        =/  ill=@s  (new:si & (bex (dec base)))  ::  unrepresentable
         |=  [v=@ w=@]
-        ^-  @
-        %+  en-si  base
+        ^-  (unit @)
+        %-  bind  :_  (cury en-si base)
+        %-  (flit |=(=@s !=(s ill)))
         %+  rem:si
           (to-si base v)
         (to-si base w)
