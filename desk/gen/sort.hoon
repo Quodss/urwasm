@@ -6,10 +6,12 @@
 =/  lv  lia-value:lia-sur:wasm
 =/  a=(list @)  (flop (gulf 0 (bex 12)))
 =/  nock
+  ~&  %nock
   ~>  %bout
   (sort a lth)
 =;  fast
   =(nock fast)
+~&  %fast
 ~>  %bout
 =/  len0=@  (lent a)
 =;  out=(list lv)
