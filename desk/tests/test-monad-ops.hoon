@@ -120,6 +120,7 @@
     =/  sign=(list tape)  ~["u" "s"]
     |-  =*  sign-loop  $
     ?~  sign  to-loop(to t.to)
+    =/  binary=octs  (bin-trunc-convert i.from i.to i.sign)
     =/  input=(list @)  (~(got by m-inputs) i.from)
     |-  =*  input-loop  $
     ?~  input  sign-loop(sign t.sign)
@@ -127,7 +128,7 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [(bin-trunc-convert i.from i.to i.sign) ~]
+    %+  run-once-comp  [binary ~]
     =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
     (return:m ;;(lv [(crip i.to) a]) ~)
@@ -146,7 +147,7 @@
       """
     ::
     --
-::
+:: ::
 ++  test-ceil-floor-trunc-near
   %+  expect-eq
     !>  &+~
@@ -155,11 +156,13 @@
     |^  ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     ::
     =/  op=(list tape)  ~["ceil" "floor" "trunc" "nearest"]
+    :: =/  op=(list tape)  ~["nearest"]
     |-  =*  op-loop  $
     ?~  op  &+~
     =/  type=(list tape)  ~["f32" "f64"]
     |-  =*  type-loop  $
     ?~  type  op-loop(op t.op)
+    =/  binary=octs  (bin i.op i.type)
     =/  input=(list @)  (~(got by m-inputs) i.type)
     |-  =*  input-loop  $
     ?~  input  type-loop(type t.type)
@@ -167,7 +170,7 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [(bin i.op i.type) ~]
+    %+  run-once-comp  [binary ~]
     =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
     (return:m ;;(lv [(crip i.type) a]) ~)
@@ -263,6 +266,7 @@
     =/  sign=(list tape)  ~["s" "u"]
     |-  =*  sign-loop  $
     ?~  sign  to-loop(to t.to)
+    =/  binary=octs  (bin i.from i.to i.sign)
     =/  input=(list @)  (~(got by m-inputs) i.from)
     |-  =*  input-loop  $
     ?~  input  sign-loop(sign t.sign)
@@ -270,7 +274,7 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [(bin i.from i.to i.sign) ~]
+    %+  run-once-comp  [binary ~]
     =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
     (return:m ;;(lv [(crip i.to) a]) ~)
