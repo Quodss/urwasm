@@ -4,11 +4,13 @@
 ::
 =/  lv  lia-value:lia-sur:wasm
 =/  cw  coin-wasm:wasm-sur:wasm
+=/  import  import:lia-sur:wasm
+=/  wasm  ^?(wasm)
 =>
   |%
   ++  run-once-comp
     =/  m  runnable:wasm
-    |=  [sed=[module=octs =import:lia-sur:wasm] script=form:m]
+    |=  [sed=[module=octs =import] script=form:m]
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     =/  nock  (run-once:wasm sed %none script)
     =/  fast  (run-once:wasm sed %$ script)
@@ -275,8 +277,9 @@
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
     %+  run-once-comp  [binary ~]
-    =/  m  runnable:wasm
-    ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
+    =,  wasm
+    =/  m  runnable
+    ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.to) a]) ~)
     ::
     ++  bin
