@@ -8,7 +8,7 @@
   =/  sur  wasm-sur
   |%
   ::  ++main: parsing function. Extends octstream with
-  ::  leading zeros, then applies ++module:r parsing rule.
+  ::  trailing zeros, then applies ++module:r parsing rule.
   ::
   ++  main
     |=  wasm=octs
@@ -16,13 +16,13 @@
     ^-  module
     =|  out=module
     =/  bytes=tape  (trip q.wasm)
-    ::  add leading zeros
+    ::  add trailing zeros
     ::
     =.  bytes
       %+  weld  bytes
       ^-  tape
-      (reap (sub p.wasm (lent bytes)) '\00')
-    (scan bytes module:r)
+      (reap (sub p.wasm (min p.wasm (lent bytes))) '\00')
+    (scan bytes ;~(sfix module:r (star next)))
     ::
     ::  |r: core with parsing rules.
     ::  Parsing rules often use the same name as the types
