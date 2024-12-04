@@ -7,14 +7,58 @@
 ::
 +$  run-input
   (each (script-raw-form (list lia-value)) (list lia-value))
+::  ++run-once: extract. Type polymorphic.
 ::
 ++  run-once
-  =/  m  runnable
-  |=  [sed=[module=octs =import] hint=term script=form:m]
+  ~/  %run-once-v0
+  |*  type=mold
+  =/  m  (script type)
+  ~%  %run-once-inner-v0  +>+  ~
+  |=  [[binary=octs imp=import] hint=term script-in=form:m]
+  ::
+  :: ~&  !.(call+!=(call))                 ::  [9 20 0 7]        kick
+  :: ~&  !.(memread+!=(memread))           ::  [9 374 0 7]       kick
+  :: ~&  !.(memwrite+!=(memwrite))         ::  [9 92 0 7]        kick
+  :: ~&  !.(call-ext+!=(call-ext))         ::  [9 2986 0 7]      kick
+  :: ~&  !.(runnable+!=(runnable))         ::  [9 372 0 7]
+  :: ~&  'from runnable:'
+  :: ~&  !.(try-m+!=(try):runnable)        ::  [9 21 0 1]  kick x2
+  :: ~&  !.(catch-m+!=(catch):runnable)    ::  [9 4 0 1]   kick x2
+  :: ~&  !.(return-m+!=(return):runnable)  ::  [9 20 0 1]  kick
+  ::
   ^-  yield:m
-  -:(run &+script (seed-init sed) hint)
+  =,  engine-sur
+  =>  [- [[binary=binary imp=imp] script-in=script-in] +>]  ::  remove hint
+  =/  ast  (main:parser binary)
+  =/  valid  (validate-module:validator ast)
+  ?>  ?=(%& -.valid)
+  =/  sat=lia-state  [(conv:engine ast ~) ~ imp]
+  |^  ^-  yield:m
+  -:(;<(* try:m init script-in) sat)  ::  ((init >> script-in) sat)
+  ::
+  ++  init
+    =/  m  (script ,~)
+    ^-  form:m
+    |=  sat=lia-state
+    ^-  output:m
+    =/  engine-res=result:engine
+      (instantiate:engine p.sat)
+    ?:  ?=(%0 -.engine-res)  [0+~ sat(p st.engine-res)]
+    ?:  ?=(%2 -.engine-res)  [2+~ sat(p st.engine-res)]
+    ::  engine-res = [%1 [[mod=cord name=cord] =request] module mem tables globals]
+    ::
+    ?>  ?=(%func -.request.engine-res)
+    =/  sat-blocked=lia-state  [[~ +>.engine-res] q.sat r.sat]  ::  Wasm blocked on import
+    =/  import-arrow
+      (~(got by imp) mod.engine-res name.engine-res)
+    =^  import-yil=(script-yield (list cw))  sat-blocked
+      ((import-arrow args.request.engine-res) sat-blocked)
+    ?.  ?=(%0 -.import-yil)  [import-yil sat-blocked]
+    $(shop.p.sat (snoc shop.p.sat p.import-yil +.p.sat-blocked))
+  --
+::  ++run: extend & extract. Type monomorphic.
 ::
-++  run  ::  extend & extract
+++  run
   ~/  %run-v0
   |=  [input=run-input =seed hint=term]
   ::

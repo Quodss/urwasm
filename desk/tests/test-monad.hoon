@@ -15,7 +15,7 @@
     !>
     |^
     %-  yield-need:wasm
-    %^  run-once:wasm  [import-vec import]  flag
+    %^  (run-once:wasm (list lv))  [import-vec import]  flag
     =/  m  runnable:wasm
     =,  wasm
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
@@ -53,7 +53,7 @@
     !>  `(list lv)`~[i32+362.880]
     !>
     %-  yield-need:wasm
-    %^  run-once:wasm  [fac-loop ~]  flag
+    %^  (run-once:wasm (list lv))  [fac-loop ~]  flag
     =/  m  runnable:wasm
     =,  wasm
     ;<  out=@  try:m  (call-1 'factorial' 9 ~)
@@ -65,7 +65,7 @@
     !>
     |^
     %-  yield-need:wasm
-    %^  run-once:wasm  [flopper ~]  flag
+    %^  (run-once:wasm (list lv))  [flopper ~]  flag
     =/  m  runnable:wasm
     =,  wasm
     ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
@@ -87,7 +87,7 @@
     !>  `(list lv)`~[i32+42]
     !>
     %-  yield-need:wasm
-    %^  run-once:wasm  [flopper ~]  flag
+    %^  (run-once:wasm (list lv))  [flopper ~]  flag
     =/  m  runnable:wasm
     =,  wasm
     ;<  ptr0=@  try:m  (call-1 '__wbindgen_malloc' 5 1 ~)
@@ -98,7 +98,7 @@
     !>  `(list lv)`~[f64+.~362880]
     !>
     %-  yield-need:wasm
-    %^  run-once:wasm  [fac-if ~]  flag
+    %^  (run-once:wasm (list lv))  [fac-if ~]  flag
     =/  m  runnable:wasm
     =,  wasm
     ;<  out=@  try:m  (call-1 'fac' .~9 ~)

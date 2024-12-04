@@ -24,7 +24,7 @@
   $(out-list [(cut 3 [ptr 4] q.+.i.out) out-list])
 |^
 %-  yield-need:wasm
-%^  run-once:wasm  [bin ~]  %$
+%^  (run-once:wasm (list lv))  [bin ~]  %$
 =/  m  runnable:wasm
 =,  wasm
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)

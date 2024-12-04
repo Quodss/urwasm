@@ -1,5 +1,5 @@
 /+  wasm=wasm-lia
-/*  bin  %wasm  /tests/gzip/wasm
+/*  bin  %wasm  /tests/gzip-real/wasm
 ::
 =/  lv  lia-value:lia-sur:wasm
 |=  a=octs
@@ -9,7 +9,7 @@
   +.i.out
 |^
 %-  yield-need:wasm
-%^  run-once:wasm  [bin ~]  %$
+%^  (run-once:wasm (list lv))  [bin ~]  %$
 =/  m  runnable:wasm
 =,  wasm
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)

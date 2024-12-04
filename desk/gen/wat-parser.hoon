@@ -11,7 +11,7 @@
   ?>  ?=([[%octs *] ~] out)
   (main:parser +.i.out)
 %-  yield-need
-%^  run-once  [binary ~]  %$
+%^  (run-once:wasm (list lv))  [binary ~]  %$
 =/  m  runnable
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
 =/  len0=@  (lent wat)

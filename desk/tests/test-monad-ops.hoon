@@ -12,8 +12,8 @@
     =/  m  runnable:wasm
     |=  [sed=[module=octs =import] script=form:m]
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    =/  nock  (run-once:wasm sed %none script)
-    =/  fast  (run-once:wasm sed %$ script)
+    =/  nock  ((run-once:wasm (list lv)) sed %none script)
+    =/  fast  ((run-once:wasm (list lv)) sed %$ script)
     ?:  =(nock fast)  &+~
     [%| nock+nock fast+fast]
   ::

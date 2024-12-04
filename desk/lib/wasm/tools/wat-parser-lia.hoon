@@ -12,7 +12,7 @@
   ?>  ?=([[%octs *] ~] out)
   +.i.out
 %-  yield-need:wasm
-%^  run-once:wasm  [bin ~]  %$
+%^  (run-once:wasm (list lv))  [bin ~]  %$
 =,  wasm
 =/  m  runnable
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
