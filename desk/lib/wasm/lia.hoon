@@ -31,7 +31,9 @@
   =>  [- [[binary=binary imp=imp] script-in=script-in] +>]  ::  remove hint
   =/  ast  (main:parser binary)
   =/  valid  (validate-module:validator ast)
-  ?>  ?=(%& -.valid)
+  ?.  ?=(%& -.valid)
+    ~&  valid
+    !!
   =/  sat=lia-state  [(conv:engine ast ~) ~ imp]
   |^  ^-  yield:m
   -:(;<(* try:m init script-in) sat)  ::  ((init >> script-in) sat)
@@ -145,6 +147,7 @@
   ?>  ?=(%func -.request.engine-res)
   =/  sat-blocked=lia-state  [[~ +>.engine-res] q.sat r.sat]  ::  Wasm blocked on import
   =/  import-arrow
+    ~|  "couldn't find import {<mod.engine-res>}/{<name.engine-res>}"
     (~(got by r.sat) mod.engine-res name.engine-res)
   =^  import-yil=(script-yield (list cw))  sat-blocked
     ((import-arrow args.request.engine-res) sat-blocked)

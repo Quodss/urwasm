@@ -380,11 +380,6 @@
   ::  Element section
   ::
   +$  elem-section  (list elem)
-  ::  The %func-ref instructions are going to contain
-  ::  function references. The offset in %acti
-  ::  active mode `off` and an element of `i` list
-  ::  of expressions are a single instruction because
-  ::  they yield a single value
   ::
   +$  elem
     $~  [*ref-type ~ %pass ~]
@@ -393,7 +388,7 @@
         $=  m
         $%  [%pass ~]
             [%decl ~]
-            [%acti tab=@ off=$>(%const instruction)]
+            [%acti tab=@ off=const-instr]
     ==  ==
   ::
   ::  Code section
@@ -414,7 +409,7 @@
   ::
   +$  data
     $%
-      [%acti off=$>(%const instruction) b=octs]
+      [%acti off=const-instr b=octs]
       [%pass b=octs]
     ==
   ::

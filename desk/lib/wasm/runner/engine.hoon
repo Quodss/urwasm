@@ -105,7 +105,7 @@
     ::
     --
   ::  +prep: instantiate Wasm module. Returns global state
-  ::  after the validation and import handling (TODO validation),
+  ::  after the validation and import handling,
   ::  instantiation of table, globals and the membuffer,
   ::  and running the start function
   ::
@@ -210,7 +210,15 @@
       ::  Assert: i32 value in the offset
       ::  (it theoretically can be a %global-get of import, revisit later?)
       ::
-      ?>  ?=([%const %i32 n=@] off.m.elem)
+      =/  offset=(unit @)
+        ?:  ?=([%const %i32 n=@] off.m.elem)  `n.p.off.m.elem
+        ?.  ?=(%global-get -.off.m.elem)  ~
+        =+  glob=(glob:grab index.off.m.elem st)
+        ?:  ?=(%| -.glob)  ~
+        =/  coin=coin-wasm  q.p.glob
+        ?:  ?=(%i32 -.coin)  `+.coin
+        ~
+      ?>  ?=(^ offset)
       =/  tab-loc-id=@
         %+  sub  tab.m.elem                     ::  Assert: elems are instantiated locally
         (lent tables.import-section.module.st)  ::  (to revisit?)
@@ -220,7 +228,7 @@
           tables.st
         %^  shot  tables.st  tab-loc-id
         %^  place  (snag tab-loc-id tables.st)  ::  table to change
-          n.p.off.m.elem                        ::  offset
+          u.offset                              ::  offset
         %+  turn  i.elem
         |=  in=instruction
         ^-  $>(%ref coin-wasm)
@@ -251,9 +259,17 @@
       ::  Assert: const i32 value as offset
       ::  (it theoretically can be a %global-get of import, revisit later?)
       ::
-      ?>  ?=([%const %i32 n=@] off.data)
+      =/  offset=(unit @)
+        ?:  ?=([%const %i32 n=@] off.data)  `n.p.off.data
+        ?.  ?=(%global-get -.off.data)  ~
+        =+  glob=(glob:grab index.off.data st)
+        ?:  ?=(%| -.glob)  ~
+        =/  coin=coin-wasm  q.p.glob
+        ?:  ?=(%i32 -.coin)  `+.coin
+        ~
+      ?>  ?=(^ offset)
       =/  l=local-state
-        [[~ ~[-.b.data 0 n.p.off.data]] ~ st]
+        [[~ ~[-.b.data 0 u.offset]] ~ st]
       =.  l  ((fetch-gate [%memory-init id %0]) l)
       ?^  br.stack.l
         ?+  br.stack.l  !!

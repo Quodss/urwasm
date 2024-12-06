@@ -716,9 +716,10 @@
       ;~  plug
         valtype
         con-var
-        ;~(sfix const-instr end)
+        const-expr
       ==
     ::
+    ++  const-expr  ;~(sfix const-instr end)  ::  single instruction
     ++  const-instr
     %+  sear
       |=  i=instruction:sur
@@ -771,7 +772,7 @@
     ++  elem-0
       %+  cook  handle-elem-0
       ;~  pfix  (just '\00')
-        ;~(plug expr (vec u32))
+        ;~(plug const-expr (vec u32))
       ==
     ::
     ++  elem-1
@@ -783,7 +784,7 @@
     ++  elem-2
       %+  cook  handle-elem-2
       ;~  pfix  (just '\02')
-        ;~(plug u32 expr elem-kind (vec u32))
+        ;~(plug u32 const-expr elem-kind (vec u32))
       ==
     ::
     ++  elem-3
@@ -795,7 +796,7 @@
     ++  elem-4
       %+  cook  handle-elem-4
       ;~  pfix  (just '\04')
-        ;~(plug expr (vec expr))
+        ;~(plug const-expr (vec expr))
       ==
     ::
     ++  elem-5
@@ -807,7 +808,7 @@
     ++  elem-6
       %+  cook  handle-elem-6
       ;~  pfix  (just '\06')
-        ;~(plug u32 expr ref-type (vec expr))
+        ;~(plug u32 const-expr ref-type (vec expr))
       ==
     ::
     ++  elem-7
@@ -817,15 +818,14 @@
       ==
     ::
     ++  handle-elem-0
-      |=  [e=expression:sur y=(list @)]
+      |=  [e=const-instr:sur y=(list @)]
       ^-  elem:sur
-      ?>  ?=([$>(%const instruction:sur) ~] e)
       :+  %func
         %+  turn  y
         |=  y=@
         ^-  $>(?(%ref-func %ref-null) instruction:sur)
         [%ref-func y]
-      [%acti 0 i.e]
+      [%acti 0 e]
     ::
     ++  handle-elem-1
       |=  [et=@ y=(list @)]
@@ -840,9 +840,8 @@
       [%pass ~]
     ::
     ++  handle-elem-2
-      |=  [x=@ e=expression:sur et=@ y=(list @)]
+      |=  [x=@ e=const-instr:sur et=@ y=(list @)]
       ^-  elem:sur
-      ?>  ?=([$>(%const instruction:sur) ~] e)
       :+  ?+  et  ~|(%unrecognized-elem-kind !!)
             %0x0  %func
           ==
@@ -850,7 +849,7 @@
         |=  y=@
         ^-  $>(?(%ref-func %ref-null) instruction:sur)
         [%ref-func y]
-      [%acti x i.e]
+      [%acti x e]
     ::
     ++  handle-elem-3
       |=  [et=@ y=(list @)]
@@ -865,16 +864,15 @@
       [%decl ~]
     ::
     ++  handle-elem-4
-      |=  [e=expression:sur el=(list expression:sur)]
+      |=  [e=const-instr:sur el=(list expression:sur)]
       ^-  elem:sur
-      ?>  ?=([$>(%const instruction:sur) ~] e)
       :+  %func
         %+  turn  el
         |=  ex=expression:sur
         ^-  $>(?(%ref-func %ref-null) instruction:sur)
         ?>  ?=([[%ref-func *] ~] ex)
         i.ex
-      [%acti 0 i.e]
+      [%acti 0 e]
     ::
     ++  handle-elem-5
       |=  [et=ref-type:sur el=(list expression:sur)]
@@ -888,16 +886,15 @@
       [%pass ~]
     ::
     ++  handle-elem-6
-      |=  [x=@ e=expression:sur et=ref-type:sur el=(list expression:sur)]
+      |=  [x=@ e=const-instr:sur et=ref-type:sur el=(list expression:sur)]
       ^-  elem:sur
-      ?>  ?=([$>(%const instruction:sur) ~] e)
       :+  et
         %+  turn  el
         |=  ex=expression:sur
         ^-  $>(?(%ref-func %ref-null) instruction:sur)
         ?>  ?=([[%ref-func *] ~] ex)
         i.ex
-      [%acti x i.e]
+      [%acti x e]
     ::
     ++  handle-elem-7
       |=  [et=ref-type:sur el=(list expression:sur)]
@@ -938,11 +935,11 @@
       (vec data)
     ::
     ++  data
-      %+  cook  handle-data
+      %+  cook  |=(data:sur +<)
       ;~    pose
           ;~  plug
             (cold %acti (just '\00'))
-            ;~(sfix instr end)
+            const-expr
             (cook to-octs (vec next))
           ==
       ::
@@ -956,7 +953,7 @@
               ;~    pfix
                   u32
                   ;~  plug
-                    ;~(sfix instr end)
+                    const-expr
                     (cook to-octs (vec next))
       ==  ==  ==  ==
     ::
@@ -966,18 +963,8 @@
       :-  (lent tape)
       (rep 3 tape)
     ::
-    ++  handle-data
-      |=  $=  p
-          $%  [%acti off=instruction:sur b=octs]
-              [%pass b=octs]
-          ==
-      ^-  data:sur
-      ?:  ?=(%pass -.p)  p
-      ?>  ?=($>(%const instruction:sur) off.p)
-      p
-    ::
     ++  datacnt-section
-      %+  cook  |=(datacnt-section:sur ~&([%foo +<] +<))
+      %+  cook  |=(datacnt-section:sur +<)
       (punt u32)
     ::
     ++  module

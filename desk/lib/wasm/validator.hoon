@@ -60,6 +60,7 @@
     =/  n-tables=@  (lent tables)
     ;<  =glob-types  bind:r
       (v-global-section m globs.import-out n-funcs)
+    =/  =store  [functypes tables memo glob-types]
     ;<  ~  bind:r
       %:  v-export-section
         m
@@ -69,18 +70,10 @@
         (lent glob-types)
       ==
     ;<  ~  bind:r  (v-start-section m functypes)
-    ;<  ~  bind:r  (v-elem-section m n-tables functypes)
+    ;<  ~  bind:r  (v-elem-section m n-tables functypes store)
     ;<  datacnt=(unit @)  bind:r  (v-datacnt-section m)
-    ;<  ~  bind:r
-      %:  v-code-section
-        m
-        n-funcs-import
-        functypes
-        tables
-        memo
-        glob-types
-      ==
-    (v-data-section m datacnt)
+    ;<  ~  bind:r  (v-code-section m n-funcs-import store)
+    (v-data-section m datacnt store)
   ::
   ++  v-import-section
     |=  m=module
@@ -100,14 +93,19 @@
       ==
     ::
         %tabl
-      ?.  (validate-limits q.t.desc.i.import-section.m)  |+'invalid limits import table'
+      ?.  (validate-limits q.t.desc.i.import-section.m)
+        |+'invalid limits import table'
       =/  =table  t.desc.i.import-section.m
       $(import-section.m t.import-section.m, tables.out [table tables.out])
     ::
         %memo
-      ?.  (validate-limits l.desc.i.import-section.m)  |+'invalid limits import memo'
+      ?.  (validate-limits l.desc.i.import-section.m)
+        |+'invalid limits import memo'
       ?^  memo.out  |+'multiple memos'
-      $(import-section.m t.import-section.m, memo.out `l.desc.i.import-section.m)
+      %=  $
+        import-section.m  t.import-section.m
+        memo.out  `l.desc.i.import-section.m
+      ==
     ::
         %glob
       %=  $
@@ -180,7 +178,8 @@
       $(global-section.m t.global-section.m, gt [[v m]:glob gt])
     ::
         %global-get
-      ?:  (gte index.i.glob n-glob-import)  |+'non-import or nonexisting const global'
+      ?:  (gte index.i.glob n-glob-import)
+        |+'non-import or nonexisting const global initializer'
       $(global-section.m t.global-section.m, gt [[v m]:glob gt])
     ==
   ::
@@ -215,10 +214,10 @@
   ::
   ++  v-elem-section
     ::  elems are additionaly restricted by the parser: offset
-    ::  expression is limited to a single %const instruction,
+    ::  expression is limited to a single const instruction,
     ::  and init expression are limited to a single %ref* instruction
     ::
-    |=  [m=module n-tables=@ functypes=(list func-type)]
+    |=  [m=module n-tables=@ functypes=(list func-type) =store]
     =/  r  (result ,~)
     ^-  form:r
     ?~  elem-section.m  &+~
@@ -236,7 +235,16 @@
       $(i.elem t.i.elem)
     ?.  ?=(%acti -.m.elem)  $(elem-section.m t.elem-section.m)
     ?:  (gte tab.m.elem n-tables)  |+'element index error'
-    ?.  ?=(%i32 -.p.off.m.elem)  |+'type error in element offset'
+    :: ?.  ?=(%i32 -.p.off.m.elem)  |+'type error in element offset'
+    ?:  ?=(?(%ref-null %ref-func %vec) -.off.m.elem)
+      |+'type error in element offset'
+    ?:  ?=(%const -.off.m.elem)
+      ?.  ?=(%i32 -.p.off.m.elem)  |+'type error in element offset'
+      $(elem-section.m t.elem-section.m)
+    ::  %global-get
+    ;<  glob=glob-type  bind:r
+      ((snug 'global section') index.off.m.elem globs.store)
+    ?.  ?=(%i32 v.glob)  |+'type error in element offset'
     $(elem-section.m t.elem-section.m)
   ::
   ++  v-datacnt-section
@@ -260,19 +268,28 @@
   ::
   ++  v-data-section
     ::  data section is additionaly restrained by the parser:
-    ::  offset expression may only be a single %const instruction
+    ::  offset expression may only be a single const instruction
     ::
-    |=  [m=module datacnt=(unit @)]
+    |=  [m=module datacnt=(unit @) =store]
     =/  r  (result ,~)
     ^-  form:r
     ?:  &(?=(^ datacnt) !=(u.datacnt (lent data-section.m)))
       |+'wrong datacnt'
+    |-  ^-  form:r
     ?~  data-section.m
       &+~
     =/  data  i.data-section.m
     ?:  ?=(%pass -.data)
       $(data-section.m t.data-section.m)
-    ?.  ?=(%i32 -.p.off.data)  |+'type error in data offset'
+    ?:  ?=(%const -.off.data)
+      ?.  ?=(%i32 -.p.off.data)  |+'type error in data offset'
+      $(data-section.m t.data-section.m)
+    ?:  ?=(?(%ref-null %ref-func %vec) -.off.data)
+      |+'type error in data offset'
+    ::  global-get
+    ;<  glob=glob-type  bind:r
+      ((snug 'global-section') index.off.data globs.store)
+    ?.  ?=(%i32 v.glob)  |+'type error in data offset'
     $(data-section.m t.data-section.m)
   ::
   ++  validate-code
@@ -322,7 +339,8 @@
     ::
     ?:  ?=(%unreachable -.instr)  &+~
     ?:  ?=(%br -.instr)
-      ;<  results=(list valtype)  bind:r  ((snug 'br frames') label.instr frames.args)
+      ;<  results=(list valtype)  bind:r
+        ((snug 'br frames') label.instr frames.args)
       ?.  =(results (flop (scag (lent results) stack.args)))  |+'br type error'
       &+~
     ?:  ?=(%br-table -.instr)
@@ -331,13 +349,16 @@
       =.  stack.args  +.stack.args
       |-  ^-  form:r
       ?~  labels  &+~
-      ;<  results=(list valtype)  bind:r  ((snug 'br-table frames') i.labels frames.args)
-      ?.  =(results (flop (scag (lent results) stack.args)))  |+'br-table type error'
+      ;<  results=(list valtype)  bind:r
+        ((snug 'br-table frames') i.labels frames.args)
+      ?.  =(results (flop (scag (lent results) stack.args)))
+        |+'br-table type error'
       $(labels t.labels)
     ?:  ?=(%return -.instr)
       ?:  =(~ frames.args)  |+'no frames'
       =/  results=(list valtype)  (rear frames.args)
-      ?.  =(results (flop (scag (lent results) stack.args)))  |+'return type error'
+      ?.  =(results (flop (scag (lent results) stack.args)))
+        |+'return type error'
       &+~
     ;<  [stack1=_stack.args]  bind:r
       (validate-instr instr module store args)
