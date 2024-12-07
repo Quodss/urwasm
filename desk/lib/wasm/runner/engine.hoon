@@ -326,9 +326,9 @@
     ::
     =,  module.st
     =/  =func-type
-    ::  May only invoke local functions (to reconsider?)
-    ::
-      (snag type-id:(snag id-local function-section) type-section)
+      =/  func  (func:grab id st)
+      ?:  ?=(%& -.func)  (snag type-id.p.func type-section)
+      (snag type-id.p.func type-section)
     ?>  =(params.func-type (get-types in))
     =/  [stack-out=stack * st-out=store]
       %+  call  id
