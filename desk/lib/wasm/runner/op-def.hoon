@@ -926,6 +926,10 @@
           ~[%i32]
         ::  local memory
         ::
+        =/  memory-section  memory-section.module.store.l
+        =/  limits  -.memory-section
+        ?.  (lte-lim (add n-pages.p.memo a) limits)
+          l(va.stack [^~((en-si 32 -1)) rest])
         %=  l
           va.stack  [n-pages.p.memo rest]
           mem.store  `[buffer.p.memo (add n-pages.p.memo a)]
