@@ -1586,11 +1586,8 @@
             ==
         |=  [v=@ w=@]
         ^-  @
-        =/  [fn-1=fn fn-2=fn]  [(sea:r v) (sea:r w)]
-        ?:  |(=(%n -.fn-1) =(%n -.fn-2))  0
-        ?:  &(?=(%f -.fn-1) ?=(%f -.fn-2) =(0 a.fn-1) =(0 a.fn-2))
-          1
-        ?:(=(v w) 1 0)
+        ?:  (equ:r v w)  1
+        0
       ::
       ++  ne
         |=  i=instruction
@@ -1607,11 +1604,8 @@
             ==
         |=  [v=@ w=@]
         ^-  @
-        =/  [fn-1=fn fn-2=fn]  [(sea:r v) (sea:r w)]
-        ?:  |(=(%n -.fn-1) =(%n -.fn-2))  1
-        ?:  &(?=(%f -.fn-1) ?=(%f -.fn-2) =(0 a.fn-1) =(0 a.fn-2))
-          0
-        ?:(!=(v w) 1 0)
+        ?:  !(equ:r v w)  1
+        0
       ::
       ++  lt
         |=  i=instruction
@@ -1645,28 +1639,52 @@
       ::
       ++  gt
         |=  i=instruction
+        %-  mayb
         ?>  ?=(%gt -.i)
         |=  [v=@ w=@]
-        ^-  (unit @)
-        %.  [w v]
-        (lt ;;(instruction [%lt +.i]))
+        ^-  @
+        ?-    type.i
+            %f32  ?:((gth:rs v w) 1 0)
+            %f64  ?:((gth:rd v w) 1 0)
+        ::
+            *
+          %-  need
+          %.  [w v]
+          (lt ;;(instruction [%lt +.i]))
+        ==
       ::
       ++  le
         |=  i=instruction
+        %-  mayb
         ?>  ?=(%le -.i)
         |=  [v=@ w=@]
-        ^-  (unit @)
-        ?:  =(v w)  `1
-        %.  [v w]
-        (lt ;;(instruction [%lt +.i]))
+        ^-  @
+        ?-    type.i
+            %f32  ?:((lte:rs v w) 1 0)
+            %f64  ?:((lte:rd v w) 1 0)
+        ::
+            *
+          ?:  =(v w)  1
+          %-  need
+          %.  [v w]
+          (lt ;;(instruction [%lt +.i]))
+        ==
       ::
       ++  ge
         |=  i=instruction
+        %-  mayb
         ?>  ?=(%ge -.i)
         |=  [v=@ w=@]
-        ^-  (unit @)
-        %.  [w v]
-        (le ;;(instruction [%le +.i]))
+        ^-  @
+        ?-    type.i
+            %f32  ?:((gte:rs v w) 1 0)
+            %f64  ?:((gte:rd v w) 1 0)
+        ::
+            *
+          %-  need
+          %.  [w v]
+          (le ;;(instruction [%le +.i]))
+        ==
       ::
       --
     --
