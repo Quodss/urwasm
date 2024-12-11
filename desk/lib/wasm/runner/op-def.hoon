@@ -294,14 +294,14 @@
   ++  mem-store
     |=  [index=@ size=@ content=@ buffer=@ n-pages=@]
     ^-  (unit [buffer=@ n-pages=@])
-    ?.  (lth (add index size) (mul n-pages page-size))
+    ?.  (lte (add index size) (mul n-pages page-size))
       ~
     `[(sew 3 [index size content] buffer) n-pages]
   ::
   ++  mem-load
     |=  [index=@ size=@ buffer=@ n-pages=@]
     ^-  (unit @)
-    ?.  (lth (add index size) (mul n-pages page-size))
+    ?.  (lte (add index size) (mul n-pages page-size))
       ~
     `(cut 3 [index size] buffer)
   ::
