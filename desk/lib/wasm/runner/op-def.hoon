@@ -1323,14 +1323,16 @@
         %-  mayb
         |=  v=@
         ^-  @
-        (bit:rs (sea:rd v))
+        =/  sig=@  (rsh 0^63 v)
+        (con (bit:rs (sea:rd v)) (lsh 0^31 sig))
       ::
       ++  promote
         |=  *
         %-  mayb
         |=  v=@
         ^-  @
-        (bit:rd (sea:rs v))
+        =/  sig=@  (rsh 0^31 v)
+        (con (bit:rd (sea:rs v)) (lsh 0^63 sig))
       ::
       ++  reinterpret
         |=  *
@@ -1433,6 +1435,7 @@
             =/  ill=@s  (new:si & (bex (dec size)))  ::  unrepresentable
             |=  [v=@ w=@]
             ^-  (unit @)
+            ?:  =(0 w)  ~
             %-  bind  :_  (cury en-si size)
             %-  (flit |=(=@s !=(s ill)))
             %+  fra:si
@@ -1454,6 +1457,7 @@
         =/  ill=@s  (new:si & (bex (dec base)))  ::  unrepresentable
         |=  [v=@ w=@]
         ^-  (unit @)
+        ?:  =(0 w)  ~
         %-  bind  :_  (cury en-si base)
         %-  (flit |=(=@s !=(s ill)))
         %+  rem:si
