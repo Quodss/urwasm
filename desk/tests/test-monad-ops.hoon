@@ -5,6 +5,7 @@
 =/  lv  lia-value:lia-sur:wasm
 =/  cw  coin-wasm:wasm-sur:wasm
 =/  import  import:lia-sur:wasm
+=/  script  script:lia-sur:wasm
 =/  wasm  ^?(wasm)
 =>  |%
     ++  i8neg   ^~((cury sub (bex 8)))
@@ -13,14 +14,26 @@
     ++  i64neg  ^~((cury sub (bex 64)))
     --
 =>
+  =/  print-time=?  |
   |%
   ::
   ++  run-once-comp
     =/  m  runnable:wasm
     |=  [sed=[module=octs =import] script=form:m]
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    =/  nock  ((run-once:wasm (list lv)) sed %none script)
-    =/  fast  ((run-once:wasm (list lv)) sed %$ script)
+    ?.  print-time
+      =/  nock  ((run-once:wasm (list lv)) sed %none script)
+      =/  fast  ((run-once:wasm (list lv)) sed %$ script)
+      ?:  =(nock fast)  &+~
+      [%| nock+nock fast+fast]
+    =/  nock
+      ~&  %nock
+      ~>  %bout
+      ((run-once:wasm (list lv)) sed %none script)
+    =/  fast
+      ~&  %fast
+      ~>  %bout
+      ((run-once:wasm (list lv)) sed %$ script)
     ?:  =(nock fast)  &+~
     [%| nock+nock fast+fast]
   ::
@@ -33,7 +46,9 @@
       :-  "f32"
       ^-  (list @rs)
       :~  .nan
+          +(.nan)
           (con .nan (bex 31))  ::  .-nan
+          +((con .nan (bex 31)))
           .inf
           .-inf
           .8.589935e9
@@ -63,7 +78,9 @@
       :-  "f64"
       ^-  (list @rd)
       :~  .~nan
+          +(.~nan)
           (con .nan (bex 63))  ::  .~-nan
+          +((con .nan (bex 63)))
           .~inf
           .~-inf
           .~8589934592
@@ -94,6 +111,7 @@
       ^-  (list @)
       :~
         (dec (bex 32))
+        (bex 31)
         (dec (bex 31))
         0
         1
@@ -103,6 +121,7 @@
         (dec (bex 16))
         (sub (bex 16) 2)
         2
+        (i32neg 1)
         (i32neg 1.000)
         (i32neg (bex 16))
         (i32neg (dec (bex 16)))
@@ -113,6 +132,7 @@
       ^-  (list @)
       :~
         (dec (bex 64))
+        (bex 63)
         (dec (bex 63))
         0
         1
@@ -121,6 +141,7 @@
         (bex 32)
         (dec (bex 32))
         (sub (bex 32) 2)
+        (i64neg 1)
         (i64neg 2)
         (i64neg 1.000)
         (i64neg (bex 32))
@@ -132,6 +153,7 @@
       ^-  (list @)
       :~
         (dec (bex 8))
+        (bex 7)
         (dec (bex 7))
         0
         1
@@ -140,6 +162,7 @@
         (bex 4)
         (dec (bex 4))
         (sub (bex 4) 2)
+        (i8neg 1)
         (i8neg 2)
         (i8neg 100)
         (i8neg (bex 4))
@@ -151,6 +174,7 @@
       ^-  (list @)
       :~
         (dec (bex 16))
+        (bex 15)
         (dec (bex 15))
         0
         1
@@ -159,6 +183,7 @@
         (bex 8)
         (dec (bex 8))
         (sub (bex 8) 2)
+        (i16neg 1)
         (i16neg 2)
         (i16neg 1.000)
         (i16neg (bex 8))
@@ -568,9 +593,9 @@
     ?~  ops  signs-loop(signs t.signs)
     =/  binary=octs  (bin i.types i.signs i.ops)
     =/  input0=(list @)  (~(got by m-inputs) i.types)
-    =/  input1=(list @)  input0
     |-  =*  input0-loop  $
     ?~  input0  ops-loop(ops t.ops)
+    =/  input1=(list @)  (~(got by m-inputs) i.types)
     |-  =*  input1-loop  $
     ?~  input1  input0-loop(input0 t.input0)
     ::
@@ -611,9 +636,9 @@
     ?~  ops  types-loop(types t.types)
     =/  binary=octs  (bin i.types i.ops)
     =/  input0=(list @)  (~(got by m-inputs) i.types)
-    =/  input1=(list @)  input0
     |-  =*  input0-loop  $
     ?~  input0  ops-loop(ops t.ops)
+    =/  input1=(list @)  (~(got by m-inputs) i.types)
     |-  =*  input1-loop  $
     ?~  input1  input0-loop(input0 t.input0)
     ::
@@ -654,9 +679,9 @@
     ?~  signs  types-loop(types t.types)
     =/  binary=octs  (bin i.types i.signs)
     =/  input0=(list @)  (~(got by m-inputs) i.types)
-    =/  input1=(list @)  input0
     |-  =*  input0-loop  $
     ?~  input0  signs-loop(signs t.signs)
+    =/  input1=(list @)  (~(got by m-inputs) i.types)
     |-  =*  input1-loop  $
     ?~  input1  input0-loop(input0 t.input0)
     ::
@@ -685,6 +710,7 @@
   %+  expect-eq
     !>  &+~
     !>
+    :: =.  print-time  & 
     =/  m  runnable:wasm
     |^  ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     ::
@@ -696,9 +722,9 @@
     ?~  ops  types-loop(types t.types)
     =/  binary=octs  (bin i.types i.ops)
     =/  input0=(list @)  (~(got by m-inputs) i.types)
-    =/  input1=(list @)  input0
     |-  =*  input0-loop  $
     ?~  input0  ops-loop(ops t.ops)
+    =/  input1=(list @)  (~(got by m-inputs) i.types)
     |-  =*  input1-loop  $
     ?~  input1  input0-loop(input0 t.input0)
     ::
@@ -729,6 +755,7 @@
   %+  expect-eq
     !>  &+~
     !>
+    :: =.  print-time  & 
     =/  m  runnable:wasm
     |^  ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     %+  run-once-comp  [binary ~]
@@ -746,8 +773,11 @@
   %+  expect-eq
     !>  &+~
     !>
+    :: =.  print-time  &
     =/  m  runnable:wasm
-    |^  ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    =/  binary
+      (parser "(module (global (export \"foo\") (mut i32) i32.const 42))")
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     %+  run-once-comp  [binary ~]
     =,  wasm
     =/  m  runnable
@@ -756,18 +786,16 @@
     ;<  ~    try:m  (global-set 'foo' (i32neg 42))
     ;<  b=@  try:m  (global-get 'foo')
     (return:m i32+b ~)
-    ::
-    ++  binary
-      ^-  octs
-      (parser "(module (global (export \"foo\") (mut i32) i32.const 42))")
-    --
 ::
 ++  test-memsize-grow
   %+  expect-eq
     !>  &+~
     !>
+    :: =.  print-time  &
     =/  m  runnable:wasm
-    |^  ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    =/  binary=octs
+      (parser "(module (memory 3 16))")
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     %+  run-once-comp  [binary ~]
     =,  wasm
     =/  m  runnable
@@ -778,9 +806,138 @@
     ;<  c=@  try:m  memory-size
     ?.  =(c 16)  !!
     (return:m ~)
+::
+++  test-write-close-32
+  %+  expect-eq
+    !>  &+~
+    !>
+    =/  m  runnable:wasm
+    =/  binary=octs
+      %-  parser
+      """
+      (module
+        (memory 1)
+        (func (export "write_i32")
+          (param i32)
+          (i32.store (local.get 0) (i32.const 42))
+        )
+      )
+      """
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    %+  run-once-comp  [binary ~]
+    =,  wasm
+    =/  m  runnable
+    ^-  form:m
+    =/  ptr0=@  65.499
+    ;<  ptr1=@  try:m
+      =/  m  (script @)
+      |-  ^-  form:m
+      ;<  res=@  catch:m
+        :-  ;<  *  try:m  (call 'write_i32' ptr0 ~)
+            $(ptr0 +(ptr0))
+        (return:m ptr0)
+      (return:m res)
     ::
-    ++  binary
-      ^-  octs
-      (parser "(module (memory 3 16))")
-    --
+    (return:m i32+ptr1 ~)
+::
+++  test-write-close-64
+  %+  expect-eq
+    !>  &+~
+    !>
+    =/  m  runnable:wasm
+    =/  binary=octs
+      %-  parser
+      """
+      (module
+        (memory 1)
+        (func (export "write_i64")
+          (param i32)
+          (i64.store (local.get 0) (i64.const 42))
+        )
+      )
+      """
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    %+  run-once-comp  [binary ~]
+    =,  wasm
+    =/  m  runnable
+    ^-  form:m
+    =/  ptr0=@  65.499
+    ;<  ptr1=@  try:m
+      =/  m  (script @)
+      |-  ^-  form:m
+      ;<  res=@  catch:m
+        :-  ;<  *  try:m  (call 'write_i64' ptr0 ~)
+            $(ptr0 +(ptr0))
+        (return:m ptr0)
+      (return:m res)
+    ::
+    (return:m i32+ptr1 ~)
+::
+++  test-read-close-32
+  %+  expect-eq
+    !>  &+~
+    !>
+    =/  m  runnable:wasm
+    =/  binary=octs
+      %-  parser
+      """
+      (module
+        (memory 1)
+        (func (export "read_i32")
+          (param i32)
+          (i32.load (local.get 0))
+          drop
+        )
+      )
+      """
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    %+  run-once-comp  [binary ~]
+    =,  wasm
+    =/  m  runnable
+    ^-  form:m
+    =/  ptr0=@  65.499
+    ;<  ptr1=@  try:m
+      =/  m  (script @)
+      |-  ^-  form:m
+      ;<  res=@  catch:m
+        :-  ;<  *  try:m  (call 'read_i32' ptr0 ~)
+            $(ptr0 +(ptr0))
+        (return:m ptr0)
+      (return:m res)
+    ::
+    (return:m i32+ptr1 ~)
+::
+++  test-read-close-64
+  %+  expect-eq
+    !>  &+~
+    !>
+    =/  m  runnable:wasm
+    =/  binary=octs
+      %-  parser
+      """
+      (module
+        (memory 1)
+        (func (export "read_i64")
+          (param i32)
+          (i64.load (local.get 0))
+          drop
+        )
+      )
+      """
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    %+  run-once-comp  [binary ~]
+    =,  wasm
+    =/  m  runnable
+    ^-  form:m
+    =/  ptr0=@  65.499
+    ;<  ptr1=@  try:m
+      =/  m  (script @)
+      |-  ^-  form:m
+      ;<  res=@  catch:m
+        :-  ;<  *  try:m  (call 'read_i64' ptr0 ~)
+            $(ptr0 +(ptr0))
+        (return:m ptr0)
+      (return:m res)
+    ::
+    (return:m i32+ptr1 ~)
 --

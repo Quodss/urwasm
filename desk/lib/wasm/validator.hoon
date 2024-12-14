@@ -152,6 +152,7 @@
     ?:  &(?=(^ memo) (gth len-memos 0))  |+'multiple memos'
     ?^  memo  &+memo
     ?:  =(len-memos 0)  &+~
+    ?.  (validate-limits -.memory-section.m)  |+'invalid limits local memory'
     &+`-.memory-section.m
   ::
   ++  v-global-section
@@ -258,6 +259,8 @@
             n-funcs-import=@
             =store
         ==
+    ?.  =((lent code-section.m) (lent function-section.m))
+      |+'mismatching lengths of function and code sections'
     =/  idx=@  n-funcs-import
     =/  r  (result ,~)
     |-  ^-  form:r
