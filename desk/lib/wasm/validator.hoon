@@ -152,7 +152,9 @@
     ?:  &(?=(^ memo) (gth len-memos 0))  |+'multiple memos'
     ?^  memo  &+memo
     ?:  =(len-memos 0)  &+~
-    ?.  (validate-limits -.memory-section.m)  |+'invalid limits local memory'
+    =/  lim  -.memory-section.m
+    ?.  (validate-limits lim)  |+'invalid limits local memory'
+    ?:  &(?=(%ceil -.lim) (gth q.lim (bex 16)))  |+'mem limit too big'
     &+`-.memory-section.m
   ::
   ++  v-global-section
@@ -284,6 +286,7 @@
     =/  data  i.data-section.m
     ?:  ?=(%pass -.data)
       $(data-section.m t.data-section.m)
+    ?~  memo.store  |+'no memory to copy data to'
     ?:  ?=(%const -.off.data)
       ?.  ?=(%i32 -.p.off.data)  |+'type error in data offset'
       $(data-section.m t.data-section.m)

@@ -749,7 +749,7 @@
     ::
     ++  start-section
       %+  cook  |=(start-section:sur +<)
-      (punt u32)
+      (stag ~ u32)
     ::  Element section
     ::
     ++  elem-section
@@ -965,7 +965,7 @@
     ::
     ++  datacnt-section
       %+  cook  |=(datacnt-section:sur +<)
-      (punt u32)
+      (stag ~ u32)
     ::
     ++  module
       %+  cook  |=(module:sur +<)
