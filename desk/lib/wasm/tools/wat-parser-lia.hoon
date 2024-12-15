@@ -11,9 +11,10 @@
 =;  out=(list lv)
   ?>  ?=([[%octs *] ~] out)
   +.i.out
-%-  yield-need:wasm
-%^  (run-once:wasm (list lv))  [bin ~]  %$
-=,  wasm
+%-  yield-need:wasm  =<  -
+%^  (run-once:wasm (list lv) *)  [bin `~]  %$
+=/  arr  (arrows:wasm *)
+=,  arr
 =/  m  runnable
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
 =/  len0=@  (lent string-in)

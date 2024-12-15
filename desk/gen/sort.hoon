@@ -14,19 +14,20 @@
 ~&  %fast
 ~>  %bout
 =/  len0=@  (lent a)
-=;  out=(list lv)
-  ?>  ?=([[%octs *] ~] out)
+=;  out=octs
   =|  out-list=(list @)
   =/  ptr=@  (mul 4 len0)
   |-  ^-  (list @)
   ?:  =(0 ptr)  out-list
   =.  ptr  (sub ptr 4)
-  $(out-list [(cut 3 [ptr 4] q.+.i.out) out-list])
+  $(out-list [(cut 3 [ptr 4] q.out) out-list])
+=/  arr  (arrows:wasm *)
 |^
 %-  yield-need:wasm
-%^  (run-once:wasm (list lv))  [bin ~]  %$
-=/  m  runnable:wasm
-=,  wasm
+=<  -
+%^  (run-once:wasm octs *)  [bin `~]  %$
+=/  m  (script:lia-sur:wasm octs *)
+=,  arr
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
 =/  len0-bytes=@  (mul 4 len0)
 ;<  ptr0=@    try:m  (call-1 '__wbindgen_malloc' len0-bytes 4 ~)
@@ -34,8 +35,8 @@
 ;<  *         try:m  (call 'process' retptr ptr0 len0 ~)
 ;<  r0=octs   try:m  (memread retptr 4)
 ;<  r1=octs   try:m  (memread (add retptr 4) 4)
-;<  r2=octs   try:m  (memread q.r0 (mul 4 q.r1))
-(return:m octs+r2 ~)
+;<  *         try:m  memory-size
+(memread q.r0 (mul 4 q.r1))
 ::
 ++  i32neg  ^~((cury sub (bex 32)))
 --

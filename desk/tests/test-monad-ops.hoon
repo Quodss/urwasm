@@ -6,6 +6,8 @@
 =/  cw  coin-wasm:wasm-sur:wasm
 =/  import  import:lia-sur:wasm
 =/  script  script:lia-sur:wasm
+=/  arr  ^?((arrows:wasm *))
+
 =/  wasm  ^?(wasm)
 =>  |%
     ++  i8neg   ^~((cury sub (bex 8)))
@@ -19,21 +21,21 @@
   ::
   ++  run-once-comp
     =/  m  runnable:wasm
-    |=  [sed=[module=octs =import] script=form:m]
+    |=  [sed=[module=octs =(import *)] script=form:m]
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
     ?.  print-time
-      =/  nock  ((run-once:wasm (list lv)) sed %none script)
-      =/  fast  ((run-once:wasm (list lv)) sed %$ script)
+      =/  nock  -:((run-once:wasm (list lv) *) sed %none script)
+      =/  fast  -:((run-once:wasm (list lv) *) sed %$ script)
       ?:  =(nock fast)  &+~
       [%| nock+nock fast+fast]
     =/  nock
       ~&  %nock
       ~>  %bout
-      ((run-once:wasm (list lv)) sed %none script)
+      -:((run-once:wasm (list lv) *) sed %none script)
     =/  fast
       ~&  %fast
       ~>  %bout
-      ((run-once:wasm (list lv)) sed %$ script)
+      -:((run-once:wasm (list lv) *) sed %$ script)
     ?:  =(nock fast)  &+~
     [%| nock+nock fast+fast]
   ::
@@ -217,9 +219,10 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
+    %+  run-once-comp  [binary `~]
     =/  m  runnable:wasm
-    ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
+    =,  arr
+    ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.to) a]) ~)
     ::
     ++  bin-trunc-convert
@@ -259,9 +262,10 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
+    %+  run-once-comp  [binary `~]
     =/  m  runnable:wasm
-    ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
+    =,  arr
+    ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.type) a]) ~)
     ::
     ++  bin
@@ -291,9 +295,10 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [bin ~]
+    %+  run-once-comp  [bin `~]
     =/  m  runnable:wasm
-    ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
+    =,  arr
+    ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m [%f64 a] ~)
     ::
     ++  bin
@@ -322,9 +327,10 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [bin ~]
+    %+  run-once-comp  [bin `~]
     =/  m  runnable:wasm
-    ;<  a=@  try:m  (call-1:wasm 'test' i.input ~)
+    =,  arr
+    ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m [%f32 a] ~)
     ::
     ++  bin
@@ -363,9 +369,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.to) a]) ~)
     ::
@@ -403,9 +409,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.type) a]) ~)
     ::
@@ -442,9 +448,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.type) a]) ~)
     ::
@@ -478,9 +484,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [%i64 a]) ~)
     ::
@@ -519,9 +525,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip i.types) a]) ~)
     ::
@@ -556,9 +562,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input-loop(input t.input)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input ~)
     (return:m ;;(lv [(crip q.i.from-to) a]) ~)
     ::
@@ -602,9 +608,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input1-loop(input1 t.input1)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input0 i.input1 ~)
     (return:m ;;(lv [(crip i.types) a]) ~)
     ::
@@ -645,9 +651,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input1-loop(input1 t.input1)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input0 i.input1 ~)
     (return:m ;;(lv [(crip i.types) a]) ~)
     ::
@@ -688,9 +694,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input1-loop(input1 t.input1)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input0 i.input1 ~)
     (return:m ;;(lv [(crip i.types) a]) ~)
     ::
@@ -731,9 +737,9 @@
     =;  res=(each ~ [[%nock yield:m] [%fast yield:m]])
       ?:  ?=(%| -.res)  res
       input1-loop(input1 t.input1)
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (call-1 'test' i.input0 i.input1 ~)
     (return:m ;;(lv [(crip i.types) a]) ~)
     ::
@@ -758,9 +764,9 @@
     :: =.  print-time  & 
     =/  m  runnable:wasm
     |^  ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  *  try:m  (call-ext %foo i32+42 octs+3^'foo' ~)
     (return:m ~)
     ::
@@ -778,9 +784,9 @@
     =/  binary
       (parser "(module (global (export \"foo\") (mut i32) i32.const 42))")
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  (global-get 'foo')
     ?.  =(a 42)  !!
     ;<  ~    try:m  (global-set 'foo' (i32neg 42))
@@ -796,9 +802,9 @@
     =/  binary=octs
       (parser "(module (memory 3 16))")
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ;<  a=@  try:m  memory-size
     ?.  =(a 3)  !!
     ;<  b=@    try:m  (memory-grow 13)
@@ -824,13 +830,13 @@
       )
       """
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ^-  form:m
     =/  ptr0=@  65.499
     ;<  ptr1=@  try:m
-      =/  m  (script @)
+      =/  m  (script @ *)
       |-  ^-  form:m
       ;<  res=@  catch:m
         :-  ;<  *  try:m  (call 'write_i32' ptr0 ~)
@@ -857,13 +863,13 @@
       )
       """
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ^-  form:m
     =/  ptr0=@  65.499
     ;<  ptr1=@  try:m
-      =/  m  (script @)
+      =/  m  (script @ *)
       |-  ^-  form:m
       ;<  res=@  catch:m
         :-  ;<  *  try:m  (call 'write_i64' ptr0 ~)
@@ -891,13 +897,13 @@
       )
       """
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ^-  form:m
     =/  ptr0=@  65.499
     ;<  ptr1=@  try:m
-      =/  m  (script @)
+      =/  m  (script @ *)
       |-  ^-  form:m
       ;<  res=@  catch:m
         :-  ;<  *  try:m  (call 'read_i32' ptr0 ~)
@@ -925,13 +931,13 @@
       )
       """
     ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
-    %+  run-once-comp  [binary ~]
-    =,  wasm
-    =/  m  runnable
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
     ^-  form:m
     =/  ptr0=@  65.499
     ;<  ptr1=@  try:m
-      =/  m  (script @)
+      =/  m  (script @ *)
       |-  ^-  form:m
       ;<  res=@  catch:m
         :-  ;<  *  try:m  (call 'read_i64' ptr0 ~)
