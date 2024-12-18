@@ -142,13 +142,13 @@
     :: ~&  !.(call-sam+!=(sam))
     =,  module.p.sat
     =/  id=@  (find-func-id:engine name module.p.sat)
-    =/  id-local=@
-      (sub id (lent funcs.import-section))
     =/  =func-type
-      (snag type-id:(snag id-local function-section) type-section)
+      =/  func  (func:grab:op-def id p.sat)
+      ?:  ?=(%& -.func)  (snag type-id.p.func type-section)
+      (snag type-id.p.func type-section)
     ?>  =((lent params.func-type) (lent args))
     =/  engine-res=result:engine
-      (invoke:engine name (types-atoms-to-coins params.func-type args) p.sat)
+      (invoke-id:engine id (types-atoms-to-coins params.func-type args) p.sat)
     ?:  ?=(%0 -.engine-res)
       [0+(turn out.engine-res cw-to-atom) sat(p st.engine-res)]
     ?:  ?=(%2 -.engine-res)
