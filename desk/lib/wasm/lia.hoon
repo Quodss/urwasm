@@ -66,7 +66,10 @@
     =^  import-yil=(script-yield (list cw))  sat-blocked
       ((import-arrow args.request.engine-res) sat-blocked)
     ?.  ?=(%0 -.import-yil)  [import-yil sat-blocked]
-    $(shop.p.sat (snoc shop.p.sat p.import-yil +.p.sat-blocked))
+    %=  $
+      shop.p.sat  (snoc shop.p.sat p.import-yil +.p.sat-blocked)
+      p.r.sat  p.r.sat-blocked
+    ==
   --
 ::  ++run: extend & extract. Type monomorphic.
 ::
@@ -115,7 +118,10 @@
     =^  import-yil=(script-yield (list cw))  sat-blocked
       ((import-arrow args.request.engine-res) sat-blocked)
     ?.  ?=(%0 -.import-yil)  [import-yil sat-blocked]
-    $(shop.p.sat (snoc shop.p.sat p.import-yil +.p.sat-blocked))
+    %=  $
+      shop.p.sat  (snoc shop.p.sat p.import-yil +.p.sat-blocked)
+      p.r.sat  p.r.sat-blocked
+    ==
   --
 ::
 ::  Basic Lia ops (Kleisli arrows)
@@ -157,7 +163,10 @@
     =^  import-yil=(script-yield (list cw))  sat-blocked
       ((import-arrow args.request.engine-res) sat-blocked)
     ?.  ?=(%0 -.import-yil)  [import-yil sat-blocked]
-    $(shop.p.sat (snoc shop.p.sat p.import-yil +.p.sat-blocked))
+    %=  $
+      shop.p.sat  (snoc shop.p.sat p.import-yil +.p.sat-blocked)
+      p.r.sat  p.r.sat-blocked
+    ==
   ::
   ++  call-1
     |=  [name=cord args=(list @)]
