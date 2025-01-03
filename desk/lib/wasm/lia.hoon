@@ -16,20 +16,22 @@
   ~%  %run-once-inner-v0  +>+  ~
   |=  [[binary=octs imp=(import type-acc)] hint=term script-in=form:m]
   ::
-  :: ~&  !.(arrows+!=(arrows))                     ::  [9 750 0 63]
+  :: ~&  !.(arrows+!=(arrows))                                         ::  [9 1502 0 63]
   :: ~&  'from arrows:'
-  :: ~&  !.(call+!=(call):(arrows))                ::  [9 20 0 1] kick x1
-  :: ~&  !.(memread+!=(memread):(arrows))          ::  [9 383 0 1] kick x1
-  :: ~&  !.(memwrite+!=(memwrite):(arrows))        ::  [9 94 0 1] kick x1
-  :: ~&  !.(call-ext+!=(call-ext):(arrows))        ::  [9 375 0 1] kick x1
-  :: ~&  !.(global-set+!=(global-set):(arrows))    ::  [9 4 0 1]  kick x1
-  :: ~&  !.(global-get+!=(global-get):(arrows))    ::  [9 22 0 1] kick x1
-  :: ~&  !.(memory-size+!=(memory-size):(arrows))  ::  [9 186 0 1]
-  :: ~&  !.(memory-grow+!=(memory-grow):(arrows))  ::  [9 190 0 1] kick x1
-  :: ~&  !.(get-acc+!=(get-acc):(arrows))          ::  [9 374 0 1]
-  :: ~&  !.(set-acc+!=(set-acc):(arrows))          ::  [9 92 0 1] kick x1
+  :: ~&  !.(call+!=(call):(arrows))                                    ::  [9 20 0 1] kick x1
+  :: ~&  !.(memread+!=(memread):(arrows))                              ::  [9 383 0 1] kick x1
+  :: ~&  !.(memwrite+!=(memwrite):(arrows))                            ::  [9 94 0 1] kick x1
+  :: ~&  !.(call-ext+!=(call-ext):(arrows))                            ::  [9 375 0 1] kick x1
+  :: ~&  !.(global-set+!=(global-set):(arrows))                        ::  [9 4 0 1]  kick x1
+  :: ~&  !.(global-get+!=(global-get):(arrows))                        ::  [9 22 0 1] kick x1
+  :: ~&  !.(memory-size+!=(memory-size):(arrows))                      ::  [9 186 0 1]
+  :: ~&  !.(memory-grow+!=(memory-grow):(arrows))                      ::  [9 381 0 1] kick x1
+  :: ~&  !.(get-acc+!=(get-acc):(arrows))                              ::  [9 374 0 1]
+  :: ~&  !.(set-acc+!=(set-acc):(arrows))                              ::  [9 92 0 1] kick x1
+  :: ~&  !.(get-all-local-globals+!=(get-all-local-globals):(arrows))  ::  [9 43 0 1]
+  :: ~&  !.(set-all-local-globals+!=(set-all-local-globals):(arrows))  ::  [9 380 0 1] kick x1
   :: ~&  ''
-  :: ~&  !.(runnable+!=(runnable))                 ::  [9 92 0 63]
+  :: ~&  !.(runnable+!=(runnable))                 ::  [9 374 0 63]
   :: ~&  'from runnable:'    
   :: ~&  !.(try-m+!=(try):runnable)                ::  [9 43 0 1]  kick x2
   :: ~&  !.(catch-m+!=(catch):runnable)            ::  [9 4 0 1]   kick x2
@@ -284,6 +286,22 @@
     |=  sat=m-sat
     [0+~ sat(p.r acc)]
   ::
+  ++  get-all-local-globals
+    =/  m  (script (list @) m-acc)
+    ^-  form:m
+    |=  sat=m-sat
+    [0+(turn globals.p.sat (cork coin-to-val:op-def @)) sat]
+  :: ::
+  ++  set-all-local-globals
+    |=  vals=(list @)
+    =/  m  (script ,~ m-acc)
+    ^-  form:m
+    |=  sat=m-sat
+    :-  0+~
+    %=    sat
+        globals.p
+      (types-atoms-to-coins (turn globals.p.sat valtype-from-coin) vals)
+    ==
   --
 ::
 ::  misc
@@ -311,6 +329,13 @@
     %v128  [i.a i.b]
   ==
 ::
+++  valtype-from-coin
+  |=  =cw
+  ^-  valtype:wasm-sur
+  ?-  -.cw
+    ?(%i32 %i64 %f32 %f64 %v128)  -.cw
+    %ref  +<.cw
+  ==
 ++  page-size  ^~((bex 16))
 ::
 ++  yield-need

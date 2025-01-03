@@ -946,4 +946,30 @@
       (return:m res)
     ::
     (return:m i32+ptr1 ~)
+::
+++  test-globals-io
+  %+  expect-eq
+    !>  &+~
+    !>
+    =/  m  runnable:wasm
+    =/  binary=octs
+      %-  parser
+      """
+      (module
+        (global (mut i32) i32.const 42)
+        (global i32 i32.const 12)
+      )
+      """
+    ^-  (each ~ [[%nock yield:m] [%fast yield:m]])
+    %+  run-once-comp  [binary `~]
+    =,  arr
+    =/  m  runnable:wasm
+    ^-  form:m
+    ;<  a=(list @)  try:m  get-all-local-globals
+    ?>  =(a ~[42 12])
+    ;<  ~           try:m  (set-all-local-globals 10 11 ~)
+    ;<  b=(list @)  try:m  get-all-local-globals
+    ?>  =(b ~[10 11])
+    (return:m ~)
+::
 --
