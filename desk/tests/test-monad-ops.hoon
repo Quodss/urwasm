@@ -75,6 +75,16 @@
           .-0.3
           .0
           .-0
+          `@rs`1
+          ^~((con 1 (bex 31)))
+          ^~((bex 22))
+          ^~((con (bex 22) (bex 31)))
+          ^~((dec (bex 23)))
+          ^~((con (dec (bex 23)) (bex 31)))
+          ^~((bex 23))
+          ^~((con (bex 23) (bex 31)))
+          ^~((con (lsh [0 23] 254) (dec (bex 23))))
+          ^~(:(con (lsh [0 23] 254) (dec (bex 23)) (bex 31)))
       ==
     ::
       :-  "f64"
@@ -107,6 +117,16 @@
           .~-0.3
           .~0
           .~-0
+          `@rd`1
+          ^~((con 1 (bex 63)))
+          ^~((bex 51))
+          ^~((con (bex 51) (bex 63)))
+          ^~((dec (bex 52)))
+          ^~((con (dec (bex 52)) (bex 63)))
+          ^~((bex 52))
+          ^~((con (bex 52) (bex 63)))
+          ^~((con (lsh [0 52] (sub (bex 11) 2)) (dec (bex 52))))
+          ^~(:(con (lsh [0 52] (sub (bex 11) 2)) (dec (bex 52)) (bex 63)))
       ==
     ::
       :-  "i32"
