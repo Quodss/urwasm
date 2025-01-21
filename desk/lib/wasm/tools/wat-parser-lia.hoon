@@ -15,7 +15,7 @@
 %^  (run-once:wasm (list lv) *)  [bin `~]  %$
 =/  arr  (arrows:wasm *)
 =,  arr
-=/  m  runnable
+=/  m  runnable:wasm
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
 =/  len0=@  (lent string-in)
 ;<  ptr0=@    try:m  (call-1 '__wbindgen_malloc' len0 1 ~)
