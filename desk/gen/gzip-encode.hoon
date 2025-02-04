@@ -9,10 +9,11 @@
   +.i.out
 |^
 ~>  %bout
-%-  yield-need:wasm
-%^  (run-once:wasm (list lv))  [bin ~]  %none
+%-  yield-need:wasm  =<  -
+%^  (run-once:wasm (list lv) *)  [bin `~]  %$
 =/  m  runnable:wasm
-=,  wasm
+=/  arr  (arrows:wasm *)
+=,  arr
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
 ;<  ptr0=@    try:m  (call-1 '__wbindgen_malloc' p.a 1 ~)
 ;<  ~         try:m  (memwrite ptr0 p.a q.a)
