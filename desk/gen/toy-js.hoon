@@ -131,7 +131,7 @@
     ;<  is-eq=@  try:m  (call-1 'QTS_IsEqual' ctx-u val-u toy-u 0 ~)  :: QTS_EqualOp_SameValue
     ?:  =(0 is-eq)
       ;<  err-u=@  try:m  (call-1 'QTS_NewError' ctx-u ~)
-      (call-1 'QTS_Throw' ctx-u err-u ~)
+      (call-1 'QTS_Throw' ctx-u err-u ~)  ::  how to attach a message to the error?
     %-  js-eval                             ::  TODO proper addition in agreement with `require` spec?
     ::  (code to define the API, e.g. the classes to be extended)
     ::
@@ -216,7 +216,7 @@
       undef-u  ::  get
       undef-u  ::  set
       0        ::  configurable
-      0        ::  ënumerable
+      0        ::  enumerable
       1        ::  has_value
       ~
     ==
