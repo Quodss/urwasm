@@ -9,15 +9,19 @@
 =/  cw  coin-wasm:wasm-sur:wasm
 =/  yil-mold  (each cord cord)  ::  result or error
 =/  acc-mold         ::  global parameters
-  $:  run-u=@      ::  runtime 
-      ctx-u=@      ::  context
-      fil-u=@      ::  file name
+  |-
+  $:  run-u=@                                  ::  runtime 
+      ctx-u=@                                  ::  context
+      fil-u=@                                  ::  file name
+      $=  js-imports                           ::  JS imports
+      (map @ $-([@ @ @ @] (script-raw-form:lia-sur:wasm @ $)))
   ==
 =/  arr  (arrows:wasm acc-mold)
 |^
 |=  plugin=cord
 ^-  yil-mold
 %-  yield-need:wasm  =<  -
+~>  %bout
 %^  (run-once:wasm yil-mold acc-mold)  [bin imports]  %$
 =/  m  (script:lia-sur:wasm yil-mold acc-mold)
 ^-  form:m
@@ -31,11 +35,11 @@
 =/  filename-len  (met 3 filename)
 ;<  fil-u=@    try:m  (call-1 'malloc' +(filename-len) ~)
 ;<  ~          try:m  (memwrite fil-u +(filename-len) filename)
-;<  ~          try:m  (set-acc run-u ctx-u fil-u)
+;<  ~          try:m  (set-acc run-u ctx-u fil-u ~)
 ::
 ::  2. Prepare context for plugin evaluation
 ::
-;<  err=(unit cord)  try:m  (make-function %1 'require')
+;<  err=(unit cord)  try:m  (make-function 'require' require)
 ?^  err  (return:m |+u.err)
 ::
 ;<  *  try:m  (js-eval 'var module = {};')  ::  TODO create `module` in a less deranged way; figure out require/module api
@@ -80,7 +84,7 @@
 ::
 ++  imports
   ^~  ^-  (import:lia-sur:wasm acc-mold)
-  :-  [0 0 0]
+  :-  [0 0 0 ~]
   =/  m  (script:lia-sur:wasm (list cw) acc-mold)
   %-  malt
   :~
@@ -105,50 +109,44 @@
         args
     ::
     =,  arr  =,  args
-    ;<  val-u=@  try:m
-      ((~(got by js-imports) magic-w) ctx-u this-u argc-w argv-u)
+    ;<  acc=acc-mold  try:m  get-acc
+    ;<  val-u=@       try:m
+      ((~(got by js-imports.acc) magic-w) ctx-u this-u argc-w argv-u)
     (return:m i32+val-u ~)
   ::
   ==
 ::
-++  js-imports
-  ^~
+++  require
   =/  m  (script:lia-sur:wasm @ acc-mold)
-  ^-  (map @ $-([@ @ @ @] form:m))
-  %-  malt
-  :~
-    :-  %1  ::  'require'
-    |=  [ctx-u=@ this-u=@ argc-w=@ argv-u=@]
-    ^-  form:m
-    =,  arr
-    =/  toy  'toy'
-    ::
-    ;<  nam-u=@  try:m  (call-1 'malloc' +((met 3 toy)) ~)
-    ;<  ~        try:m  (memwrite nam-u +((met 3 toy)) toy)
-    ?>  =(1 argc-w)
-    ;<  val-u=@  try:m  (call-1 'QTS_DupValuePointer' ctx-u argv-u ~)
-    ;<  toy-u=@  try:m  (call-1 'QTS_NewString' ctx-u nam-u ~)
-    ;<  is-eq=@  try:m  (call-1 'QTS_IsEqual' ctx-u val-u toy-u 0 ~)  :: QTS_EqualOp_SameValue
-    ?:  =(0 is-eq)
-      ;<  err-u=@  try:m  (call-1 'QTS_NewError' ctx-u ~)
-      (call-1 'QTS_Throw' ctx-u err-u ~)  ::  how to attach a message to the error?
-    %-  js-eval                             ::  TODO proper addition in agreement with `require` spec?
-    ::  (code to define the API, e.g. the classes to be extended)
-    ::
-    '''
-    var _o = {
-      Plugin: class Plugin
+  |=  [ctx-u=@ this-u=@ argc-w=@ argv-u=@]
+  ^-  form:m
+  =,  arr
+  =/  toy  'toy'
+  ::
+  ;<  nam-u=@  try:m  (call-1 'malloc' +((met 3 toy)) ~)
+  ;<  ~        try:m  (memwrite nam-u +((met 3 toy)) toy)
+  ?>  =(1 argc-w)
+  ;<  val-u=@  try:m  (call-1 'QTS_DupValuePointer' ctx-u argv-u ~)
+  ;<  toy-u=@  try:m  (call-1 'QTS_NewString' ctx-u nam-u ~)
+  ;<  is-eq=@  try:m  (call-1 'QTS_IsEqual' ctx-u val-u toy-u 0 ~)  :: QTS_EqualOp_SameValue
+  ?:  =(0 is-eq)
+    ;<  err-u=@  try:m  (call-1 'QTS_NewError' ctx-u ~)
+    (call-1 'QTS_Throw' ctx-u err-u ~)  ::  how to attach a message to the error?
+  %-  js-eval                             ::  TODO proper addition in agreement with `require` spec?
+  ::  (code to define the API, e.g. the classes to be extended)
+  ::
+  '''
+  var _o = {
+    Plugin: class Plugin
+    {
+      render_our_now_eny(our, now, eny)
       {
-        render_our_now_eny(our, now, eny)
-        {
-            return now;
-        }
+          return now;
       }
     }
-    _o
-    '''
-  ::
-  ==
+  }
+  _o
+  '''
 ::
 ++  get-c-string
   |=  ptr=@
@@ -190,13 +188,16 @@
   (return:m `str)
 ::
 ++  make-function
-  |=  [mag-w=@ name=cord]
+  |=  [name=cord gat=$-([@ @ @ @] (script-raw-form:lia-sur:wasm @ acc-mold))]
   =/  m  (script:lia-sur:wasm (unit cord) acc-mold)  ::  (unit error=cord)
   ^-  form:m
   =,  arr
   ;<  acc=acc-mold  try:m  get-acc
   =,  acc
   ::
+  =/  mag-w=@
+    ?:  =(~ js-imports)  0
+    +((~(rep in ~(key by js-imports)) max))
   ;<  nam-u=@  try:m  (call-1 'malloc' +((met 3 name)) ~)
   ;<  ~        try:m  (memwrite nam-u +((met 3 name)) name)
   ;<  res-u=@  try:m  (call-1 'QTS_NewFunction' ctx-u mag-w nam-u ~)
@@ -221,5 +222,6 @@
       ~
     ==
   ::
+  ;<  ~  try:m  (set-acc acc(js-imports (~(put by js-imports.acc) mag-w gat)))
   (return:m ~)
 --
