@@ -1,0 +1,9 @@
+:~
+  title+'toy'
+  info+'toy'
+  color+0xff.ffff
+  version+[0 0 1]
+  website+'~'
+  license+'MIT'
+  site+/apps/toy
+==
