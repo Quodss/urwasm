@@ -26,7 +26,7 @@
 ;<  filename-u=@  try:m  (call-1 'malloc' +(filename-len) ~)
 ;<  ~             try:m  (memwrite filename-u +(filename-len) filename)
 ;<  val-u=@       try:m
-  (call-1 'QTS_Eval' ctx-u code-u code-len filename-u 0 0 ~)
+  (call-1 'QTS_Eval' ctx-u code-u code-len filename-u 1 0 ~)
 ;<  err-u=@       try:m  (call-1 'QTS_ResolveException' ctx-u val-u ~)
 ?:  =(0 err-u)
   ;<  str-u=@     try:m  (call-1 'QTS_GetString' ctx-u val-u ~)
