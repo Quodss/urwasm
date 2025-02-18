@@ -7,6 +7,7 @@
 ::  (same nomenclature as in u3: -u for pointers, -w/d for 32/64 bit values)
 ::
 =/  cw  coin-wasm:wasm-sur:wasm
+=/  script-form  script-raw-form:lia-sur:wasm
 =/  yil-mold  (each cord cord)  ::  result or error
 =/  acc-mold         ::  global parameters
   |-
@@ -14,7 +15,7 @@
       ctx-u=@                                  ::  context
       fil-u=@                                  ::  file name
       $=  js-imports                           ::  JS imports
-      (map @ $-([@ @ @ @] (script-raw-form:lia-sur:wasm @ $)))
+      (map @ $-([@ @ @ @] (script-form @ $)))
   ==
 =/  arr  (arrows:wasm acc-mold)
 |^
@@ -33,8 +34,7 @@
 ;<  ctx-u=@    try:m  (call-1 'QTS_NewContext' run-u 0 ~)
 =/  filename=cord  'eval.js'
 =/  filename-len  (met 3 filename)
-;<  fil-u=@    try:m  (call-1 'malloc' +(filename-len) ~)
-;<  ~          try:m  (memwrite fil-u +(filename-len) filename)
+;<  fil-u=@    try:m  (malloc-write +(filename-len) filename)
 ;<  ~          try:m  (set-acc run-u ctx-u fil-u ~)
 ::
 ::  2. Prepare context for plugin evaluation
@@ -76,15 +76,14 @@
   =,  acc
   ::
   =/  code-len  (met 3 code)
-  ;<  code-u=@  try:m  (call-1 'malloc' +(code-len) ~)
-  ;<  ~         try:m  (memwrite code-u +(code-len) code)
+  ;<  code-u=@  try:m  (malloc-write +(code-len) code)
   ;<  res-u=@   try:m  (call-1 'QTS_Eval' ctx-u code-u code-len fil-u 0 0 ~)
   ;<  *         try:m  (call 'free' code-u ~)
   (return:m res-u)
 ::
 ++  imports
   ^~  ^-  (import:lia-sur:wasm acc-mold)
-  :-  [0 0 0 ~]
+  :-  *acc-mold
   =/  m  (script:lia-sur:wasm (list cw) acc-mold)
   %-  malt
   :~
@@ -116,23 +115,66 @@
   ::
   ==
 ::
-++  require
-  =/  m  (script:lia-sur:wasm @ acc-mold)
-  |=  [ctx-u=@ this-u=@ argc-w=@ argv-u=@]
+++  js-val-cord-compare
+  |=  [val-u=@ =cord]
+  =/  m  (script:lia-sur:wasm ? acc-mold)
   ^-  form:m
   =,  arr
-  =/  toy  'toy'
+  ;<  acc=acc-mold  try:m  get-acc
+  =,  acc
   ::
-  ;<  nam-u=@  try:m  (call-1 'malloc' +((met 3 toy)) ~)
-  ;<  ~        try:m  (memwrite nam-u +((met 3 toy)) toy)
+  ;<  crd-u=@  try:m  (malloc-write +((met 3 cord)) cord)
+  ;<  str-u=@  try:m  (call-1 'QTS_NewString' ctx-u crd-u ~)
+  ;<  is-eq=@  try:m  (call-1 'QTS_IsEqual' ctx-u val-u str-u 0 ~)  :: QTS_EqualOp_SameValue
+  ;<  *        try:m  (call 'QTS_FreeValuePointer' ctx-u str-u ~)
+  ;<  *        try:m  (call 'free' crd-u ~)
+  (return:m !=(is-eq 0))
+::
+++  require
+  |=  [ctx-u=@ this-u=@ argc-w=@ argv-u=@]
+  =/  m  (script:lia-sur:wasm @ acc-mold)
+  ^-  form:m
+  =,  arr
   ?>  =(1 argc-w)
-  ;<  val-u=@  try:m  (call-1 'QTS_DupValuePointer' ctx-u argv-u ~)
-  ;<  toy-u=@  try:m  (call-1 'QTS_NewString' ctx-u nam-u ~)
-  ;<  is-eq=@  try:m  (call-1 'QTS_IsEqual' ctx-u val-u toy-u 0 ~)  :: QTS_EqualOp_SameValue
-  ?:  =(0 is-eq)
-    ;<  err-u=@  try:m  (call-1 'QTS_NewError' ctx-u ~)
-    (call-1 'QTS_Throw' ctx-u err-u ~)  ::  how to attach a message to the error?
-  %-  js-eval                             ::  TODO proper addition in agreement with `require` spec?
+  ;<  is-toy=?  try:m  (js-val-cord-compare argv-u 'toy')
+  ?:  is-toy  (js-eval toy-code)  ::  TODO proper addition in agreement with `require` spec?
+  ::  ;<  is-foo=?  try:m  (js-val-cord-compare argv-u 'foo')
+  ::  ?:  is-foo  (js-eval foo-code)
+  ::  ...
+  ::
+  (ding 'QTS_Throw' ctx-u (make-error 'Name not recognized by `require`') ~)
+::
+++  make-error
+  |=  txt=cord
+  =/  m  (script:lia-sur:wasm @ acc-mold)
+  ^-  form:m
+  =,  arr
+  ;<  acc=acc-mold  try:m  get-acc
+  =,  acc
+  ::
+  ;<  err-u=@  try:m  (call-1 'QTS_NewError' ctx-u ~)
+  =/  field=cord  'message'
+  ;<  *        try:m
+    %:  ring  'QTS_SetProp'  ::  ++ring is like ++call but takes a list of (@ or script that yields @)
+      ctx-u
+      err-u
+      (ding 'QTS_NewString' ctx-u (malloc-write +((met 3 field)) field) ~)
+      (ding 'QTS_NewString' ctx-u (malloc-write +((met 3 txt)) txt) ~)
+      ~
+    ==
+  (return:m err-u)
+::
+++  malloc-write
+  |=  data=octs
+  =/  m  (script:lia-sur:wasm @ acc-mold)
+  ^-  form:m
+  =,  arr
+  ;<  ptr-u=@  try:m  (call-1 'malloc' p.data ~)
+  ;<  ~        try:m  (memwrite ptr-u data)
+  (return:m ptr-u)
+::
+++  toy-code
+  ^-  cord
   ::  (code to define the API, e.g. the classes to be extended)
   ::
   '''
@@ -198,8 +240,7 @@
   =/  mag-w=@
     ?:  =(~ js-imports)  0
     +((~(rep in ~(key by js-imports)) max))
-  ;<  nam-u=@  try:m  (call-1 'malloc' +((met 3 name)) ~)
-  ;<  ~        try:m  (memwrite nam-u +((met 3 name)) name)
+  ;<  nam-u=@  try:m  (malloc-write +((met 3 name)) name)
   ;<  res-u=@  try:m  (call-1 'QTS_NewFunction' ctx-u mag-w nam-u ~)
   ::
   ;<  err=(unit cord)  try:m  (mayb-error res-u)
@@ -224,4 +265,27 @@
   ::
   ;<  ~  try:m  (set-acc acc(js-imports (~(put by js-imports.acc) mag-w gat)))
   (return:m ~)
+::  ++ring: complex call. Takes a list of either atoms
+::    or scripts that yield atoms. Scripts are evaluated
+::    from left to right
+::
+++  ring
+  |=  [func=cord args=(list $@(@ (script-form @ acc-mold)))]
+  =/  m  (script:lia-sur:wasm (list @) acc-mold)
+  ^-  form:m
+  =,  arr
+  =|  args-atoms=(list @)
+  |-  ^-  form:m
+  ?~  args  (call func (flop args-atoms))
+  ?@  i.args  $(args t.args, args-atoms [i.args args-atoms])
+  ;<  atom=@  try:m  i.args
+  $(args t.args, args-atoms [atom args-atoms])
+::
+++  ding  ::  complex call-1
+  |=  [func=cord args=(list $@(@ (script-form @ acc-mold)))]
+  =/  m  (script:lia-sur:wasm @ acc-mold)
+  ;<  out=(list @)  try:m  (ring func args)
+  ?>  =(1 (lent out))
+  (return:m -.out)
+::
 --
