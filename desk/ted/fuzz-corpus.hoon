@@ -35,7 +35,7 @@
   ;<  ~  bind:m  (sleep:strandio `@dr`2)
   %-  pure:m
   !>
-  %^  (run-once:wasm ,~)  [bin ~]  %$
-  =/  m1  (script:lia-sur:wasm ,~)
+  %^  (run-once:wasm ,~ *)  [bin `~]  %$
+  =/  m1  (script:lia-sur:wasm ,~ *)
   (return:m1 ~)
 --
