@@ -1,18 +1,20 @@
-/-  *lia
-/+  *lia
-/*  binary  %wasm  /lib/tools/wat2wasm/wasm
+/-  *wasm-lia
+/+  *wasm-lia
+/*  binary  %wasm  /lib/wasm/tools/wat2wasm/wasm
 :-  %say  |=  *  :-  %noun
 ::
+=/  lv  lia-value:lia-sur
 |^
 =,  lia-sur
-=,  script-lib
 ?>  (levy wat (curr lte 0x7f))
 =;  out=(list lia-value)
   ?>  ?=([[%octs *] ~] out)
   (main:parser +.i.out)
-%-  yield-need
-%^  (run-once:wasm (list lv))  [binary ~]  %$
+%-  yield-need  =<  -
+%^  (run-once (list lv) *)  [binary `~]  %$
 =/  m  runnable
+=/  arr  (arrows *)
+=,  arr
 ;<  retptr=@  try:m  (call-1 '__wbindgen_add_to_stack_pointer' (i32neg 16) ~)
 =/  len0=@  (lent wat)
 ;<  ptr0=@    try:m  (call-1 '__wbindgen_malloc' len0 1 ~)
