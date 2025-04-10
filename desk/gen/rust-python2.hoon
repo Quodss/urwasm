@@ -2,6 +2,7 @@
 /*  bin  %wasm  /tests/rustpython/wasm
 ::
 |=  code=@t
+^-  [std-out=(list @t) std-err=(list @t)]
 ::
 =<
   =/  arr  (arrows:wasm acc-mold)
@@ -12,7 +13,8 @@
   ^-  form:m
   =,  arr
   ;<  *  try:m  (call '_start' ~)
-  (return:m ~)
+  ;<  acc=acc-mold  try:m  get-acc
+  (return:m (flop std-out.acc) (flop std-err.acc))
 ::
 =>
   |%
@@ -35,9 +37,11 @@
                         off=@  ::  offset
                     ==
                 ::
+                    std-out=(list @t)
+                    std-err=(list @t)
                 ==
   ::
-  +$  yil-mold  ~
+  +$  yil-mold  [std-out=(list @t) std-err=(list @t)]
   ++  arr  (arrows:wasm acc-mold)
   --
 ::
@@ -52,6 +56,8 @@
           i39kv
         ::
           [[3 `(met 3 preopen-dir-name) [0 3 3 1 0 0 0 0] 0] ~ ~]
+          ~
+          ~
       ==
   =*  cw  coin-wasm:wasm-sur:wasm
   =/  m  (script:lia-sur:wasm (list cw) acc-mold)
@@ -335,15 +341,19 @@
     =,  arr  =,  args
     ?>  |(=(2 fd) =(1 fd))
     =/  size-out=@  0
+    ;<  acc=acc-mold  try:m  get-acc
+    =/  [std-out=(list @t) std-err=(list @t)]  [std-out std-err]:acc
     |-  ^-  form:m
     ?:  =(0 ciovec-len-w)
       ;<  ~  try:m  (memwrite size-u 4 size-out)
+      ;<  ~  try:m  (set-acc acc(std-out std-out, std-err std-err))
       (return:m i32+0 ~)
     ;<  o=octs  try:m  (memread ciovec-u 8)
     =/  buf-u=@  (cut 3 [0 4] q.o)
     =/  len-w=@  (cut 3 [4 4] q.o)
     ;<  o=octs  try:m  (memread buf-u len-w)
-    ~&  `@t`q.o
+    =?  std-out  =(1 fd)  [q.o std-out]
+    =?  std-err  =(2 fd)  [q.o std-err]
     %=  $
       size-out           (add size-out len-w)
       ciovec-u.args      (add ciovec-u 8)
@@ -358,7 +368,9 @@
     ?:  =(0 exit)
       ~&  >  'process exited normally'
       (return:m ~)
-    ~&  >>>  `@t`(rap 3 'process exited with an error ' (scot %ud exit) ~)
+    ;<  acc=acc-mold  try:m  get-acc
+    ~&  [std-out=std-out std-err=std-err]:acc
+    ~&  >>  `@t`(rap 3 'process exited with an error ' (scot %ud exit) ~)
     !!
   ==
 --
