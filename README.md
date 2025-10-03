@@ -1,3 +1,6 @@
+Update: as urwasm was merged into [409 version of Arvo OS](https://github.com/urbit/urbit/tree/next/kelvin/409), the development and maintenance continues there.
+For jets, see pkg/noun/jets/e/urwasm.c in [vere@urbit](https://github.com/urbit/vere/tree/develop)
+
 # urwasm
 WebAssembly interpreter suite for Urbit
 
@@ -18,6 +21,6 @@ Next:
 - [X] Language for Invocation of Assembly (Lia) specification
 - [X] Lia monad in Hoon:
 - [X] Jet of Lia monad reducer:
-- [ ] Operationalization:
-  - [ ] Caching of Lia state
-  - [ ] Unit tests
+- [X] Operationalization:
+  - [X] Caching of Lia state
+  - [X] Unit tests
